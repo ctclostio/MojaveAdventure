@@ -21,3 +21,6 @@ Thumbs.db
 # Logs
 *.log
 llama-cpp/models/*.gguf
+
+# Proptest regressions
+*.proptest-regressions

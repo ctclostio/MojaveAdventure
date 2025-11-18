@@ -81,6 +81,15 @@ cargo tarpaulin --out Html --output-dir coverage
 - **Game logic**: 70% line coverage
 - **Overall project**: 60% line coverage
 
+### CI/CD Integration
+A GitHub Actions workflow file (`coverage.yml`) is available locally in `.github/workflows/`
+but cannot be pushed via the GitHub App due to workflow permissions. To enable automated
+coverage reporting:
+1. Manually add the workflow file through GitHub's web interface, or
+2. Push it using a git client with full repository access
+
+The workflow will run tests with coverage on each push and upload reports to codecov.io.
+
 ## Test Organization
 
 ### Test Helpers (`tests/helpers.rs`)
