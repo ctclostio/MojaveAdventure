@@ -23,7 +23,7 @@ async fn main() {
     UI::print_header();
 
     // Load config
-    let config = match Config::load() {
+    let config = match Config::load_with_env() {
         Ok(cfg) => cfg,
         Err(_) => {
             UI::print_info("No config.toml found, using defaults.");

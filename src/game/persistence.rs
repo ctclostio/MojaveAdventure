@@ -16,41 +16,7 @@ use colored::*;
 use std::fs;
 use std::path::Path;
 
-/// Validate a filename for security
-///
-/// Checks for path traversal attempts, invalid characters, and other security issues.
-/// Returns an error if the filename is invalid.
-fn validate_filename(filename: &str) -> Result<()> {
-    // Check if empty
-    if filename.is_empty() {
-        return Err(GameError::InvalidInput("Empty filename".to_string()).into());
-    }
 
-    // Check for path separators and traversal
-    if filename.contains("..")
-        || filename.contains('/')
-        || filename.contains('\\')
-        || filename.contains('\0')  // Null byte injection
-        || filename.contains(':')
-    // Windows drive letters
-    {
-        return Err(GameError::PathTraversalError(filename.to_string()).into());
-    }
-
-    // Additional safety: ensure filename doesn't start with dot
-    if filename.starts_with('.') {
-        return Err(GameError::InvalidInput("Filename cannot start with '.'".to_string()).into());
-    }
-
-    // Limit filename length to prevent abuse
-    if filename.len() > 100 {
-        return Err(
-            GameError::InvalidInput("Filename too long (max 100 chars)".to_string()).into(),
-        );
-    }
-
-    Ok(())
-}
 
 /// Save a game state to a file
 ///
@@ -62,7 +28,7 @@ fn validate_filename(filename: &str) -> Result<()> {
 /// - Ensures saves are contained within the saves/ directory
 /// - Limits filename length to prevent abuse
 pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
-    validate_filename(filename)?;
+    crate::validation::validate_save_name(filename)?;
 
     // Ensure saves directory exists
     let saves_dir = Path::new("saves");
@@ -98,7 +64,7 @@ pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
 /// - Validates filename to prevent path traversal attacks
 /// - Ensures loads are contained within the saves/ directory
 pub fn load_from_file(filename: &str) -> Result<GameState> {
-    validate_filename(filename)?;
+    crate::validation::validate_save_name(filename)?;
 
     let saves_dir = Path::new("saves");
     let save_path = saves_dir.join(format!("{}.json", filename));
