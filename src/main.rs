@@ -4,6 +4,7 @@ mod error;
 mod game;
 mod tui;
 mod ui;
+mod validation;
 
 use ai::extractor::ExtractionAI;
 use ai::AIDungeonMaster;
