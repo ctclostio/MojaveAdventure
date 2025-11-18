@@ -63,10 +63,7 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
                 // Add empty line before dialogue for spacing
                 lines.push(Line::from(vec![
                     Span::styled("│", Style::default().fg(Color::Cyan)),
-                    Span::styled(
-                        " ".repeat(max_width.saturating_sub(2)),
-                        Style::default(),
-                    ),
+                    Span::styled(" ".repeat(max_width.saturating_sub(2)), Style::default()),
                     Span::styled("│", Style::default().fg(Color::Cyan)),
                 ]));
 
@@ -110,10 +107,7 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
                 // Add empty line before mechanic for spacing
                 lines.push(Line::from(vec![
                     Span::styled("│", Style::default().fg(Color::Cyan)),
-                    Span::styled(
-                        " ".repeat(max_width.saturating_sub(2)),
-                        Style::default(),
-                    ),
+                    Span::styled(" ".repeat(max_width.saturating_sub(2)), Style::default()),
                     Span::styled("│", Style::default().fg(Color::Cyan)),
                 ]));
 
@@ -135,10 +129,7 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
             NarrativeSection::EmptyLine => {
                 lines.push(Line::from(vec![
                     Span::styled("│", Style::default().fg(Color::Cyan)),
-                    Span::styled(
-                        " ".repeat(max_width.saturating_sub(2)),
-                        Style::default(),
-                    ),
+                    Span::styled(" ".repeat(max_width.saturating_sub(2)), Style::default()),
                     Span::styled("│", Style::default().fg(Color::Cyan)),
                 ]));
             }
@@ -193,14 +184,17 @@ fn parse_narrative_content(content: &str) -> Vec<NarrativeSection> {
         if line.starts_with("• ")
             || line.starts_with("- ")
             || line.starts_with("* ")
-            || (line.len() > 2 && line.chars().next().unwrap().is_numeric() && line.chars().nth(1) == Some('.'))
+            || (line.len() > 2
+                && line.chars().next().unwrap().is_numeric()
+                && line.chars().nth(1) == Some('.'))
         {
-            let bullet_text = if line.starts_with("• ") || line.starts_with("- ") || line.starts_with("* ") {
-                line[2..].trim().to_string()
-            } else {
-                // numbered list
-                line.splitn(2, '.').nth(1).unwrap_or("").trim().to_string()
-            };
+            let bullet_text =
+                if line.starts_with("• ") || line.starts_with("- ") || line.starts_with("* ") {
+                    line[2..].trim().to_string()
+                } else {
+                    // numbered list
+                    line.splitn(2, '.').nth(1).unwrap_or("").trim().to_string()
+                };
             current_bullets.push(bullet_text);
             i += 1;
             continue;

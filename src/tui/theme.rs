@@ -2,20 +2,22 @@
 use ratatui::style::{Color, Modifier, Style};
 
 /// Pip-Boy color palette - monochrome green phosphor display
+#[allow(dead_code)]
 pub struct PipBoyTheme;
 
+#[allow(dead_code)]
 impl PipBoyTheme {
     // Primary colors - green phosphor variations
-    pub const PHOSPHOR_BRIGHT: Color = Color::Rgb(0, 255, 0);      // Bright green
-    pub const PHOSPHOR_NORMAL: Color = Color::Rgb(0, 200, 0);      // Normal green
-    pub const PHOSPHOR_DIM: Color = Color::Rgb(0, 150, 0);         // Dim green
-    pub const PHOSPHOR_DARK: Color = Color::Rgb(0, 100, 0);        // Dark green
-    pub const PHOSPHOR_VERY_DARK: Color = Color::Rgb(0, 50, 0);    // Very dark green
-    pub const BACKGROUND: Color = Color::Rgb(0, 20, 0);            // Almost black with green tint
+    pub const PHOSPHOR_BRIGHT: Color = Color::Rgb(0, 255, 0); // Bright green
+    pub const PHOSPHOR_NORMAL: Color = Color::Rgb(0, 200, 0); // Normal green
+    pub const PHOSPHOR_DIM: Color = Color::Rgb(0, 150, 0); // Dim green
+    pub const PHOSPHOR_DARK: Color = Color::Rgb(0, 100, 0); // Dark green
+    pub const PHOSPHOR_VERY_DARK: Color = Color::Rgb(0, 50, 0); // Very dark green
+    pub const BACKGROUND: Color = Color::Rgb(0, 20, 0); // Almost black with green tint
 
     // Accent colors (still green-tinted)
-    pub const AMBER_HIGHLIGHT: Color = Color::Rgb(255, 200, 0);    // Amber warning
-    pub const RED_DANGER: Color = Color::Rgb(200, 50, 0);          // Danger (reddish but muted)
+    pub const AMBER_HIGHLIGHT: Color = Color::Rgb(255, 200, 0); // Amber warning
+    pub const RED_DANGER: Color = Color::Rgb(200, 50, 0); // Danger (reddish but muted)
 
     // Styles for different UI elements
 
@@ -143,8 +145,10 @@ impl PipBoyTheme {
 }
 
 /// Scanline effect overlay - creates retro CRT appearance
+#[allow(dead_code)]
 pub struct ScanlineEffect;
 
+#[allow(dead_code)]
 impl ScanlineEffect {
     /// Get scanline characters for a given row
     /// Alternates between normal and slightly dimmed to create scanline effect
@@ -171,18 +175,18 @@ impl ScanlineEffect {
 }
 
 /// Loading spinner frames for AI response waiting
+#[allow(dead_code)]
 pub struct LoadingSpinner {
     frames: Vec<&'static str>,
     current_frame: usize,
 }
 
+#[allow(dead_code)]
 impl LoadingSpinner {
     /// Create a new loading spinner
     pub fn new() -> Self {
         Self {
-            frames: vec![
-                "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏",
-            ],
+            frames: vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
             current_frame: 0,
         }
     }
@@ -212,8 +216,10 @@ impl Default for LoadingSpinner {
 }
 
 /// Terminal sound effects using system bell
+#[allow(dead_code)]
 pub struct TerminalSound;
 
+#[allow(dead_code)]
 impl TerminalSound {
     /// Play terminal bell
     fn play_bell() {
@@ -262,8 +268,10 @@ impl TerminalSound {
 }
 
 /// Pip-Boy ASCII art header
+#[allow(dead_code)]
 pub struct PipBoyHeader;
 
+#[allow(dead_code)]
 impl PipBoyHeader {
     pub fn get_header() -> Vec<&'static str> {
         vec![
@@ -294,8 +302,10 @@ impl PipBoyHeader {
 }
 
 /// Retro terminal effects and decorations
+#[allow(dead_code)]
 pub struct RetroEffects;
 
+#[allow(dead_code)]
 impl RetroEffects {
     /// Get a decorative line separator
     pub fn separator_line(width: usize) -> String {

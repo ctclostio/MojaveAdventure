@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, BorderType, Gauge, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, Gauge, List, ListItem, Paragraph},
     Frame,
 };
 
@@ -18,8 +18,8 @@ pub fn render(f: &mut Frame, app: &App) {
     let root_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(0),     // Main area (sidebar + content + input)
-            Constraint::Length(3),  // Status bar at bottom
+            Constraint::Min(0),    // Main area (sidebar + content + input)
+            Constraint::Length(3), // Status bar at bottom
         ])
         .split(size);
 
@@ -39,8 +39,8 @@ pub fn render(f: &mut Frame, app: &App) {
     let content_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(0),     // Message log
-            Constraint::Length(3),  // Input bar
+            Constraint::Min(0),    // Message log
+            Constraint::Length(3), // Input bar
         ])
         .split(main_chunks[1]);
 
@@ -167,7 +167,12 @@ fn render_character_header(f: &mut Frame, app: &App, area: Rect) {
 }
 
 /// Render HP, AP, XP vitals
-fn render_vitals(f: &mut Frame, character: &Character, animation_manager: &crate::tui::animations::AnimationManager, area: Rect) {
+fn render_vitals(
+    f: &mut Frame,
+    character: &Character,
+    animation_manager: &crate::tui::animations::AnimationManager,
+    area: Rect,
+) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -194,10 +199,7 @@ fn render_vitals(f: &mut Frame, character: &Character, animation_manager: &crate
     let hp_gauge = Gauge::default()
         .block(Block::default().borders(Borders::NONE))
         .gauge_style(Style::default().fg(hp_color))
-        .label(format!(
-            "❤ HP {}/{}",
-            display_hp, character.max_hp
-        ))
+        .label(format!("❤ HP {}/{}", display_hp, character.max_hp))
         .ratio(hp_ratio);
     f.render_widget(hp_gauge, chunks[0]);
 
@@ -247,7 +249,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.strength),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.strength), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.strength),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ P ", Style::default().fg(Color::Green)),
@@ -255,7 +260,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.perception),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.perception), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.perception),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ E ", Style::default().fg(Color::Green)),
@@ -263,7 +271,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.endurance),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.endurance), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.endurance),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ C ", Style::default().fg(Color::Green)),
@@ -271,7 +282,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.charisma),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.charisma), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.charisma),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ I ", Style::default().fg(Color::Green)),
@@ -279,7 +293,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.intelligence),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.intelligence), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.intelligence),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ A ", Style::default().fg(Color::Green)),
@@ -287,7 +304,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.agility),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.agility), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.agility),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("│ L ", Style::default().fg(Color::Green)),
@@ -295,7 +315,10 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
                 create_stat_bar(special.luck),
                 Style::default().fg(Color::Yellow),
             ),
-            Span::styled(format!(" {:2}", special.luck), Style::default().fg(Color::White)),
+            Span::styled(
+                format!(" {:2}", special.luck),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(Span::styled(
             "└───────────────────────────────────┘",
@@ -318,9 +341,7 @@ fn render_quick_status(f: &mut Frame, app: &App, area: Rect) {
             Span::styled("⚔ ", Style::default().fg(Color::Red)),
             Span::styled(
                 format!("COMBAT - Round {}", app.game_state.combat.round),
-                Style::default()
-                    .fg(Color::Red)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ),
         ]));
         lines.push(Line::from(""));
@@ -332,14 +353,21 @@ fn render_quick_status(f: &mut Frame, app: &App, area: Rect) {
                 lines.push(Line::from(vec![
                     Span::styled(format!("[{}] ", i + 1), Style::default().fg(Color::Yellow)),
                     Span::styled(&enemy.name, Style::default().fg(Color::Red)),
-                    Span::styled(format!(" {}%", hp_percent), Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!(" {}%", hp_percent),
+                        Style::default().fg(Color::DarkGray),
+                    ),
                 ]));
             }
         }
     } else {
         // Show equipped weapon
         if let Some(weapon_id) = &character.equipped_weapon {
-            if let Some(weapon) = character.inventory.iter().find(|item| &item.id == weapon_id) {
+            if let Some(weapon) = character
+                .inventory
+                .iter()
+                .find(|item| &item.id == weapon_id)
+            {
                 lines.push(Line::from(vec![
                     Span::styled("🔫 ", Style::default().fg(Color::Yellow)),
                     Span::styled(&weapon.name, Style::default().fg(Color::White)),
@@ -405,10 +433,8 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
     for msg in messages {
         // Use enhanced formatting for DM messages
         if msg.message_type == MessageType::DM {
-            let narrative_lines = narrative::format_dm_narrative(
-                &msg.content,
-                inner_area.width as usize,
-            );
+            let narrative_lines =
+                narrative::format_dm_narrative(&msg.content, inner_area.width as usize);
             lines.extend(narrative_lines);
             // Add spacing after DM message
             lines.push(Line::from(""));
@@ -423,9 +449,7 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
                 MessageType::System => Style::default().fg(Color::DarkGray),
                 MessageType::Info => Style::default().fg(Color::Blue),
                 MessageType::Success => Style::default().fg(Color::Green),
-                MessageType::Error => Style::default()
-                    .fg(Color::Red)
-                    .add_modifier(Modifier::BOLD),
+                MessageType::Error => Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             };
 
             // Wrap text to fit width
@@ -442,20 +466,26 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
     // Add streaming message if present
     if let Some(ref streaming_msg) = app.streaming_message {
         if !streaming_msg.is_empty() {
-            let narrative_lines = narrative::format_dm_narrative(
-                streaming_msg,
-                inner_area.width as usize,
-            );
+            let narrative_lines =
+                narrative::format_dm_narrative(streaming_msg, inner_area.width as usize);
             lines.extend(narrative_lines);
 
             // Add typing indicator
-            lines.push(Line::from(vec![
-                Span::styled("▊", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-            ]));
+            lines.push(Line::from(vec![Span::styled(
+                "▊",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            )]));
         } else {
             // Show "DM is typing..." before any tokens arrive
             lines.push(Line::from(vec![
-                Span::styled("DM is typing", Style::default().fg(Color::Green).add_modifier(Modifier::ITALIC)),
+                Span::styled(
+                    "DM is typing",
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::ITALIC),
+                ),
                 Span::styled("...", Style::default().fg(Color::Green)),
             ]));
         }
@@ -519,13 +549,14 @@ fn render_inventory(f: &mut Frame, app: &App, area: Rect) {
             // Show item details based on type
             let details = match &item.item_type {
                 crate::game::items::ItemType::Weapon(stats) => format!(" - DMG: {}", stats.damage),
-                crate::game::items::ItemType::Armor(stats) => format!(" - AC: +{}", stats.armor_class),
+                crate::game::items::ItemType::Armor(stats) => {
+                    format!(" - AC: +{}", stats.armor_class)
+                }
                 crate::game::items::ItemType::Consumable(_) => format!(" x{}", item.quantity),
                 crate::game::items::ItemType::Misc => String::new(),
             };
 
-            ListItem::new(format!("• {}{}{}", item.name, equipped, details))
-                .style(style)
+            ListItem::new(format!("• {}{}{}", item.name, equipped, details)).style(style)
         })
         .collect();
 
@@ -593,7 +624,11 @@ fn render_sheet_header(f: &mut Frame, character: &Character, area: Rect) {
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::raw(format!("{}Level {}", " ".repeat(area.width.saturating_sub(character.name.len() as u16 + 12) as usize), character.level)),
+            Span::raw(format!(
+                "{}Level {}",
+                " ".repeat(area.width.saturating_sub(character.name.len() as u16 + 12) as usize),
+                character.level
+            )),
         ]),
         Line::from(Span::styled(
             "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
@@ -624,13 +659,23 @@ fn render_sheet_vitals(f: &mut Frame, character: &Character, area: Rect) {
             Span::styled("  ⚡ Action  ", Style::default().fg(Color::Yellow)),
             Span::raw(format!("{}/{}", character.current_ap, character.max_ap)),
             Span::raw("    "),
-            Span::raw(make_progress_bar(ap_ratio, 20, Color::Yellow, Color::DarkGray)),
+            Span::raw(make_progress_bar(
+                ap_ratio,
+                20,
+                Color::Yellow,
+                Color::DarkGray,
+            )),
         ]),
         Line::from(vec![
             Span::styled("  ⭐ XP     ", Style::default().fg(Color::Magenta)),
             Span::raw(format!("{}/{}", character.experience, xp_next_level)),
             Span::raw("  "),
-            Span::raw(make_progress_bar(xp_ratio, 20, Color::Magenta, Color::DarkGray)),
+            Span::raw(make_progress_bar(
+                xp_ratio,
+                20,
+                Color::Magenta,
+                Color::DarkGray,
+            )),
         ]),
         Line::from(vec![
             Span::styled("  💰 Caps   ", Style::default().fg(Color::Green)),
@@ -658,12 +703,50 @@ fn render_sheet_special(f: &mut Frame, character: &Character, area: Rect) {
             ),
             Span::raw(" ───────────────────────────────────┐"),
         ]),
-        make_special_line("Strength", special.strength, "Melee DMG +", special.strength as i32),
-        make_special_line("Perception", special.perception, "Accuracy +", special.perception as i32),
-        make_special_line("Endurance", special.endurance, "HP +", (special.endurance * 2) as i32),
-        make_special_line("Charisma", special.charisma, if special.charisma >= 5 { "Barter +" } else { "Barter " }, if special.charisma >= 5 { (special.charisma - 5) as i32 * 5 } else { -((5 - special.charisma) as i32 * 10) }),
-        make_special_line("Intelligence", special.intelligence, "Skill Pts +", (special.intelligence * 2) as i32),
-        make_special_line("Agility", special.agility, "AC ", 10 + special.agility as i32),
+        make_special_line(
+            "Strength",
+            special.strength,
+            "Melee DMG +",
+            special.strength as i32,
+        ),
+        make_special_line(
+            "Perception",
+            special.perception,
+            "Accuracy +",
+            special.perception as i32,
+        ),
+        make_special_line(
+            "Endurance",
+            special.endurance,
+            "HP +",
+            (special.endurance * 2) as i32,
+        ),
+        make_special_line(
+            "Charisma",
+            special.charisma,
+            if special.charisma >= 5 {
+                "Barter +"
+            } else {
+                "Barter "
+            },
+            if special.charisma >= 5 {
+                (special.charisma - 5) as i32 * 5
+            } else {
+                -((5 - special.charisma) as i32 * 10)
+            },
+        ),
+        make_special_line(
+            "Intelligence",
+            special.intelligence,
+            "Skill Pts +",
+            (special.intelligence * 2) as i32,
+        ),
+        make_special_line(
+            "Agility",
+            special.agility,
+            "AC ",
+            10 + special.agility as i32,
+        ),
         make_special_line("Luck", special.luck, "Critical +", special.luck as i32),
         Line::from("  └────────────────────────────────────────────────────┘"),
     ];
@@ -712,14 +795,21 @@ fn render_sheet_skills(f: &mut Frame, character: &Character, area: Rect) {
         lines.push(make_skill_line(name, value));
     }
 
-    lines.push(Line::from("  └────────────────────────────────────────────────────┘"));
+    lines.push(Line::from(
+        "  └────────────────────────────────────────────────────┘",
+    ));
 
     let paragraph = Paragraph::new(lines);
     f.render_widget(paragraph, area);
 }
 
 /// Helper: Create a SPECIAL stat line with bar and benefit
-fn make_special_line(name: &str, value: u8, benefit_label: &str, benefit_value: i32) -> Line<'static> {
+fn make_special_line(
+    name: &str,
+    value: u8,
+    benefit_label: &str,
+    benefit_value: i32,
+) -> Line<'static> {
     let bar = make_stat_bar(value, 10);
     let benefit = if benefit_value >= 0 {
         format!("{}  {}", benefit_label, benefit_value)
@@ -774,10 +864,15 @@ fn make_stat_bar(value: u8, max: u8) -> String {
 }
 
 /// Helper: Make a progress bar
-fn make_progress_bar(ratio: f64, width: usize, filled_color: Color, empty_color: Color) -> String {
+fn make_progress_bar(
+    ratio: f64,
+    width: usize,
+    _filled_color: Color,
+    _empty_color: Color,
+) -> String {
     let filled_count = (ratio * width as f64).round() as usize;
     let empty_count = width.saturating_sub(filled_count);
-    format!("{}{}",  "█".repeat(filled_count), "░".repeat(empty_count))
+    format!("{}{}", "█".repeat(filled_count), "░".repeat(empty_count))
 }
 
 /// Render input bar - Pip-Boy themed with loading spinner
@@ -798,9 +893,7 @@ fn render_input_bar(f: &mut Frame, app: &App, area: Rect) {
         .border_style(PipBoyTheme::border())
         .border_type(BorderType::Double);
 
-    let paragraph = Paragraph::new(input_text)
-        .style(style)
-        .block(block);
+    let paragraph = Paragraph::new(input_text).style(style).block(block);
 
     f.render_widget(paragraph, area);
 
@@ -892,21 +985,23 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw(" "),
         Span::styled(
             truncate_string(location, 25),
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::raw("  │  "),
         Span::styled("❤", Style::default().fg(hp_color)),
         Span::raw(" "),
         Span::styled(
             format!("{}/{}", character.current_hp, character.max_hp),
-            Style::default().fg(Color::White)
+            Style::default().fg(Color::White),
         ),
         Span::raw("  "),
         Span::styled("⚡", Style::default().fg(Color::Yellow)),
         Span::raw(" "),
         Span::styled(
             format!("{}/{}", character.current_ap, character.max_ap),
-            Style::default().fg(Color::White)
+            Style::default().fg(Color::White),
         ),
         Span::raw("  │  "),
         Span::styled(format!("Day {}", day), Style::default().fg(Color::Cyan)),
@@ -915,7 +1010,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw(" "),
         Span::styled(
             format!("{}", character.caps),
-            Style::default().fg(Color::Green)
+            Style::default().fg(Color::Green),
         ),
         Span::raw(" "),
     ];
@@ -928,7 +1023,10 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     let text = vec![
         Line::from(Span::styled(top_border, Style::default().fg(Color::Green))),
         Line::from(status_content),
-        Line::from(Span::styled(bottom_border, Style::default().fg(Color::Green))),
+        Line::from(Span::styled(
+            bottom_border,
+            Style::default().fg(Color::Green),
+        )),
     ];
 
     let paragraph = Paragraph::new(text)

@@ -1,4 +1,7 @@
-use fallout_dnd::game::{GameState, character::{Character, Special}, persistence};
+use fallout_dnd::game::{
+    character::{Character, Special},
+    persistence, GameState,
+};
 
 #[test]
 fn test_character_creation_to_combat_flow() {
@@ -13,10 +16,13 @@ fn test_character_creation_to_combat_flow() {
     assert_eq!(character.current_ap, character.max_ap);
 
     // Verify SPECIAL total is valid
-    let total = character.special.strength + character.special.perception +
-                character.special.endurance + character.special.charisma +
-                character.special.intelligence + character.special.agility +
-                character.special.luck;
+    let total = character.special.strength
+        + character.special.perception
+        + character.special.endurance
+        + character.special.charisma
+        + character.special.intelligence
+        + character.special.agility
+        + character.special.luck;
     assert!(total > 0, "SPECIAL stats should be initialized");
 }
 
@@ -60,10 +66,7 @@ fn test_combat_encounter_lifecycle() {
     let mut game_state = GameState::new(character);
 
     // Start combat with test enemies
-    let enemies = vec![
-        Enemy::radroach(1),
-        Enemy::raider(1),
-    ];
+    let enemies = vec![Enemy::radroach(1), Enemy::raider(1)];
     game_state.combat.start_combat(enemies);
 
     assert!(game_state.combat.active, "Combat should be active");

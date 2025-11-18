@@ -1,6 +1,6 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use anyhow::{Result, Context};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -30,8 +30,7 @@ pub struct GameConfig {
 
 impl Config {
     pub fn load() -> Result<Self> {
-        let config_str = fs::read_to_string("config.toml")
-            .context("Failed to read config.toml")?;
+        let config_str = fs::read_to_string("config.toml").context("Failed to read config.toml")?;
         let config: Config = toml::from_str(&config_str)
             .context("Failed to parse config.toml - check TOML syntax")?;
         Ok(config)

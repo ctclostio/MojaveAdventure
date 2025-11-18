@@ -56,8 +56,8 @@
 //! println!("Enemies: {}", combat.enemies.len());
 //! ```
 
-use serde::{Deserialize, Serialize};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 /// Combat state tracking active encounters.
 ///
@@ -80,8 +80,8 @@ pub struct Enemy {
     pub damage: String,
     pub ap: i32,
     pub xp_reward: u32,
-    pub skill: u8,        // Combat skill (like small_guns for raiders)
-    pub strength: u8,     // For melee damage bonus
+    pub skill: u8,    // Combat skill (like small_guns for raiders)
+    pub strength: u8, // For melee damage bonus
 }
 
 impl Enemy {
@@ -96,14 +96,14 @@ impl Enemy {
             damage: format!("{}d6+{}", 1 + level / 3, level),
             ap: 5 + (level as i32 / 2),
             xp_reward: level * 100,
-            skill: 30 + (level as u8 * 10).min(70),  // Scales with level, caps at 70
+            skill: 30 + (level as u8 * 10).min(70), // Scales with level, caps at 70
             strength: 5,
         }
     }
 
     pub fn raider(level: u32) -> Self {
         let mut enemy = Enemy::new(&format!("Raider (Level {})", level), level);
-        enemy.skill = 40 + (level as u8 * 8).min(80);  // Raiders are better shots
+        enemy.skill = 40 + (level as u8 * 8).min(80); // Raiders are better shots
         enemy.strength = 5 + level as u8;
         enemy
     }
@@ -113,8 +113,8 @@ impl Enemy {
         enemy.max_hp = 10 + (level as i32 * 3);
         enemy.current_hp = enemy.max_hp;
         enemy.damage = "1d4".to_string();
-        enemy.skill = 20;  // Low combat skill
-        enemy.strength = 2;  // Weak
+        enemy.skill = 20; // Low combat skill
+        enemy.strength = 2; // Weak
         enemy.armor_class = 8;
         enemy
     }
@@ -124,8 +124,8 @@ impl Enemy {
         enemy.max_hp = 40 + (level as i32 * 15);
         enemy.current_hp = enemy.max_hp;
         enemy.damage = format!("{}d8+{}", 1 + level / 2, level * 2);
-        enemy.skill = 60 + (level as u8 * 5).min(90);  // Very skilled
-        enemy.strength = 10 + level as u8;  // Very strong
+        enemy.skill = 60 + (level as u8 * 5).min(90); // Very skilled
+        enemy.strength = 10 + level as u8; // Very strong
         enemy.armor_class = 15 + level as i32;
         enemy
     }
@@ -235,7 +235,8 @@ impl CombatState {
     }
 
     pub fn total_xp_reward(&self) -> u32 {
-        self.enemies.iter()
+        self.enemies
+            .iter()
             .filter(|e| !e.is_alive())
             .map(|e| e.xp_reward)
             .sum()
@@ -250,19 +251,35 @@ mod tests {
     fn test_roll_dice_basic() {
         // Test basic dice rolling - result should be between min and max
         let result = roll_dice("1d6");
-        assert!(result >= 1 && result <= 6, "1d6 should be between 1 and 6, got {}", result);
+        assert!(
+            result >= 1 && result <= 6,
+            "1d6 should be between 1 and 6, got {}",
+            result
+        );
 
         let result = roll_dice("2d6");
-        assert!(result >= 2 && result <= 12, "2d6 should be between 2 and 12, got {}", result);
+        assert!(
+            result >= 2 && result <= 12,
+            "2d6 should be between 2 and 12, got {}",
+            result
+        );
     }
 
     #[test]
     fn test_roll_dice_with_modifier() {
         let result = roll_dice("1d6+3");
-        assert!(result >= 4 && result <= 9, "1d6+3 should be between 4 and 9, got {}", result);
+        assert!(
+            result >= 4 && result <= 9,
+            "1d6+3 should be between 4 and 9, got {}",
+            result
+        );
 
         let result = roll_dice("2d6+5");
-        assert!(result >= 7 && result <= 17, "2d6+5 should be between 7 and 17, got {}", result);
+        assert!(
+            result >= 7 && result <= 17,
+            "2d6+5 should be between 7 and 17, got {}",
+            result
+        );
     }
 
     #[test]
@@ -272,7 +289,10 @@ mod tests {
         let result = roll_dice("invalid");
         // The function tries to parse and may return a random value for malformed input
         // Just verify it doesn't panic
-        assert!(result >= 0, "Should handle invalid format without panicking");
+        assert!(
+            result >= 0,
+            "Should handle invalid format without panicking"
+        );
     }
 
     #[test]

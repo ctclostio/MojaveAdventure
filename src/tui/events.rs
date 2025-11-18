@@ -41,6 +41,7 @@ impl EventHandler {
 }
 
 /// Check if the key event is Ctrl+C (quit)
+#[allow(dead_code)]
 pub fn is_quit_key(key: KeyEvent) -> bool {
     matches!(
         key,
@@ -53,11 +54,13 @@ pub fn is_quit_key(key: KeyEvent) -> bool {
 }
 
 /// Check if the key event is Enter
+#[allow(dead_code)]
 pub fn is_enter_key(key: KeyEvent) -> bool {
     matches!(key.code, KeyCode::Enter)
 }
 
 /// Check if the key event is Backspace
+#[allow(dead_code)]
 pub fn is_backspace_key(key: KeyEvent) -> bool {
     matches!(key.code, KeyCode::Backspace)
 }

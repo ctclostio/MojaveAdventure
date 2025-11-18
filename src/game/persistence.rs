@@ -9,8 +9,8 @@
 //! - Interactive save/load with user prompts
 
 use super::GameState;
-use crate::ui::UI;
 use crate::error::GameError;
+use crate::ui::UI;
 use anyhow::Result;
 use colored::*;
 use std::fs;
@@ -31,7 +31,8 @@ fn validate_filename(filename: &str) -> Result<()> {
         || filename.contains('/')
         || filename.contains('\\')
         || filename.contains('\0')  // Null byte injection
-        || filename.contains(':')   // Windows drive letters
+        || filename.contains(':')
+    // Windows drive letters
     {
         return Err(GameError::PathTraversalError(filename.to_string()).into());
     }
@@ -43,7 +44,9 @@ fn validate_filename(filename: &str) -> Result<()> {
 
     // Limit filename length to prevent abuse
     if filename.len() > 100 {
-        return Err(GameError::InvalidInput("Filename too long (max 100 chars)".to_string()).into());
+        return Err(
+            GameError::InvalidInput("Filename too long (max 100 chars)".to_string()).into(),
+        );
     }
 
     Ok(())
@@ -73,13 +76,13 @@ pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
     // Final safety check: ensure the path is within saves/ directory
     // We can't canonicalize a file that doesn't exist yet, so check the parent
     if let Some(parent) = save_path.parent() {
-        let canonical_parent = parent.canonicalize()
-            .unwrap_or(parent.to_path_buf());
-        let canonical_saves = saves_dir.canonicalize()
-            .unwrap_or(saves_dir.to_path_buf());
+        let canonical_parent = parent.canonicalize().unwrap_or(parent.to_path_buf());
+        let canonical_saves = saves_dir.canonicalize().unwrap_or(saves_dir.to_path_buf());
 
         if canonical_parent != canonical_saves {
-            return Err(GameError::PathTraversalError("Path escapes saves directory".to_string()).into());
+            return Err(
+                GameError::PathTraversalError("Path escapes saves directory".to_string()).into(),
+            );
         }
     }
 
@@ -101,13 +104,13 @@ pub fn load_from_file(filename: &str) -> Result<GameState> {
     let save_path = saves_dir.join(format!("{}.json", filename));
 
     // Final safety check: ensure the canonical path is within saves/
-    let canonical_save = save_path.canonicalize()
-        .unwrap_or(save_path.clone());
-    let canonical_saves = saves_dir.canonicalize()
-        .unwrap_or(saves_dir.to_path_buf());
+    let canonical_save = save_path.canonicalize().unwrap_or(save_path.clone());
+    let canonical_saves = saves_dir.canonicalize().unwrap_or(saves_dir.to_path_buf());
 
     if !canonical_save.starts_with(&canonical_saves) {
-        return Err(GameError::PathTraversalError("Path escapes saves directory".to_string()).into());
+        return Err(
+            GameError::PathTraversalError("Path escapes saves directory".to_string()).into(),
+        );
     }
 
     let json = fs::read_to_string(canonical_save)?;

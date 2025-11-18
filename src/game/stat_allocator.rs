@@ -178,7 +178,9 @@ fn handle_key_event(
                 KeyAction::Continue
             }
         }
-        KeyCode::Char('q') | KeyCode::Esc if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+        KeyCode::Char('q') | KeyCode::Esc
+            if key_event.modifiers.contains(KeyModifiers::CONTROL) =>
+        {
             KeyAction::Quit
         }
         _ => KeyAction::Continue,

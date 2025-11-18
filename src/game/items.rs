@@ -20,21 +20,21 @@ pub enum ItemType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum WeaponType {
-    SmallGun,    // Pistols, SMGs
-    BigGun,      // Miniguns, rocket launchers
+    SmallGun,     // Pistols, SMGs
+    BigGun,       // Miniguns, rocket launchers
     EnergyWeapon, // Laser, plasma
-    MeleeWeapon, // Swords, clubs
-    Unarmed,     // Fists, brass knuckles
+    MeleeWeapon,  // Swords, clubs
+    Unarmed,      // Fists, brass knuckles
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WeaponStats {
-    pub damage: String,        // e.g., "1d10+2"
+    pub damage: String, // e.g., "1d10+2"
     pub damage_type: DamageType,
     pub weapon_type: WeaponType,
     pub ap_cost: i32,
     pub ammo_type: Option<String>,
-    pub range: u32,            // in meters
+    pub range: u32, // in meters
     pub critical_multiplier: f32,
 }
 
@@ -49,8 +49,14 @@ pub struct ArmorStats {
 pub enum ConsumableEffect {
     Healing(i32),
     RadAway(i32),
-    StatBuff { stat: String, amount: i32, duration: u32 },
-    Addiction { effect: String },
+    StatBuff {
+        stat: String,
+        amount: i32,
+        duration: u32,
+    },
+    Addiction {
+        effect: String,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,8 +71,16 @@ pub struct Item {
 }
 
 impl Item {
-    pub fn new_weapon(id: &str, name: &str, description: &str, damage: &str,
-                     damage_type: DamageType, weapon_type: WeaponType, ap_cost: i32, value: u32) -> Self {
+    pub fn new_weapon(
+        id: &str,
+        name: &str,
+        description: &str,
+        damage: &str,
+        damage_type: DamageType,
+        weapon_type: WeaponType,
+        ap_cost: i32,
+        value: u32,
+    ) -> Self {
         Item {
             id: id.to_string(),
             name: name.to_string(),
@@ -102,8 +116,13 @@ impl Item {
         }
     }
 
-    pub fn new_consumable(id: &str, name: &str, description: &str,
-                         effect: ConsumableEffect, value: u32) -> Self {
+    pub fn new_consumable(
+        id: &str,
+        name: &str,
+        description: &str,
+        effect: ConsumableEffect,
+        value: u32,
+    ) -> Self {
         Item {
             id: id.to_string(),
             name: name.to_string(),

@@ -3,7 +3,7 @@
 //! Provides a rich UI for exploring the worldbook with tabs, tree navigation,
 //! and detailed views of locations, NPCs, and events.
 
-use crate::game::worldbook::{Location, Worldbook, NPC, WorldEvent};
+use crate::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
 use std::collections::HashMap;
 
 /// Worldbook browser tab selection
@@ -45,6 +45,7 @@ impl WorldbookTab {
 }
 
 /// Tree node for hierarchical location display
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct LocationTreeNode {
     pub id: String,
@@ -66,9 +67,11 @@ pub struct WorldbookBrowser {
     pub scroll_offset: usize,
 
     /// Search query
+    #[allow(dead_code)]
     pub search_query: String,
 
     /// Whether search input is active
+    #[allow(dead_code)]
     pub search_active: bool,
 
     /// Expanded location IDs (for tree view)
@@ -126,27 +129,34 @@ impl WorldbookBrowser {
 
     /// Toggle expansion of the currently selected location
     pub fn toggle_expansion(&mut self, location_id: &str) {
-        let expanded = self.expanded_locations.entry(location_id.to_string()).or_insert(false);
+        let expanded = self
+            .expanded_locations
+            .entry(location_id.to_string())
+            .or_insert(false);
         *expanded = !*expanded;
     }
 
     /// Check if a location is expanded
     pub fn is_expanded(&self, location_id: &str) -> bool {
-        self.expanded_locations.get(location_id).copied().unwrap_or(false)
+        self.expanded_locations
+            .get(location_id)
+            .copied()
+            .unwrap_or(false)
     }
 
     /// Get sorted locations for display
-    pub fn get_sorted_locations<'a>(&self, worldbook: &'a Worldbook) -> Vec<(&'a String, &'a Location)> {
+    pub fn get_sorted_locations<'a>(
+        &self,
+        worldbook: &'a Worldbook,
+    ) -> Vec<(&'a String, &'a Location)> {
         let mut locations: Vec<_> = worldbook.locations.iter().collect();
 
         // Sort by last visited (most recent first), then by name
-        locations.sort_by(|a, b| {
-            match (&b.1.last_visited, &a.1.last_visited) {
-                (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
-                (Some(_), None) => std::cmp::Ordering::Less,
-                (None, Some(_)) => std::cmp::Ordering::Greater,
-                (None, None) => a.1.name.cmp(&b.1.name),
-            }
+        locations.sort_by(|a, b| match (&b.1.last_visited, &a.1.last_visited) {
+            (Some(b_time), Some(a_time)) => b_time.cmp(a_time),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => a.1.name.cmp(&b.1.name),
         });
 
         locations
@@ -168,11 +178,13 @@ impl WorldbookBrowser {
     }
 
     /// Filter items by search query
+    #[allow(dead_code)]
     pub fn matches_search(&self, text: &str) -> bool {
         if self.search_query.is_empty() {
             return true;
         }
-        text.to_lowercase().contains(&self.search_query.to_lowercase())
+        text.to_lowercase()
+            .contains(&self.search_query.to_lowercase())
     }
 
     /// Scroll detail view up
@@ -190,6 +202,7 @@ impl WorldbookBrowser {
     }
 
     /// Reset detail scroll
+    #[allow(dead_code)]
     pub fn reset_detail_scroll(&mut self) {
         self.detail_scroll = 0;
     }

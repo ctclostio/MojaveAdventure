@@ -1,16 +1,16 @@
-mod config;
-mod game;
 mod ai;
-mod ui;
+mod config;
 mod error;
+mod game;
 mod tui;
+mod ui;
 
-use game::handlers::{create_new_character, load_game, game_loop};
-use game::tui_game_loop::run_game_with_tui;
-use ai::AIDungeonMaster;
 use ai::extractor::ExtractionAI;
-use ui::UI;
+use ai::AIDungeonMaster;
 use config::Config;
+use game::handlers::{create_new_character, game_loop, load_game};
+use game::tui_game_loop::run_game_with_tui;
+use ui::UI;
 
 #[tokio::main]
 async fn main() {
@@ -32,10 +32,15 @@ async fn main() {
     // Test llama.cpp connection
     UI::print_info("Testing connection to llama.cpp server...");
     match ai_dm.test_connection().await {
-        Ok(_) => UI::print_success(&format!("Connected to narrative AI at {}", config.llama.server_url)),
+        Ok(_) => UI::print_success(&format!(
+            "Connected to narrative AI at {}",
+            config.llama.server_url
+        )),
         Err(e) => {
             UI::print_error(&format!("{}", e));
-            UI::print_info("You can continue without AI (manual mode), or fix the connection and restart.");
+            UI::print_info(
+                "You can continue without AI (manual mode), or fix the connection and restart.",
+            );
             UI::print_info("To start llama.cpp server: ./llama-server -m <model_path> --port 8080");
         }
     }
@@ -44,11 +49,16 @@ async fn main() {
     UI::print_info("Testing connection to extraction AI server...");
     let extractor = ExtractionAI::new(config.llama.extraction_url.clone());
     match extractor.test_connection().await {
-        Ok(_) => UI::print_success(&format!("Connected to extraction AI at {}", config.llama.extraction_url)),
+        Ok(_) => UI::print_success(&format!(
+            "Connected to extraction AI at {}",
+            config.llama.extraction_url
+        )),
         Err(e) => {
             UI::print_error(&format!("{}", e));
             UI::print_info("Worldbook features will be limited without extraction AI.");
-            UI::print_info("To start extraction server: ./llama-server -m <model_path> --port 8081");
+            UI::print_info(
+                "To start extraction server: ./llama-server -m <model_path> --port 8081",
+            );
         }
     }
 

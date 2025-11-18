@@ -65,25 +65,71 @@ impl UI {
     }
 
     pub fn print_header() {
-        println!("{}", "═══════════════════════════════════════════════════════════════".green().bold());
-        println!("{}", "    FALLOUT: WASTELAND ADVENTURES - AI Dungeon Master".green().bold());
-        println!("{}", "═══════════════════════════════════════════════════════════════".green().bold());
+        println!(
+            "{}",
+            "═══════════════════════════════════════════════════════════════"
+                .green()
+                .bold()
+        );
+        println!(
+            "{}",
+            "    FALLOUT: WASTELAND ADVENTURES - AI Dungeon Master"
+                .green()
+                .bold()
+        );
+        println!(
+            "{}",
+            "═══════════════════════════════════════════════════════════════"
+                .green()
+                .bold()
+        );
         println!();
     }
 
     pub fn print_character_sheet(character: &crate::game::character::Character) {
         println!("{}", "╔════════════════════════════════════════╗".cyan());
-        println!("{} {:<36} {}", "║".cyan(), format!("{} (Level {})", character.name, character.level).bold(), "║".cyan());
+        println!(
+            "{} {:<36} {}",
+            "║".cyan(),
+            format!("{} (Level {})", character.name, character.level).bold(),
+            "║".cyan()
+        );
         println!("{}", "╠════════════════════════════════════════╣".cyan());
 
-        println!("{} {:<36} {}", "║".cyan(), format!("HP: {}/{}", character.current_hp, character.max_hp).red(), "║".cyan());
-        println!("{} {:<36} {}", "║".cyan(), format!("AP: {}/{}", character.current_ap, character.max_ap).yellow(), "║".cyan());
-        println!("{} {:<36} {}", "║".cyan(), format!("XP: {} / {}", character.experience, (character.level + 1) * 1000).white(), "║".cyan());
-        println!("{} {:<36} {}", "║".cyan(), format!("Caps: {}", character.caps).green(), "║".cyan());
+        println!(
+            "{} {:<36} {}",
+            "║".cyan(),
+            format!("HP: {}/{}", character.current_hp, character.max_hp).red(),
+            "║".cyan()
+        );
+        println!(
+            "{} {:<36} {}",
+            "║".cyan(),
+            format!("AP: {}/{}", character.current_ap, character.max_ap).yellow(),
+            "║".cyan()
+        );
+        println!(
+            "{} {:<36} {}",
+            "║".cyan(),
+            format!(
+                "XP: {} / {}",
+                character.experience,
+                (character.level + 1) * 1000
+            )
+            .white(),
+            "║".cyan()
+        );
+        println!(
+            "{} {:<36} {}",
+            "║".cyan(),
+            format!("Caps: {}", character.caps).green(),
+            "║".cyan()
+        );
 
         println!("{}", "╠════════════════════════════════════════╣".cyan());
         println!("{} {:<36} {}", "║".cyan(), "SPECIAL:".bold(), "║".cyan());
-        println!("{} S:{} P:{} E:{} C:{} I:{} A:{} L:{} {}",
+        println!(
+            "{} S:{} P:{} E:{} C:{} I:{} A:{} L:{} {}",
             "║".cyan(),
             format!("{:2}", character.special.strength).yellow(),
             format!("{:2}", character.special.perception).yellow(),
@@ -129,11 +175,17 @@ impl UI {
             wrapped_lines.push(current_line);
         }
 
-        println!("{}", "┌─ DUNGEON MASTER ─────────────────────────".bright_green());
+        println!(
+            "{}",
+            "┌─ DUNGEON MASTER ─────────────────────────".bright_green()
+        );
         for line in &wrapped_lines {
             println!("{} {}", "│".bright_green(), line);
         }
-        println!("{}", "└──────────────────────────────────────────".bright_green());
+        println!(
+            "{}",
+            "└──────────────────────────────────────────".bright_green()
+        );
         println!();
     }
 
@@ -142,19 +194,24 @@ impl UI {
             return;
         }
 
-        println!("{}", format!("⚔  COMBAT - Round {} ⚔", combat.round).red().bold());
+        println!(
+            "{}",
+            format!("⚔  COMBAT - Round {} ⚔", combat.round).red().bold()
+        );
         println!();
         for (i, enemy) in combat.enemies.iter().enumerate() {
             if enemy.is_alive() {
                 let health_bar = Self::health_bar(enemy.current_hp, enemy.max_hp);
-                println!("  [{}] {} - HP: {} {}",
+                println!(
+                    "  [{}] {} - HP: {} {}",
                     i + 1,
                     enemy.name.red(),
                     health_bar,
                     format!("({}/{})", enemy.current_hp, enemy.max_hp)
                 );
             } else {
-                println!("  [{}] {} - {}",
+                println!(
+                    "  [{}] {} - {}",
                     i + 1,
                     enemy.name.dimmed(),
                     "DEAD".red().bold()
@@ -187,7 +244,13 @@ impl UI {
             println!("{} {:<36} {}", "║".cyan(), "Empty".dimmed(), "║".cyan());
         } else {
             for (i, item) in items.iter().enumerate() {
-                println!("{} [{}] {:<32} {}", "║".cyan(), i + 1, item.name, "║".cyan());
+                println!(
+                    "{} [{}] {:<32} {}",
+                    "║".cyan(),
+                    i + 1,
+                    item.name,
+                    "║".cyan()
+                );
             }
         }
         println!("{}", "╚════════════════════════════════════════╝".cyan());

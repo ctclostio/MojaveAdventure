@@ -1,0 +1,4 @@
+# Clippy configuration for MojaveAdventure
+
+# Allow some pedantic lints that are stylistic
+too-many-arguments-threshold = 8

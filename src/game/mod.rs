@@ -27,24 +27,24 @@
 //! All save operations are handled by the [`persistence`] module with comprehensive
 //! security checks to prevent path traversal attacks.
 
-pub mod character;
-pub mod items;
-pub mod combat;
-pub mod handlers;
-pub mod combat_handlers;
 pub mod char_handlers;
+pub mod character;
+pub mod combat;
+pub mod combat_handlers;
+pub mod handlers;
+pub mod items;
 pub mod persistence;
-pub mod worldbook;
 pub mod rolls;
 pub mod stat_allocator;
-pub mod tui_game_loop;
 pub mod story_manager;
+pub mod tui_game_loop;
+pub mod worldbook;
 
-use serde::{Deserialize, Serialize};
 use character::Character;
 use combat::CombatState;
-use worldbook::Worldbook;
+use serde::{Deserialize, Serialize};
 use story_manager::StoryManager;
+use worldbook::Worldbook;
 
 /// Default value for day counter (used for backward compatibility with old saves)
 fn default_day() -> u32 {

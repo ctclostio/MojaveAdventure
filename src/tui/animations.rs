@@ -17,7 +17,10 @@ pub enum AnimationType {
     /// Dice rolling animation with final result
     DiceRoll { result: u8, modifier: i32 },
     /// Enemy fadeout animation
-    EnemyFadeout { enemy_index: usize },
+    EnemyFadeout {
+        #[allow(dead_code)]
+        enemy_index: usize,
+    },
 }
 
 /// Tracks a single animation with timing information
@@ -113,7 +116,7 @@ impl AnimationManager {
     }
 
     /// Get the current interpolated HP value during animation
-    pub fn get_animated_hp(&self, current_hp: i32) -> Option<i32> {
+    pub fn get_animated_hp(&self, _current_hp: i32) -> Option<i32> {
         if let Some(anim) = &self.health_animation {
             if let AnimationType::HealthDrain { from, to } = anim.anim_type {
                 let progress = anim.eased_progress();
@@ -125,7 +128,7 @@ impl AnimationManager {
     }
 
     /// Get the current interpolated XP value during animation
-    pub fn get_animated_xp(&self, current_xp: u32) -> Option<u32> {
+    pub fn get_animated_xp(&self, _current_xp: u32) -> Option<u32> {
         if let Some(anim) = &self.xp_animation {
             if let AnimationType::XpFill { from, to } = anim.anim_type {
                 let progress = anim.eased_progress();
@@ -200,6 +203,7 @@ impl AnimationManager {
     }
 
     /// Check if any animations are currently active
+    #[allow(dead_code)]
     pub fn has_active_animations(&self) -> bool {
         self.health_animation.is_some()
             || self.xp_animation.is_some()
@@ -208,6 +212,7 @@ impl AnimationManager {
     }
 
     /// Clear all animations (useful for scene transitions)
+    #[allow(dead_code)]
     pub fn clear_all(&mut self) {
         self.health_animation = None;
         self.xp_animation = None;
@@ -224,7 +229,9 @@ mod tests {
     #[test]
     fn test_animation_progress() {
         let anim = Animation::new(AnimationType::HealthDrain { from: 100, to: 50 });
-        assert_eq!(anim.progress(), 0.0);
+        // Just created, should be at or near 0.0 (allow for minimal CPU time)
+        let initial = anim.progress();
+        assert!(initial < 0.01, "Initial progress should be near 0, got {}", initial);
 
         thread::sleep(Duration::from_millis(100));
         assert!(anim.progress() > 0.0 && anim.progress() < 1.0);
@@ -247,7 +254,7 @@ mod tests {
 
         // Should start near 0
         let animated = manager.get_animated_xp(500).unwrap();
-        assert!(animated >= 0 && animated <= 50);
+        assert!(animated <= 50);
     }
 
     #[test]

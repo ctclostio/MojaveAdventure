@@ -80,7 +80,12 @@ pub fn render_combat_display(
 }
 
 /// Render player character panel
-fn render_player_panel(frame: &mut Frame, area: Rect, character: &Character, animation_manager: &crate::tui::animations::AnimationManager) {
+fn render_player_panel(
+    frame: &mut Frame,
+    area: Rect,
+    character: &Character,
+    animation_manager: &crate::tui::animations::AnimationManager,
+) {
     // Create vertical layout for player info
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -92,7 +97,11 @@ fn render_player_panel(frame: &mut Frame, area: Rect, character: &Character, ani
 
     // "YOU" header
     let header = Paragraph::new("YOU")
-        .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(Alignment::Center);
     frame.render_widget(header, chunks[0]);
 
@@ -110,7 +119,9 @@ fn render_player_panel(frame: &mut Frame, area: Rect, character: &Character, ani
     // Character name (centered)
     lines.push(Line::from(vec![Span::styled(
         format!(" {}", character.name),
-        Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD),
     )]));
 
     // HP bar - use animated value if animation is active
@@ -119,11 +130,7 @@ fn render_player_panel(frame: &mut Frame, area: Rect, character: &Character, ani
         .unwrap_or(character.current_hp);
 
     lines.push(Line::from(""));
-    lines.push(Line::from(create_hp_bar(
-        display_hp,
-        character.max_hp,
-        14,
-    )));
+    lines.push(Line::from(create_hp_bar(display_hp, character.max_hp, 14)));
     lines.push(Line::from(vec![Span::styled(
         format!(" {}/{} HP", display_hp, character.max_hp),
         Style::default().fg(Color::White),
@@ -160,14 +167,19 @@ fn render_player_panel(frame: &mut Frame, area: Rect, character: &Character, ani
 }
 
 /// Render enemies panel
-fn render_enemies_panel(frame: &mut Frame, area: Rect, enemies: &[Enemy], animation_manager: &crate::tui::animations::AnimationManager) {
+fn render_enemies_panel(
+    frame: &mut Frame,
+    area: Rect,
+    enemies: &[Enemy],
+    animation_manager: &crate::tui::animations::AnimationManager,
+) {
     // Create vertical layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1),      // "ENEMIES" header
-            Constraint::Min(10),        // Enemy boxes
-            Constraint::Length(2),      // Initiative order
+            Constraint::Length(1), // "ENEMIES" header
+            Constraint::Min(10),   // Enemy boxes
+            Constraint::Length(2), // Initiative order
         ])
         .split(area);
 
@@ -205,16 +217,20 @@ fn render_enemies_panel(frame: &mut Frame, area: Rect, enemies: &[Enemy], animat
 
         // Render each enemy
         for (i, (original_idx, enemy)) in visible_enemies.iter().take(3).enumerate() {
-            render_enemy_box(frame, enemy_areas[i], *original_idx + 1, enemy, *original_idx, animation_manager);
+            render_enemy_box(
+                frame,
+                enemy_areas[i],
+                *original_idx + 1,
+                enemy,
+                *original_idx,
+                animation_manager,
+            );
         }
 
         // If more than 3 enemies, show count
         if visible_enemies.len() > 3 {
-            let overflow = Paragraph::new(format!(
-                "  + {} more...",
-                visible_enemies.len() - 3
-            ))
-            .style(Style::default().fg(Color::Gray));
+            let overflow = Paragraph::new(format!("  + {} more...", visible_enemies.len() - 3))
+                .style(Style::default().fg(Color::Gray));
             frame.render_widget(overflow, enemy_areas[2]);
         }
     }
@@ -263,9 +279,7 @@ fn render_enemy_box(
     // Enemy name with number
     lines.push(Line::from(vec![Span::styled(
         format!(" [{}] {}", number, enemy.name),
-        Style::default()
-            .fg(text_color)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(text_color).add_modifier(Modifier::BOLD),
     )]));
 
     // HP bar
@@ -292,7 +306,11 @@ fn render_enemy_box(
         lines.push(Line::from(""));
         lines.push(Line::from(vec![Span::styled(
             " Wounded ⚠",
-            Style::default().fg(if opacity < 1.0 { Color::DarkGray } else { Color::Yellow }),
+            Style::default().fg(if opacity < 1.0 {
+                Color::DarkGray
+            } else {
+                Color::Yellow
+            }),
         )]));
     }
 
@@ -328,7 +346,7 @@ fn render_initiative_order(frame: &mut Frame, area: Rect, enemies: &[Enemy]) {
 }
 
 /// Render action bar with available commands
-fn render_action_bar(frame: &mut Frame, area: Rect, character: &Character) {
+fn render_action_bar(frame: &mut Frame, area: Rect, _character: &Character) {
     let actions = vec![
         Span::raw("Actions: "),
         Span::styled("[A]", Style::default().fg(Color::Yellow)),
@@ -411,9 +429,7 @@ fn get_weapon_display_name(character: &Character) -> String {
                 let mut chars = word.chars();
                 match chars.next() {
                     None => String::new(),
-                    Some(first) => {
-                        first.to_uppercase().collect::<String>() + chars.as_str()
-                    }
+                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
                 }
             })
             .collect::<Vec<_>>()
@@ -449,14 +465,16 @@ fn render_dice_roll_overlay(
     let dice_box = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Double)
-        .border_style(
-            Style::default().fg(if is_rolling {
-                Color::Yellow
-            } else {
-                Color::Green
-            }),
-        )
-        .title(if is_rolling { " 🎲 ROLLING... " } else { " 🎲 RESULT " })
+        .border_style(Style::default().fg(if is_rolling {
+            Color::Yellow
+        } else {
+            Color::Green
+        }))
+        .title(if is_rolling {
+            " 🎲 ROLLING... "
+        } else {
+            " 🎲 RESULT "
+        })
         .title_alignment(Alignment::Center);
 
     let inner = dice_box.inner(popup_area);
@@ -494,7 +512,14 @@ fn render_dice_roll_overlay(
         )]));
 
         lines.push(Line::from(vec![Span::styled(
-            format!("  Modifier: {}", if modifier >= 0 { format!("+{}", modifier) } else { modifier.to_string() }),
+            format!(
+                "  Modifier: {}",
+                if modifier >= 0 {
+                    format!("+{}", modifier)
+                } else {
+                    modifier.to_string()
+                }
+            ),
             Style::default().fg(Color::Gray),
         )]));
 
