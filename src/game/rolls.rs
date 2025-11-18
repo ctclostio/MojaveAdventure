@@ -96,6 +96,131 @@ pub fn parse_roll_request(text: &str) -> Option<(String, i32)> {
     None
 }
 
+/// Parse natural language skill check requests from DM responses
+/// Detects patterns like "make a Science check", "roll Lockpick", etc.
+pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
+    let lower = text.to_lowercase();
+
+    // List of all possible skills and stats to detect
+    let skills = [
+        "small guns", "big guns", "energy weapons", "melee weapons", "unarmed",
+        "speech", "sneak", "lockpick", "science", "repair", "barter",
+        "explosives", "medicine", "survival", "throwing", "first aid",
+        "doctor", "outdoorsman"
+    ];
+
+    let stats = [
+        "strength", "perception", "endurance", "charisma",
+        "intelligence", "agility", "luck"
+    ];
+
+    // Common trigger phrases that indicate a skill check request
+    let check_phrases = [
+        "roll", "check", "make a", "requires a", "need a", "needs a",
+        "attempt a", "try a", "successful", "roll under your",
+        "requires an", "needs an", "make an", "attempt an"
+    ];
+
+    // Check if the text contains any check trigger phrases
+    let has_check_phrase = check_phrases.iter().any(|phrase| lower.contains(phrase));
+
+    if !has_check_phrase {
+        return None;
+    }
+
+    // Try to find a skill or stat name in the text
+    let mut found_skill = None;
+
+    // Check for skills first (they're more specific)
+    for skill in &skills {
+        if lower.contains(skill) {
+            found_skill = Some(skill.to_string());
+            break;
+        }
+    }
+
+    // If no skill found, check for stats
+    if found_skill.is_none() {
+        for stat in &stats {
+            if lower.contains(stat) {
+                found_skill = Some(stat.to_string());
+                break;
+            }
+        }
+    }
+
+    // If we found a skill/stat, try to extract the DC
+    if let Some(skill_name) = found_skill {
+        // Strategy 1: Look for "DC" followed by a number (most common)
+        if let Some(dc_pos) = lower.find("dc") {
+            let after_dc = &text[dc_pos + 2..];
+
+            // Skip any whitespace, colons, or equal signs
+            let trimmed = after_dc.trim_start_matches(|c: char| c.is_whitespace() || c == ':' || c == '=');
+
+            // Extract consecutive digits
+            let digits: String = trimmed
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+
+            if !digits.is_empty() {
+                if let Ok(dc) = digits.parse::<i32>() {
+                    return Some((skill_name, dc));
+                }
+            }
+        }
+
+        // Strategy 2: Look for "(DC number)" or "[DC number]" patterns
+        for pattern in &["(dc ", "[dc ", "(DC ", "[DC "] {
+            if let Some(paren_dc) = text.find(pattern) {
+                let after_dc = &text[paren_dc + pattern.len()..];
+                if let Some(dc_str) = after_dc.split_whitespace().next() {
+                    // Remove trailing ) or ]
+                    let dc_clean = dc_str.trim_end_matches(|c| c == ')' || c == ']');
+                    if let Ok(dc) = dc_clean.parse::<i32>() {
+                        return Some((skill_name, dc));
+                    }
+                }
+            }
+        }
+
+        // Strategy 3: Look for "difficulty X" or "difficulty of X" patterns
+        if let Some(diff_pos) = lower.find("difficulty") {
+            let after_diff = &text[diff_pos + 10..];
+            let trimmed = after_diff.trim_start_matches(|c: char| c.is_whitespace() || c == ':' || c == 'o' || c == 'f');
+            let digits: String = trimmed
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+
+            if !digits.is_empty() {
+                if let Ok(dc) = digits.parse::<i32>() {
+                    return Some((skill_name, dc));
+                }
+            }
+        }
+
+        // Strategy 4: Look for "against DC" pattern specifically
+        if let Some(against_pos) = lower.find("against dc") {
+            let after_against = &text[against_pos + 10..];
+            let trimmed = after_against.trim_start();
+            let digits: String = trimmed
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+
+            if !digits.is_empty() {
+                if let Ok(dc) = digits.parse::<i32>() {
+                    return Some((skill_name, dc));
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Perform a skill or stat check
 pub fn perform_roll(character: &Character, skill_or_stat: &str, dc: i32) -> RollResult {
     let mut rng = rand::thread_rng();
@@ -255,5 +380,53 @@ mod tests {
         let result = perform_roll(&character, "lockpick", 15);
         assert!(result.roll >= 1 && result.roll <= 20);
         assert_eq!(result.dc, 15);
+    }
+
+    #[test]
+    fn test_parse_natural_roll_request() {
+        // Test natural language patterns
+        let result = parse_natural_roll_request(
+            "You'll need a successful Science skill check for this, Gaunt. This requires a Science check (DC 15)."
+        );
+        assert_eq!(result, Some(("science".to_string(), 15)));
+
+        let result = parse_natural_roll_request(
+            "This requires a Lockpick roll against DC 18 to open the safe."
+        );
+        assert_eq!(result, Some(("lockpick".to_string(), 18)));
+
+        let result = parse_natural_roll_request(
+            "Make a Perception check DC 12 to notice the trap."
+        );
+        assert_eq!(result, Some(("perception".to_string(), 12)));
+
+        let result = parse_natural_roll_request(
+            "You need to roll Intelligence [DC 20] to hack this terminal."
+        );
+        assert_eq!(result, Some(("intelligence".to_string(), 20)));
+
+        // Test the exact pattern from the screenshot
+        let result = parse_natural_roll_request(
+            "This requires a Speech check against DC 15. Roll the dice and I'll tell you the result."
+        );
+        assert_eq!(result, Some(("speech".to_string(), 15)));
+
+        // Test difficulty pattern
+        let result = parse_natural_roll_request(
+            "This needs a Science roll with difficulty 14 to succeed."
+        );
+        assert_eq!(result, Some(("science".to_string(), 14)));
+
+        // Test DC: pattern with colon
+        let result = parse_natural_roll_request(
+            "Make a Lockpick check DC: 16"
+        );
+        assert_eq!(result, Some(("lockpick".to_string(), 16)));
+
+        // Test that non-skill check text doesn't trigger
+        let result = parse_natural_roll_request(
+            "You walk into the room and see a desk."
+        );
+        assert_eq!(result, None);
     }
 }

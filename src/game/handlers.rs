@@ -4,7 +4,7 @@ use super::combat_handlers::{
 };
 use super::items::ItemType;
 use super::persistence::save_game;
-use super::rolls::{parse_roll_request, perform_roll};
+use super::rolls::{parse_roll_request, parse_natural_roll_request, perform_roll};
 use super::worldbook::Worldbook;
 use super::GameState;
 use crate::ai::extractor::{ExtractedEntities, ExtractionAI};
@@ -230,15 +230,139 @@ async fn handle_ai_action(
         Ok(response) => {
             UI::clear_screen();
             UI::print_dm_response(&response);
-            // Add DM response to both conversation systems
-            game_state.conversation.add_dm_turn(response.clone());
-            game_state.story.add(format!("DM: {}", response)); // Legacy support
 
-            // Extract entities from AI response in background
-            extract_and_save_entities(&extractor, &response, game_state).await;
+            // Check if DM is requesting a skill check and handle it automatically
+            if let Some((skill_or_stat, dc)) = parse_natural_roll_request(&response) {
+                println!(); // Add spacing
+                println!("{}","═".repeat(80).bright_yellow());
+                UI::print_info(&format!("🎲 SKILL CHECK DETECTED: {} (DC {})", skill_or_stat.to_uppercase(), dc));
+                UI::print_info("Rolling dice automatically...");
+                println!("{}", "═".repeat(80).bright_yellow());
+                println!();
 
-            // Check if DM initiated combat (simplified detection)
-            check_and_start_combat(&response, game_state);
+                // Perform the roll automatically
+                let result = perform_roll(&game_state.character, &skill_or_stat, dc);
+
+                // Display the roll result with color coding and details
+                let result_text = result.format();
+                println!("🎲 DICE ROLL:");
+                println!("   d20 roll: {}", format!("{}", result.roll).bright_cyan().bold());
+                println!("   Modifier: +{} (from {} skill/stat)", result.modifier, result.skill_name);
+                println!("   Total: {} vs DC {}", format!("{}", result.total).bright_cyan().bold(), result.dc);
+                println!();
+
+                if result.critical {
+                    println!("{} {}", result.emoji(), result_text.green().bold());
+                } else if result.fumble {
+                    println!("{} {}", result.emoji(), result_text.red().bold());
+                } else if result.success {
+                    println!("{} {}", result.emoji(), result_text.green());
+                } else {
+                    println!("{} {}", result.emoji(), result_text.red());
+                }
+                println!();
+                println!("{}", "═".repeat(80).bright_yellow());
+                println!();
+
+                // Add the initial DM response to conversation (before roll outcome)
+                game_state.conversation.add_dm_turn(response.clone());
+                game_state.story.add(format!("DM: {}", response));
+
+                // Ask AI to narrate the outcome based on the roll result
+                UI::print_info("The DM is narrating the outcome...");
+                println!();
+
+                let outcome_prompt = format!(
+                    "GAME SYSTEM UPDATE:\n\
+                    The player attempted: {}\n\
+                    You requested a {} check (DC {}).\n\
+                    The dice have been rolled automatically by the game system.\n\
+                    Result: {} - d20 rolled {}, modifier +{}, total {} vs DC {}\n\n\
+                    NOW NARRATE: Describe what happens as a result of this {}. \
+                    DO NOT mention the dice roll or ask the player to roll - that already happened. \
+                    Just describe the outcome narratively. Be vivid and engaging.\n\n\
+                    Start your response immediately with the narrative outcome:",
+                    input,
+                    result.skill_name,
+                    result.dc,
+                    if result.success { "SUCCESS" } else { "FAILURE" },
+                    result.roll,
+                    result.modifier,
+                    result.total,
+                    result.dc,
+                    if result.critical {
+                        "CRITICAL SUCCESS"
+                    } else if result.fumble {
+                        "CRITICAL FAILURE"
+                    } else {
+                        "result"
+                    }
+                );
+
+                match ai_dm.generate_response(game_state, &outcome_prompt).await {
+                    Ok(outcome) => {
+                        UI::clear_screen();
+
+                        // Redisplay the roll result in a compact format
+                        println!("{}", "─".repeat(80).bright_black());
+                        print!("🎲 ");
+                        if result.critical {
+                            print!("{}", result_text.green().bold());
+                        } else if result.fumble {
+                            print!("{}", result_text.red().bold());
+                        } else if result.success {
+                            print!("{}", result_text.green());
+                        } else {
+                            print!("{}", result_text.red());
+                        }
+                        println!();
+                        println!("{}", "─".repeat(80).bright_black());
+                        println!();
+
+                        // Display the outcome
+                        UI::print_dm_response(&outcome);
+
+                        // Add the roll and outcome to conversation
+                        game_state.conversation.add_player_turn(format!(
+                            "rolled {} - {}",
+                            result.skill_name,
+                            if result.success { "Success" } else { "Failure" }
+                        ));
+                        game_state.conversation.add_dm_turn(outcome.clone());
+                        game_state.story.add(format!("Roll: {}", result_text));
+                        game_state.story.add(format!("DM: {}", outcome));
+
+                        // Extract entities from outcome
+                        extract_and_save_entities(&extractor, &outcome, game_state).await;
+
+                        // Check if outcome initiated combat
+                        check_and_start_combat(&outcome, game_state);
+                    }
+                    Err(e) => {
+                        UI::print_error(&format!("AI Error when narrating outcome: {}", e));
+                        UI::print_info("The roll succeeded but the DM couldn't narrate the outcome. Continuing...");
+
+                        // Still add to conversation even if narration fails
+                        game_state.conversation.add_player_turn(format!(
+                            "rolled {} - {}",
+                            result.skill_name,
+                            if result.success { "Success" } else { "Failure" }
+                        ));
+                        game_state.story.add(format!("Roll: {}", result_text));
+                    }
+                }
+            } else {
+                // No skill check detected, just add response to conversation normally
+                // Add DM response to both conversation systems
+                game_state.conversation.add_dm_turn(response.clone());
+                game_state.story.add(format!("DM: {}", response)); // Legacy support
+
+                // Extract entities from AI response in background
+                extract_and_save_entities(&extractor, &response, game_state).await;
+
+                // Check if DM initiated combat (simplified detection)
+                check_and_start_combat(&response, game_state);
+            }
         }
         Err(e) => {
             UI::print_error(&format!("AI Error: {}", e));
@@ -296,7 +420,11 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
     match ai_dm.generate_response(game_state, &roll_prompt).await {
         Ok(response) => {
             // Try to parse the skill/stat and DC from AI response
-            if let Some((skill_or_stat, dc)) = parse_roll_request(&response) {
+            // First try strict format, then fallback to natural language
+            let parse_result = parse_roll_request(&response)
+                .or_else(|| parse_natural_roll_request(&response));
+
+            if let Some((skill_or_stat, dc)) = parse_result {
                 println!();
                 UI::print_dm_response(&response);
                 println!();
@@ -304,7 +432,14 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 // Perform the roll
                 let result = perform_roll(&game_state.character, &skill_or_stat, dc);
 
-                // Display roll result with color
+                // Display enhanced roll result with detailed breakdown
+                println!("{}", "═".repeat(80).bright_yellow());
+                println!("🎲 DICE ROLL:");
+                println!("   d20 roll: {}", format!("{}", result.roll).bright_cyan().bold());
+                println!("   Modifier: +{} (from {} skill/stat)", result.modifier, result.skill_name);
+                println!("   Total: {} vs DC {}", format!("{}", result.total).bright_cyan().bold(), result.dc);
+                println!();
+
                 let result_text = result.format();
                 if result.critical {
                     println!("{} {}", result.emoji(), result_text.green().bold());
@@ -315,16 +450,26 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 } else {
                     println!("{} {}", result.emoji(), result_text.red());
                 }
+                println!("{}", "═".repeat(80).bright_yellow());
                 println!();
 
                 // Ask AI to narrate the outcome
                 let outcome_prompt = format!(
-                    "The player attempted: {}\n\
-                    Roll result: {} (rolled {}, total {} vs DC {})\n\n\
-                    Narrate what happens as a result of this {}. Be descriptive and atmospheric.",
+                    "GAME SYSTEM UPDATE:\n\
+                    The player attempted: {}\n\
+                    You determined this required a {} check (DC {}).\n\
+                    The dice have been rolled automatically by the game system.\n\
+                    Result: {} - d20 rolled {}, modifier +{}, total {} vs DC {}\n\n\
+                    NOW NARRATE: Describe what happens as a result of this {}. \
+                    DO NOT mention the dice roll - that already happened. \
+                    Just describe the outcome narratively. Be vivid and atmospheric.\n\n\
+                    Start your response immediately with the narrative outcome:",
                     action,
+                    result.skill_name,
+                    result.dc,
                     if result.success { "SUCCESS" } else { "FAILURE" },
                     result.roll,
+                    result.modifier,
                     result.total,
                     result.dc,
                     if result.critical {
@@ -339,10 +484,28 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 );
 
                 UI::print_info("The DM narrates the outcome...");
+                println!();
 
                 match ai_dm.generate_response(game_state, &outcome_prompt).await {
                     Ok(outcome) => {
+                        UI::clear_screen();
+
+                        // Redisplay the roll result in compact format
+                        println!("{}", "─".repeat(80).bright_black());
+                        print!("🎲 ");
+                        if result.critical {
+                            print!("{}", result_text.green().bold());
+                        } else if result.fumble {
+                            print!("{}", result_text.red().bold());
+                        } else if result.success {
+                            print!("{}", result_text.green());
+                        } else {
+                            print!("{}", result_text.red());
+                        }
                         println!();
+                        println!("{}", "─".repeat(80).bright_black());
+                        println!();
+
                         UI::print_dm_response(&outcome);
                         // Add roll context to both conversation systems
                         let roll_context = format!("rolled for: {} - Result: {}", action, result_text);
@@ -356,7 +519,14 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                         game_state.story.add(format!("DM: {}", outcome));
                     }
                     Err(e) => {
-                        UI::print_error(&format!("AI Error: {}", e));
+                        UI::print_error(&format!("AI Error when narrating outcome: {}", e));
+                        UI::print_info("The roll succeeded but the DM couldn't narrate the outcome. Continuing...");
+
+                        // Still add to conversation even if narration fails
+                        let roll_context = format!("rolled for: {} - Result: {}", action, result_text);
+                        game_state.conversation.add_player_turn(roll_context.clone());
+                        game_state.story.add(format!("Player rolled for: {}", action));
+                        game_state.story.add(format!("Result: {}", result_text));
                     }
                 }
             } else {
