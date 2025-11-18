@@ -158,6 +158,28 @@ impl ConversationManager {
         self.current_turn = 0;
     }
 
+    /// Remove the last DM turn from conversation
+    /// Returns true if a DM turn was removed, false otherwise
+    pub fn remove_last_dm_turn(&mut self) -> bool {
+        // Find the last DM turn by iterating backwards
+        if let Some(pos) = self.turns.iter().rposition(|turn| turn.speaker == Speaker::DM) {
+            self.turns.remove(pos);
+            return true;
+        }
+        false
+    }
+
+    /// Replace the last DM turn with a new message
+    /// Returns true if a turn was replaced, false otherwise
+    pub fn replace_last_dm_turn(&mut self, new_message: String) -> bool {
+        if self.remove_last_dm_turn() {
+            self.add_dm_turn(new_message);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Build a prompt section from recent conversation history
     ///
     /// This creates a well-formatted section for AI prompts that clearly
