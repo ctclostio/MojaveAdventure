@@ -238,9 +238,13 @@ impl Character {
         // Simple leveling: every 1000 XP = 1 level
         let new_level = 1 + (self.experience / 1000);
         if new_level > self.level {
+            // Apply level up bonuses for each level gained
+            let levels_gained = new_level - self.level;
+            for _ in 0..levels_gained {
+                self.max_hp += 5 + self.special.endurance as i32;
+            }
             self.level = new_level;
-            // Level up bonuses
-            self.max_hp += 5 + self.special.endurance as i32;
+            // Restore HP to full on level up
             self.current_hp = self.max_hp;
         }
     }
