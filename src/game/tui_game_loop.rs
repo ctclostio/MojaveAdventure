@@ -273,6 +273,10 @@ async fn handle_player_input(
             show_help(app);
             return Ok(());
         }
+        "debug" | "context" => {
+            show_debug_context(app);
+            return Ok(());
+        }
         _ => {}
     }
 
@@ -291,7 +295,9 @@ async fn handle_player_input(
         Ok(rx) => {
             // Start streaming - tokens will be processed in the tick event
             app.start_streaming(rx);
-            app.game_state.story.add(format!("Player: {}", input));
+            // Add player input to both conversation systems
+            app.game_state.conversation.add_player_turn(input.to_string());
+            app.game_state.story.add(format!("Player: {}", input)); // Legacy support
             // Note: waiting_for_ai will be set to false when streaming completes
         }
         Err(e) => {
@@ -504,6 +510,7 @@ fn show_help(app: &mut App) {
     app.add_info_message("worldbook, wb      - View worldbook".to_string());
     app.add_info_message("save               - Save your game".to_string());
     app.add_info_message("help               - Show this help".to_string());
+    app.add_info_message("debug, context     - Show AI conversation context".to_string());
     app.add_info_message("quit, exit         - Exit game".to_string());
     app.add_system_message("".to_string());
     app.add_system_message("In combat:".to_string());
@@ -512,4 +519,30 @@ fn show_help(app: &mut App) {
     app.add_system_message("".to_string());
     app.add_system_message("Press ESC to return to main view".to_string());
     app.add_system_message("Use PageUp/PageDown to scroll messages".to_string());
+}
+
+fn show_debug_context(app: &mut App) {
+    app.add_system_message("═══ CONVERSATION CONTEXT DEBUG ═══".to_string());
+    app.add_info_message(format!("Total turns: {}", app.game_state.conversation.len()));
+    app.add_info_message(format!("Max turns: {}", app.game_state.conversation.max_turns()));
+    app.add_system_message("".to_string());
+    app.add_system_message("Recent conversation history (last 10 turns):".to_string());
+
+    // Collect turns into owned strings to avoid borrow checker issues
+    let recent_turns: Vec<String> = app.game_state.conversation.get_recent_turns(10)
+        .iter()
+        .map(|turn| turn.format())
+        .collect();
+
+    if recent_turns.is_empty() {
+        app.add_info_message("(No conversation history yet)".to_string());
+    } else {
+        for turn_text in recent_turns {
+            app.add_info_message(turn_text);
+        }
+    }
+
+    app.add_system_message("".to_string());
+    app.add_system_message("Legacy story context:".to_string());
+    app.add_info_message(format!("Total events: {}", app.game_state.story.len()));
 }

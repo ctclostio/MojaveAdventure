@@ -39,16 +39,23 @@ pub mod rolls;
 pub mod stat_allocator;
 pub mod tui_game_loop;
 pub mod story_manager;
+pub mod conversation;
 
 use serde::{Deserialize, Serialize};
 use character::Character;
 use combat::CombatState;
 use worldbook::Worldbook;
 use story_manager::StoryManager;
+use conversation::ConversationManager;
 
 /// Default value for day counter (used for backward compatibility with old saves)
 fn default_day() -> u32 {
     1
+}
+
+/// Default conversation manager (migrates from old story context for backward compatibility)
+fn default_conversation() -> ConversationManager {
+    ConversationManager::new()
 }
 
 /// Main game state container that holds all game data.
@@ -56,7 +63,8 @@ fn default_day() -> u32 {
 /// `GameState` is the central structure that manages:
 /// - Player character progression and stats
 /// - Combat encounters
-/// - Story context for AI conversation (via StoryManager)
+/// - Conversation context for AI (via ConversationManager)
+/// - Legacy story context (via StoryManager, kept for backward compatibility)
 /// - Current location and quest progress
 /// - Worldbook knowledge base
 ///
@@ -69,8 +77,9 @@ fn default_day() -> u32 {
 /// let character = Character::new("Vault Dweller".to_string(), special);
 /// let mut game = GameState::new(character);
 ///
-/// // Add story events
-/// game.story.add("You enter the wasteland for the first time.".to_string());
+/// // Add conversation turns
+/// game.conversation.add_player_turn("I enter the wasteland".to_string());
+/// game.conversation.add_dm_turn("You see ruins ahead".to_string());
 ///
 /// // Save the game
 /// persistence::save_to_file(&game, "my_save").expect("Failed to save game");
@@ -83,7 +92,12 @@ pub struct GameState {
     /// Current combat state (active encounters, enemies, round counter)
     pub combat: CombatState,
 
-    /// Story and conversation context manager for AI narrative
+    /// Structured conversation context manager for AI narrative (NEW: preferred method)
+    #[serde(default = "default_conversation")]
+    pub conversation: ConversationManager,
+
+    /// Legacy story context manager (kept for backward compatibility)
+    /// New code should use `conversation` instead
     pub story: StoryManager,
 
     /// Current location in the wasteland
@@ -128,11 +142,22 @@ impl GameState {
         GameState {
             character,
             combat: CombatState::new(),
+            conversation: ConversationManager::new(),
             story: StoryManager::new(),
             location: "Vault 13 Entrance".to_string(),
             quest_log: vec!["Find the Water Chip".to_string()],
             worldbook: Worldbook::new(),
             day: 1,
+        }
+    }
+
+    /// Migrate legacy story context to new conversation system
+    ///
+    /// This should be called once when loading old save files to convert
+    /// the string-based story context to structured conversation turns.
+    pub fn migrate_story_to_conversation(&mut self) {
+        if self.conversation.is_empty() && !self.story.is_empty() {
+            self.conversation = ConversationManager::from_legacy_story_context(self.story.get_all());
         }
     }
 }

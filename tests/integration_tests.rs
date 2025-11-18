@@ -29,7 +29,10 @@ fn test_game_state_save_load_roundtrip() {
     let character = Character::new("Test Character".to_string(), special);
     let mut game_state = GameState::new(character);
     game_state.location = "Test Vault".to_string();
-    game_state.story.add("Test event happened".to_string());
+    // Test both conversation systems
+    game_state.conversation.add_player_turn("I explore the vault".to_string());
+    game_state.conversation.add_dm_turn("You find a locked door".to_string());
+    game_state.story.add("Test event happened".to_string()); // Legacy support
 
     // Use a unique test save name
     let save_name = "test_integration_save";

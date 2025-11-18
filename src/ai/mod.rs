@@ -262,15 +262,21 @@ impl AIDungeonMaster {
             prompt.push_str("\n");
         }
 
-        // Combat and story sections
+        // Combat section
         if game_state.combat.active {
             prompt.push_str(&Self::build_combat_section(&game_state.combat));
         }
 
-        prompt.push_str(&Self::build_story_section(game_state.story.get_all()));
+        // Conversation history section (use new structured system if available, else fall back to legacy)
+        if !game_state.conversation.is_empty() {
+            prompt.push_str(&Self::build_conversation_section(&game_state.conversation));
+        } else if !game_state.story.is_empty() {
+            // Fallback for old save files
+            prompt.push_str(&Self::build_story_section(game_state.story.get_all()));
+        }
 
         // Current player action
-        prompt.push_str(&format!("Player: {}\n\nDM:", player_action));
+        prompt.push_str(&format!(">>> PLAYER: {}\n\n>>> DM (YOU):", player_action));
 
         prompt
     }
@@ -336,6 +342,8 @@ impl AIDungeonMaster {
     }
 
     /// Build recent story context section
+    ///
+    /// DEPRECATED: This uses the old StoryManager. New code should use build_conversation_section.
     fn build_story_section(story_context: &std::collections::VecDeque<String>) -> String {
         if story_context.is_empty() {
             return String::new();
@@ -344,17 +352,25 @@ impl AIDungeonMaster {
         let skip_count = story_context.len().saturating_sub(10);
         let num_events = story_context.len() - skip_count;
 
-        // Pre-allocate: ~50 bytes header + ~100 bytes per story event
-        let mut section = String::with_capacity(50 + num_events * 100);
-        section.push_str("Recent events:\n");
+        // Pre-allocate: ~100 bytes header + ~100 bytes per story event
+        let mut section = String::with_capacity(100 + num_events * 100);
+        section.push_str("=== CONVERSATION HISTORY ===\n");
+        section.push_str("(You are the DM. The player is the other speaker.)\n\n");
 
         // Take last 10 messages (or fewer if not enough)
         for msg in story_context.iter().skip(skip_count) {
             section.push_str(&format!("{}\n", msg));
         }
-        section.push_str("\n");
+        section.push_str("\n=== END HISTORY ===\n\n");
 
         section
+    }
+
+    /// Build conversation context section using structured ConversationManager
+    ///
+    /// This is the preferred method for building conversation context.
+    fn build_conversation_section(conversation: &crate::game::conversation::ConversationManager) -> String {
+        conversation.build_prompt_section(10)
     }
 
     /// Test connection to llama.cpp server

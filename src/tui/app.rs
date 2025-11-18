@@ -309,7 +309,10 @@ impl App {
         self.stream_receiver = None;
         if let Some(content) = self.streaming_message.take() {
             if !content.is_empty() {
-                self.add_message(content, MessageType::DM);
+                self.add_message(content.clone(), MessageType::DM);
+                // Add DM response to both conversation systems for continuity
+                self.game_state.conversation.add_dm_turn(content.clone());
+                self.game_state.story.add(format!("DM: {}", content)); // Legacy support
             }
         }
     }

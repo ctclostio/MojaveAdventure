@@ -155,7 +155,9 @@ async fn show_opening_message(ai_dm: &AIDungeonMaster, game_state: &mut GameStat
 
     UI::clear_screen();
     UI::print_dm_response(&opening);
-    game_state.story.add(format!("DM: {}", opening));
+    // Add to both conversation systems
+    game_state.conversation.add_dm_turn(opening.clone());
+    game_state.story.add(format!("DM: {}", opening)); // Legacy support
 }
 
 /// Display character and combat status
@@ -212,14 +214,18 @@ fn parse_numbered_command(command: &str, combat_active: bool) -> String {
 
 /// Handle player action by sending to AI DM
 async fn handle_ai_action(input: &str, game_state: &mut GameState, ai_dm: &AIDungeonMaster, extractor: &ExtractionAI) {
-    game_state.story.add(format!("Player: {}", input));
+    // Add player input to both conversation systems
+    game_state.conversation.add_player_turn(input.to_string());
+    game_state.story.add(format!("Player: {}", input)); // Legacy support
     UI::print_info("The DM is thinking...");
 
     match ai_dm.generate_response(&game_state, &input).await {
         Ok(response) => {
             UI::clear_screen();
             UI::print_dm_response(&response);
-            game_state.story.add(format!("DM: {}", response));
+            // Add DM response to both conversation systems
+            game_state.conversation.add_dm_turn(response.clone());
+            game_state.story.add(format!("DM: {}", response)); // Legacy support
 
             // Extract entities from AI response in background
             extract_and_save_entities(&extractor, &response, game_state).await;
@@ -327,6 +333,11 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                     Ok(outcome) => {
                         println!();
                         UI::print_dm_response(&outcome);
+                        // Add roll context to both conversation systems
+                        let roll_context = format!("rolled for: {} - Result: {}", action, result_text);
+                        game_state.conversation.add_player_turn(roll_context.clone());
+                        game_state.conversation.add_dm_turn(outcome.clone());
+                        // Legacy support
                         game_state.story.add(format!("Player rolled for: {}", action));
                         game_state.story.add(format!("Result: {}", result_text));
                         game_state.story.add(format!("DM: {}", outcome));

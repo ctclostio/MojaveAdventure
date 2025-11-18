@@ -111,7 +111,11 @@ pub fn load_from_file(filename: &str) -> Result<GameState> {
     }
 
     let json = fs::read_to_string(canonical_save)?;
-    let game_state: GameState = serde_json::from_str(&json)?;
+    let mut game_state: GameState = serde_json::from_str(&json)?;
+
+    // Migrate legacy story context to new conversation system if needed
+    game_state.migrate_story_to_conversation();
+
     Ok(game_state)
 }
 
