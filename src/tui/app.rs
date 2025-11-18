@@ -291,14 +291,14 @@ impl App {
     }
 
     /// Check if the stream has finished and clean up if so
-    pub fn check_stream_finished(&mut self) -> bool {
+    /// Returns Some(response) if streaming finished, None if still streaming
+    pub fn check_stream_finished(&mut self) -> Option<String> {
         if let Some(ref mut rx) = self.stream_receiver {
             if rx.is_closed() {
-                self.finish_streaming();
-                return true;
+                return self.finish_streaming();
             }
         }
-        false
+        None
     }
 
     /// Append a token to the current streaming message
@@ -309,7 +309,8 @@ impl App {
     }
 
     /// Finish the current streaming message and add it to the log
-    pub fn finish_streaming(&mut self) {
+    /// Returns the completed message content
+    pub fn finish_streaming(&mut self) -> Option<String> {
         self.is_streaming = false;
         self.stream_receiver = None;
         if let Some(content) = self.streaming_message.take() {
@@ -318,8 +319,10 @@ impl App {
                 // Add DM response to both conversation systems for continuity
                 self.game_state.conversation.add_dm_turn(content.clone());
                 self.game_state.story.add(format!("DM: {}", content)); // Legacy support
+                return Some(content);
             }
         }
+        None
     }
 
     /// Cancel the current streaming message

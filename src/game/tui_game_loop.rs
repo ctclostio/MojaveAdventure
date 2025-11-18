@@ -1,6 +1,7 @@
 use crate::ai::AIDungeonMaster;
 use crate::config::Config;
 use crate::game::GameState;
+use crate::game::rolls::{parse_natural_roll_request, perform_roll};
 use crate::tui::{self, App, Event, EventHandler};
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io;
@@ -85,7 +86,11 @@ async fn run_app<B: ratatui::backend::Backend>(
                     }
 
                     // Check if stream has finished
-                    if app.check_stream_finished() {
+                    if let Some(dm_response) = app.check_stream_finished() {
+                        // Check if DM requested a skill check
+                        if let Err(e) = handle_skill_check_if_needed(app, &dm_response, ai_dm).await {
+                            app.add_error_message(format!("Skill check error: {}", e));
+                        }
                         app.waiting_for_ai = false;
                         // TODO: Implement worldbook extraction from the completed response
                         // This would require passing the extraction AI client to this function
@@ -559,4 +564,90 @@ fn show_debug_context(app: &mut App) {
     app.add_system_message("".to_string());
     app.add_system_message("Legacy story context:".to_string());
     app.add_info_message(format!("Total events: {}", app.game_state.story.len()));
+}
+
+/// Check if DM response contains a skill check request and handle it automatically
+async fn handle_skill_check_if_needed(
+    app: &mut App,
+    dm_response: &str,
+    ai_dm: &AIDungeonMaster,
+) -> anyhow::Result<()> {
+    // Check if the DM response contains a skill check request
+    if let Some((skill_or_stat, dc)) = parse_natural_roll_request(dm_response) {
+        // Perform the roll automatically
+        let result = perform_roll(&app.game_state.character, &skill_or_stat, dc);
+
+        // Format roll result message
+        let roll_msg = format!(
+            "🎲 {} Check: Rolled {}+{} = {} vs DC {} - {}",
+            result.skill_name,
+            result.roll,
+            result.modifier,
+            result.total,
+            result.dc,
+            if result.critical {
+                "CRITICAL SUCCESS!"
+            } else if result.fumble {
+                "CRITICAL FAILURE!"
+            } else if result.success {
+                "Success"
+            } else {
+                "Failure"
+            }
+        );
+
+        // Display the roll result
+        app.add_system_message(roll_msg);
+
+        // Add roll to conversation history
+        app.game_state.conversation.add_player_turn(format!(
+            "rolled {} - {}",
+            result.skill_name,
+            if result.success { "Success" } else { "Failure" }
+        ));
+
+        // Request AI to narrate the outcome
+        app.waiting_for_ai = true;
+
+        let outcome_prompt = format!(
+            "GAME SYSTEM UPDATE:\n\
+            You requested a {} check (DC {}).\n\
+            The dice have been rolled automatically by the game system.\n\
+            Result: {} - d20 rolled {}, modifier +{}, total {} vs DC {}\n\n\
+            NOW NARRATE: Describe what happens as a result of this {}. \
+            DO NOT mention the dice roll or ask the player to roll - that already happened. \
+            Just describe the outcome narratively. Be vivid and engaging.\n\n\
+            Start your response immediately with the narrative outcome:",
+            result.skill_name,
+            result.dc,
+            if result.success { "SUCCESS" } else { "FAILURE" },
+            result.roll,
+            result.modifier,
+            result.total,
+            result.dc,
+            if result.critical {
+                "CRITICAL SUCCESS"
+            } else if result.fumble {
+                "CRITICAL FAILURE"
+            } else {
+                "result"
+            }
+        );
+
+        // Get AI response stream for the outcome
+        match ai_dm.generate_response_stream(&app.game_state, &outcome_prompt).await {
+            Ok(rx) => {
+                app.start_streaming(rx);
+            }
+            Err(e) => {
+                app.waiting_for_ai = false;
+                app.add_error_message(format!("AI Error when narrating outcome: {}", e));
+                app.add_system_message(
+                    "The roll succeeded but the DM couldn't narrate the outcome.".to_string(),
+                );
+            }
+        }
+    }
+
+    Ok(())
 }
