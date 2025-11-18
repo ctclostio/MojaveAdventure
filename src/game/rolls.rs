@@ -221,6 +221,47 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
     None
 }
 
+/// Truncate a DM response at the skill check statement
+/// Returns the response trimmed to end right after the DC statement
+/// This prevents AI commentary after skill checks from entering conversation history
+pub fn truncate_response_at_skill_check(text: &str) -> Option<String> {
+    // First, check if there's a skill check in this text
+    if let Some((_skill, dc)) = parse_natural_roll_request(text) {
+        let lower = text.to_lowercase();
+
+        // Look for DC patterns in the text
+        let dc_patterns = [
+            format!("(dc {})", dc),
+            format!("(DC {})", dc),
+            format!("[dc {}]", dc),
+            format!("[DC {}]", dc),
+            format!("dc {}", dc),
+            format!("DC {}", dc),
+        ];
+
+        // Find the first matching DC pattern
+        for pattern in &dc_patterns {
+            if let Some(pos) = text.find(pattern) {
+                let end_of_dc = pos + pattern.len();
+
+                // Look for sentence ending within next 15 characters
+                let search_range = &text[end_of_dc..].chars().take(15).collect::<String>();
+
+                if let Some(offset) = search_range.find(|c| c == '.' || c == '!' || c == '?') {
+                    // Found sentence ending nearby, include it
+                    let final_pos = end_of_dc + offset + 1;
+                    return Some(text[..final_pos].trim().to_string());
+                } else {
+                    // No sentence ending found nearby, add a period
+                    return Some(format!("{}.", text[..end_of_dc].trim()));
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Perform a skill or stat check
 pub fn perform_roll(character: &Character, skill_or_stat: &str, dc: i32) -> RollResult {
     let mut rng = rand::thread_rng();
