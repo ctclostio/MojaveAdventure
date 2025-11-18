@@ -1,0 +1,251 @@
+use super::character::Character;
+use rand::Rng;
+
+/// Represents a skill check result
+#[derive(Debug, Clone)]
+pub struct RollResult {
+    pub skill_name: String,
+    pub roll: i32,
+    pub modifier: i32,
+    pub total: i32,
+    pub dc: i32,
+    pub success: bool,
+    pub critical: bool,
+    pub fumble: bool,
+}
+
+impl RollResult {
+    /// Format the roll result for display
+    pub fn format(&self) -> String {
+        let outcome = if self.critical {
+            "CRITICAL SUCCESS!"
+        } else if self.fumble {
+            "CRITICAL FAILURE!"
+        } else if self.success {
+            "Success"
+        } else {
+            "Failure"
+        };
+
+        format!(
+            "{} Check: Rolled {}+{} = {} vs DC {} - {}",
+            self.skill_name,
+            self.roll,
+            self.modifier,
+            self.total,
+            self.dc,
+            outcome
+        )
+    }
+
+    /// Get a color-coded emoji for the result
+    pub fn emoji(&self) -> &str {
+        if self.critical {
+            "⭐"
+        } else if self.fumble {
+            "💀"
+        } else if self.success {
+            "✓"
+        } else {
+            "✗"
+        }
+    }
+}
+
+/// Parse skill/stat from AI response
+/// Expected format: "SKILL: lockpick DC 15" or "STAT: perception DC 10"
+/// This parser is designed to be forgiving of minor format variations
+pub fn parse_roll_request(text: &str) -> Option<(String, i32)> {
+    let lower = text.to_lowercase();
+
+    // Primary pattern: Look for "SKILL: name DC number" or "STAT: name DC number"
+    if let Some(skill_start) = lower.find("skill:").or_else(|| lower.find("stat:")) {
+        let after_skill = &text[skill_start + 6..]; // Skip "skill:" or "stat:"
+
+        // Extract skill name (everything before "DC")
+        if let Some(dc_pos) = after_skill.to_lowercase().find("dc") {
+            let skill_name = after_skill[..dc_pos].trim().to_string();
+
+            // Skip empty skill names
+            if skill_name.is_empty() {
+                return None;
+            }
+
+            // Extract DC number - look for the first number after "DC"
+            let after_dc = &after_skill[dc_pos + 2..];
+            let dc_part = after_dc.trim();
+
+            // Try multiple DC extraction strategies
+            // Strategy 1: First whitespace-separated token
+            if let Some(dc_str) = dc_part.split_whitespace().next() {
+                if let Ok(dc) = dc_str.parse::<i32>() {
+                    return Some((skill_name, dc));
+                }
+            }
+
+            // Strategy 2: Extract first sequence of digits
+            let digits: String = dc_part.chars()
+                .take_while(|c| c.is_ascii_digit() || c.is_whitespace())
+                .filter(|c| c.is_ascii_digit())
+                .collect();
+
+            if !digits.is_empty() {
+                if let Ok(dc) = digits.parse::<i32>() {
+                    return Some((skill_name, dc));
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Perform a skill or stat check
+pub fn perform_roll(character: &Character, skill_or_stat: &str, dc: i32) -> RollResult {
+    let mut rng = rand::thread_rng();
+    let roll = rng.gen_range(1..=20);
+
+    // Determine modifier based on skill or stat name
+    let (skill_name, modifier) = get_modifier(character, skill_or_stat);
+
+    let total = roll + modifier;
+    let success = total >= dc || roll == 20;
+    let critical = roll == 20;
+    let fumble = roll == 1;
+
+    RollResult {
+        skill_name,
+        roll,
+        modifier,
+        total,
+        dc,
+        success,
+        critical,
+        fumble,
+    }
+}
+
+/// Get the appropriate modifier for a skill or stat
+fn get_modifier(character: &Character, name: &str) -> (String, i32) {
+    let lower = name.to_lowercase();
+
+    // Check skills first
+    if lower.contains("small") || lower.contains("gun") || lower.contains("firearms") {
+        return ("Small Guns".to_string(), character.skills.small_guns as i32);
+    }
+    if lower.contains("big") || lower.contains("heavy") {
+        return ("Big Guns".to_string(), character.skills.big_guns as i32);
+    }
+    if lower.contains("energy") {
+        return ("Energy Weapons".to_string(), character.skills.energy_weapons as i32);
+    }
+    if lower.contains("melee") {
+        return ("Melee Weapons".to_string(), character.skills.melee_weapons as i32);
+    }
+    if lower.contains("unarmed") || lower.contains("fist") {
+        return ("Unarmed".to_string(), character.skills.unarmed as i32);
+    }
+    if lower.contains("speech") || lower.contains("persuade") || lower.contains("charisma check") {
+        return ("Speech".to_string(), character.skills.speech as i32);
+    }
+    if lower.contains("sneak") || lower.contains("stealth") {
+        return ("Sneak".to_string(), character.skills.sneak as i32);
+    }
+    if lower.contains("lockpick") || lower.contains("lock") {
+        return ("Lockpick".to_string(), character.skills.lockpick as i32);
+    }
+    if lower.contains("science") || lower.contains("hack") || lower.contains("computer") {
+        return ("Science".to_string(), character.skills.science as i32);
+    }
+    if lower.contains("repair") || lower.contains("fix") {
+        return ("Repair".to_string(), character.skills.repair as i32);
+    }
+
+    // Check SPECIAL stats
+    if lower.contains("strength") || lower.contains("str") {
+        return ("Strength".to_string(), character.special.strength as i32);
+    }
+    if lower.contains("perception") || lower.contains("per") {
+        return ("Perception".to_string(), character.special.perception as i32);
+    }
+    if lower.contains("endurance") || lower.contains("end") {
+        return ("Endurance".to_string(), character.special.endurance as i32);
+    }
+    if lower.contains("charisma") || lower.contains("cha") {
+        return ("Charisma".to_string(), character.special.charisma as i32);
+    }
+    if lower.contains("intelligence") || lower.contains("int") {
+        return ("Intelligence".to_string(), character.special.intelligence as i32);
+    }
+    if lower.contains("agility") || lower.contains("agi") {
+        return ("Agility".to_string(), character.special.agility as i32);
+    }
+    if lower.contains("luck") || lower.contains("lck") {
+        return ("Luck".to_string(), character.special.luck as i32);
+    }
+
+    // Default to Luck if we can't determine
+    ("Luck".to_string(), character.special.luck as i32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::character::Special;
+
+    #[test]
+    fn test_parse_roll_request() {
+        let result = parse_roll_request("You need to make a SKILL: lockpick DC 15 check.");
+        assert_eq!(result, Some(("lockpick".to_string(), 15)));
+
+        let result = parse_roll_request("This requires a STAT: perception DC 10 roll.");
+        assert_eq!(result, Some(("perception".to_string(), 10)));
+
+        let result = parse_roll_request("SKILL: Speech DC 12");
+        assert_eq!(result, Some(("Speech".to_string(), 12)));
+    }
+
+    #[test]
+    fn test_get_modifier() {
+        let character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 6,
+                perception: 8,
+                endurance: 5,
+                charisma: 7,
+                intelligence: 9,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let (name, modifier) = get_modifier(&character, "lockpick");
+        assert_eq!(name, "Lockpick");
+        assert!(modifier >= 0);
+
+        let (name, modifier) = get_modifier(&character, "strength");
+        assert_eq!(name, "Strength");
+        assert_eq!(modifier, 6);
+    }
+
+    #[test]
+    fn test_perform_roll() {
+        let character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let result = perform_roll(&character, "lockpick", 15);
+        assert!(result.roll >= 1 && result.roll <= 20);
+        assert_eq!(result.dc, 15);
+    }
+}

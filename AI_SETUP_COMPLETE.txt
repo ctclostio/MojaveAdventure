@@ -1,0 +1,102 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   FALLOUT DND - AI DUNGEON MASTER                             ║
+║   AI Setup: COMPLETE ✓                                        ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+AI DUNGEON MASTER SETUP COMPLETE!
+═══════════════════════════════════════════════════════════════
+
+✓ llama.cpp installed (AVX2 build)
+✓ Mistral 7B Instruct v0.2 model downloaded (4.1 GB)
+✓ Server running on http://localhost:8080
+✓ Model loaded with 4096 context size
+✓ Health check: PASSED
+✓ Game configured to use AI DM
+
+READY TO PLAY WITH FULL AI DUNGEON MASTER!
+═══════════════════════════════════════════════════════════════
+
+SERVER STATUS:
+  • Running: YES ✓
+  • Model: Mistral 7B Instruct v0.2 (Q4_K_M)
+  • Port: 8080
+  • Context Size: 4096 tokens
+  • Memory: ~512 MB KV cache
+  • Performance: ~27 tokens/second
+
+HOW TO PLAY:
+═══════════════════════════════════════════════════════════════
+
+OPTION 1: Quick Launch
+  cargo run --release
+
+OPTION 2: Use Launcher
+  LAUNCH_GAME.bat     (Windows)
+  ./run.sh            (Linux/Mac)
+
+The game will:
+1. Connect to the AI DM automatically
+2. Let you create your character
+3. Generate dynamic story responses
+4. Provide immersive Fallout RPG experience
+
+MANAGING THE SERVER:
+═══════════════════════════════════════════════════════════════
+
+The server is currently RUNNING in the background.
+
+To stop it:
+  ps aux | grep llama-server
+  kill <process_id>
+
+To restart it:
+  cd llama-cpp
+  ./start-server.bat    (Windows)
+  ./start-server.sh     (Linux/Mac)
+
+Server logs: llama-cpp/server.log
+
+TIPS FOR BEST EXPERIENCE:
+═══════════════════════════════════════════════════════════════
+
+• Be descriptive with your actions
+• The AI will adapt to your choices
+• Combat is handled by game mechanics
+• AI provides narrative and NPC interactions
+• Save often!
+
+CUSTOMIZATION:
+═══════════════════════════════════════════════════════════════
+
+Edit config.toml to adjust:
+  • AI temperature (creativity)
+  • Max response length
+  • System prompt (DM personality)
+  • Game difficulty
+
+EXAMPLE GAMEPLAY:
+═══════════════════════════════════════════════════════════════
+
+You: "I search the abandoned building for supplies"
+
+AI DM: "The rusted door groans as you push it open. Inside,
+dust particles dance in shafts of light. You spot a locked
+safe in the corner and hear something moving upstairs..."
+
+You: "I try to pick the lock on the safe"
+
+AI DM: "Roll for lockpick... [game handles the roll]
+Success! Inside you find 150 caps, a faded photo, and
+a key labeled 'Sheriff's Office'..."
+
+READY TO EXPLORE THE WASTELAND!
+═══════════════════════════════════════════════════════════════
+
+Your AI Dungeon Master awaits. The wasteland is dangerous,
+but with your skills and a bit of luck, you might just survive.
+
+War never changes... but your story starts now! ☢️
+
+═══════════════════════════════════════════════════════════════

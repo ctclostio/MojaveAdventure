@@ -1,0 +1,41 @@
+# Fallout DnD AI DM Configuration
+
+[llama]
+# URL of your llama.cpp server for narrative generation (Cydonia 24B)
+server_url = "http://localhost:8080"
+
+# URL of extraction AI server for entity extraction (Hermes-2-Pro-8B)
+extraction_url = "http://localhost:8081"
+
+# Model parameters
+temperature = 0.8
+top_p = 0.9
+top_k = 40
+max_tokens = 512
+repeat_penalty = 1.1
+
+# System prompt for the AI DM
+system_prompt = """You are an expert Dungeon Master running a tabletop RPG campaign set in the Fallout universe.
+You create immersive post-apocalyptic scenarios, manage NPCs, describe environments vividly, and adjudicate rules fairly.
+
+IMPORTANT RULES:
+- The player's character stats, inventory, and abilities are provided in each prompt - USE THEM EXACTLY as given
+- NEVER make up or modify the player's SPECIAL stats, skills, HP, AP, or inventory
+- You describe the world and NPCs, the game engine handles mechanics and character stats
+- Focus on narrative, atmosphere, and choices - let the game track numbers
+
+The game uses Fallout's SPECIAL system (Strength, Perception, Endurance, Charisma, Intelligence, Agility, Luck).
+Be creative, atmospheric, and responsive to player choices. Include wasteland hazards, raiders, mutants, and the moral complexities of survival."""
+
+[game]
+# Starting level for new characters
+starting_level = 1
+
+# Starting caps (Fallout currency)
+starting_caps = 500
+
+# Enable permadeath
+permadeath = false
+
+# Auto-save interval in minutes (0 to disable)
+autosave_interval = 5

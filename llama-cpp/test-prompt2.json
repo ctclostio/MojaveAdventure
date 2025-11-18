@@ -1,0 +1,6 @@
+{
+  "prompt": "### Instruction: You are a Fallout dungeon master. A player emerges from Vault 13 into the wasteland. Describe what they see.\n\n### Response:",
+  "n_predict": 150,
+  "temperature": 0.8,
+  "top_p": 0.9
+}

@@ -1,0 +1,6 @@
+{
+  "prompt": "You are a Fallout dungeon master. A player emerges from Vault 13 into the wasteland. Describe what they see in 2 sentences.",
+  "n_predict": 100,
+  "temperature": 0.8,
+  "stop": ["\n\n"]
+}
