@@ -1,7 +1,7 @@
 use crate::game::GameState;
-use crate::tui::worldbook_browser::WorldbookBrowser;
 use crate::tui::animations::AnimationManager;
 use crate::tui::theme::LoadingSpinner;
+use crate::tui::worldbook_browser::WorldbookBrowser;
 use std::collections::VecDeque;
 
 /// Main application state for the TUI
@@ -63,22 +63,23 @@ pub struct LogMessage {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageType {
-    DM,          // AI DM narrative
-    Player,      // Player action echo
-    Combat,      // Combat message
-    System,      // System message (saves, errors, etc.)
-    Info,        // Info message
-    Success,     // Success message
-    Error,       // Error message
+    DM,     // AI DM narrative
+    Player, // Player action echo
+    Combat, // Combat message
+    System, // System message (saves, errors, etc.)
+    Info,   // Info message
+    #[allow(dead_code)]
+    Success, // Success message
+    Error,  // Error message
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ViewMode {
-    Normal,      // Regular gameplay
-    Inventory,   // Viewing inventory
-    Stats,       // Viewing character stats
-    Worldbook,   // Viewing worldbook
-    Combat,      // In combat
+    Normal,    // Regular gameplay
+    Inventory, // Viewing inventory
+    Stats,     // Viewing character stats
+    Worldbook, // Viewing worldbook
+    Combat,    // In combat
 }
 
 impl App {
@@ -108,7 +109,8 @@ impl App {
             MessageType::DM,
         );
         app.add_message(
-            "Type your actions and press Enter to proceed. Use 'help' for available commands.".to_string(),
+            "Type your actions and press Enter to proceed. Use 'help' for available commands."
+                .to_string(),
             MessageType::System,
         );
 
@@ -137,6 +139,7 @@ impl App {
     }
 
     /// Add a DM response to the log
+    #[allow(dead_code)]
     pub fn add_dm_response(&mut self, response: String) {
         self.add_message(response, MessageType::DM);
     }
@@ -157,6 +160,7 @@ impl App {
     }
 
     /// Add a success message to the log
+    #[allow(dead_code)]
     pub fn add_success_message(&mut self, message: String) {
         self.add_message(message, MessageType::Success);
     }
@@ -236,9 +240,7 @@ impl App {
         let start_idx = total_messages.saturating_sub(height + self.scroll_offset);
         let end_idx = total_messages.saturating_sub(self.scroll_offset);
 
-        self.message_log
-            .range(start_idx..end_idx)
-            .collect()
+        self.message_log.range(start_idx..end_idx).collect()
     }
 
     /// Set view mode
@@ -261,7 +263,10 @@ impl App {
     }
 
     /// Start a new streaming message with a receiver channel
-    pub fn start_streaming(&mut self, receiver: tokio::sync::mpsc::Receiver<Result<String, String>>) {
+    pub fn start_streaming(
+        &mut self,
+        receiver: tokio::sync::mpsc::Receiver<Result<String, String>>,
+    ) {
         self.is_streaming = true;
         self.streaming_message = Some(String::new());
         self.stream_receiver = Some(receiver);

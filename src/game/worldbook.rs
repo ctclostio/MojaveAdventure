@@ -105,7 +105,7 @@ pub struct Worldbook {
 pub struct Location {
     pub id: String,
     pub name: String,
-    #[serde(skip)]  // Don't serialize - computed from name
+    #[serde(skip)] // Don't serialize - computed from name
     pub name_lowercase: String,
     pub description: String,
     pub location_type: String, // "settlement", "ruin", "vault", "wasteland"
@@ -122,12 +122,12 @@ pub struct Location {
 pub struct NPC {
     pub id: String,
     pub name: String,
-    #[serde(skip)]  // Don't serialize - computed from name
+    #[serde(skip)] // Don't serialize - computed from name
     pub name_lowercase: String,
-    pub role: String, // "merchant", "guard", "quest_giver", "settler"
+    pub role: String,             // "merchant", "guard", "quest_giver", "settler"
     pub personality: Vec<String>, // ["gruff", "honest", "paranoid"]
     pub current_location: Option<String>,
-    pub disposition: i32, // -100 to +100
+    pub disposition: i32,       // -100 to +100
     pub knowledge: Vec<String>, // Things they know about
     pub notes: String,
     pub alive: bool,
@@ -152,6 +152,7 @@ impl Worldbook {
         }
     }
 
+    #[allow(dead_code)]
     pub fn load_from_file(path: &Path) -> anyhow::Result<Self> {
         if path.exists() {
             let json = fs::read_to_string(path)?;
@@ -165,6 +166,7 @@ impl Worldbook {
 
     /// Populate cached lowercase name fields for all locations and NPCs
     /// Call this after deserialization since cached fields are not serialized
+    #[allow(dead_code)]
     fn populate_caches(&mut self) {
         for location in self.locations.values_mut() {
             location.name_lowercase = location.name.to_lowercase();
@@ -331,7 +333,7 @@ mod tests {
         let loc = Location {
             id: "megaton".to_string(),
             name: "Megaton".to_string(),
-            name_lowercase: String::new(),  // Will be populated by add_location
+            name_lowercase: String::new(), // Will be populated by add_location
             description: "Settlement built around bomb".to_string(),
             location_type: "settlement".to_string(),
             npcs_present: vec![],
@@ -355,7 +357,7 @@ mod tests {
         let npc = NPC {
             id: "marcus".to_string(),
             name: "Marcus".to_string(),
-            name_lowercase: String::new(),  // Will be populated by add_npc
+            name_lowercase: String::new(), // Will be populated by add_npc
             role: "trader".to_string(),
             personality: vec!["gruff".to_string()],
             current_location: Some("megaton".to_string()),
@@ -385,7 +387,7 @@ mod tests {
         let npc1 = NPC {
             id: "marcus".to_string(),
             name: "Marcus".to_string(),
-            name_lowercase: String::new(),  // Will be populated by add_npc
+            name_lowercase: String::new(), // Will be populated by add_npc
             role: "trader".to_string(),
             personality: vec![],
             current_location: Some("megaton".to_string()),
@@ -398,7 +400,7 @@ mod tests {
         let npc2 = NPC {
             id: "sheriff".to_string(),
             name: "Sheriff Simms".to_string(),
-            name_lowercase: String::new(),  // Will be populated by add_npc
+            name_lowercase: String::new(), // Will be populated by add_npc
             role: "lawman".to_string(),
             personality: vec![],
             current_location: Some("megaton".to_string()),

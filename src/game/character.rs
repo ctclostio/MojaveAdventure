@@ -54,8 +54,8 @@
 //! println!("Science skill: {}", character.skills.science);
 //! ```
 
-use serde::{Deserialize, Serialize};
 use super::items::Item;
+use serde::{Deserialize, Serialize};
 
 /// SPECIAL stats - core Fallout character attributes
 ///
@@ -63,13 +63,19 @@ use super::items::Item;
 /// Each stat ranges from 1-10 and affects derived stats and skills.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Special {
-    pub strength: u8,      // Physical power, melee damage
-    pub perception: u8,    // Awareness, accuracy
-    pub endurance: u8,     // Health, radiation resistance
-    pub charisma: u8,      // Speech, barter
-    pub intelligence: u8,  // Skill points, hacking
-    pub agility: u8,       // Action points, speed
-    pub luck: u8,          // Critical chance, general fortune
+    pub strength: u8,     // Physical power, melee damage
+    pub perception: u8,   // Awareness, accuracy
+    pub endurance: u8,    // Health, radiation resistance
+    pub charisma: u8,     // Speech, barter
+    pub intelligence: u8, // Skill points, hacking
+    pub agility: u8,      // Action points, speed
+    pub luck: u8,         // Critical chance, general fortune
+}
+
+impl Default for Special {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Special {
@@ -85,9 +91,15 @@ impl Special {
         }
     }
 
+    #[allow(dead_code)]
     pub fn total_points(&self) -> u8 {
-        self.strength + self.perception + self.endurance +
-        self.charisma + self.intelligence + self.agility + self.luck
+        self.strength
+            + self.perception
+            + self.endurance
+            + self.charisma
+            + self.intelligence
+            + self.agility
+            + self.luck
     }
 }
 
@@ -117,23 +129,23 @@ impl Skills {
     pub fn from_special(special: &Special) -> Self {
         Skills {
             small_guns: 5 + (special.agility * 4),
-            big_guns: 0 + (special.agility * 2),
-            energy_weapons: 0 + (special.agility * 2),
+            big_guns: special.agility * 2,
+            energy_weapons: special.agility * 2,
             unarmed: 30 + ((special.agility + special.strength) * 2),
             melee_weapons: 20 + ((special.agility + special.strength) * 2),
-            throwing: 0 + (special.agility * 4),
-            first_aid: 0 + ((special.perception + special.intelligence) * 2),
-            doctor: 5 + ((special.perception + special.intelligence)),
+            throwing: special.agility * 4,
+            first_aid: (special.perception + special.intelligence) * 2,
+            doctor: 5 + (special.perception + special.intelligence),
             sneak: 5 + (special.agility * 3),
-            lockpick: 10 + ((special.perception + special.agility)),
-            steal: 0 + (special.agility * 3),
-            traps: 10 + ((special.perception + special.agility)),
-            science: 0 + (special.intelligence * 4),
-            repair: 0 + (special.intelligence * 3),
-            speech: 0 + (special.charisma * 5),
-            barter: 0 + (special.charisma * 4),
-            gambling: 0 + (special.luck * 5),
-            outdoorsman: 0 + ((special.endurance + special.intelligence)),
+            lockpick: 10 + (special.perception + special.agility),
+            steal: special.agility * 3,
+            traps: 10 + (special.perception + special.agility),
+            science: special.intelligence * 4,
+            repair: special.intelligence * 3,
+            speech: special.charisma * 5,
+            barter: special.charisma * 4,
+            gambling: special.luck * 5,
+            outdoorsman: special.endurance + special.intelligence,
         }
     }
 
@@ -290,11 +302,16 @@ impl Character {
 
     pub fn use_consumable(&mut self, item_id: &str) -> Result<String, String> {
         // Find the item
-        let item_index = self.inventory.iter().position(|i| i.id == item_id)
+        let item_index = self
+            .inventory
+            .iter()
+            .position(|i| i.id == item_id)
             .ok_or_else(|| "Item not found in inventory".to_string())?;
 
         // Clone the effect to avoid borrow issues
-        let effect = if let super::items::ItemType::Consumable(ref effect) = self.inventory[item_index].item_type {
+        let effect = if let super::items::ItemType::Consumable(ref effect) =
+            self.inventory[item_index].item_type
+        {
             effect.clone()
         } else {
             return Err("Item is not consumable".to_string());
@@ -309,7 +326,11 @@ impl Character {
             super::items::ConsumableEffect::RadAway(amount) => {
                 format!("Removed {} rads", amount)
             }
-            super::items::ConsumableEffect::StatBuff { stat, amount, duration } => {
+            super::items::ConsumableEffect::StatBuff {
+                stat,
+                amount,
+                duration,
+            } => {
                 format!("Gained +{} {} for {} rounds", amount, stat, duration)
             }
             super::items::ConsumableEffect::Addiction { effect } => {

@@ -59,14 +59,14 @@
 pub mod extractor;
 
 use crate::config::LlamaConfig;
-use crate::game::GameState;
 use crate::error::GameError;
+use crate::game::GameState;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use futures_util::StreamExt;
 use reqwest;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::sync::mpsc;
-use futures_util::StreamExt;
 
 #[derive(Debug, Serialize)]
 struct LlamaRequest {
@@ -103,7 +103,11 @@ impl AIDungeonMaster {
     }
 
     /// Generate a response from the AI DM
-    pub async fn generate_response(&self, game_state: &GameState, player_action: &str) -> Result<String> {
+    pub async fn generate_response(
+        &self,
+        game_state: &GameState,
+        player_action: &str,
+    ) -> Result<String> {
         let prompt = self.build_prompt(game_state, player_action);
 
         let request = LlamaRequest {
@@ -119,20 +123,26 @@ impl AIDungeonMaster {
 
         let url = format!("{}/completion", self.config.server_url);
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&request)
             .timeout(Duration::from_secs(60))
             .send()
             .await
-            .map_err(|e| GameError::AIConnectionError(
-                format!("Failed to connect to llama.cpp server: {}. Make sure it's running at {}", e, self.config.server_url)
-            ))?;
+            .map_err(|e| {
+                GameError::AIConnectionError(format!(
+                    "Failed to connect to llama.cpp server: {}. Make sure it's running at {}",
+                    e, self.config.server_url
+                ))
+            })?;
 
         if !response.status().is_success() {
-            return Err(GameError::AIConnectionError(
-                format!("llama.cpp server returned error: {}", response.status())
-            ).into());
+            return Err(GameError::AIConnectionError(format!(
+                "llama.cpp server returned error: {}",
+                response.status()
+            ))
+            .into());
         }
 
         let llama_response: LlamaResponse = response.json().await?;
@@ -217,10 +227,18 @@ impl AIDungeonMaster {
                                         }
 
                                         // Try to parse as JSON
-                                        if let Ok(json) = serde_json::from_str::<serde_json::Value>(data) {
-                                            if let Some(content) = json.get("content").and_then(|v| v.as_str()) {
+                                        if let Ok(json) =
+                                            serde_json::from_str::<serde_json::Value>(data)
+                                        {
+                                            if let Some(content) =
+                                                json.get("content").and_then(|v| v.as_str())
+                                            {
                                                 if !content.is_empty() {
-                                                    if tx.send(Ok(content.to_string())).await.is_err() {
+                                                    if tx
+                                                        .send(Ok(content.to_string()))
+                                                        .await
+                                                        .is_err()
+                                                    {
                                                         return; // Receiver dropped
                                                     }
                                                 }
@@ -252,7 +270,9 @@ impl AIDungeonMaster {
 
         // Build all context sections
         prompt.push_str(&Self::build_character_section(&game_state.character));
-        prompt.push_str(&Self::build_inventory_section(&game_state.character.inventory));
+        prompt.push_str(&Self::build_inventory_section(
+            &game_state.character.inventory,
+        ));
         prompt.push_str(&format!("Location: {}\n\n", game_state.location));
 
         // Worldbook context (locations, NPCs, events)
@@ -317,9 +337,7 @@ impl AIDungeonMaster {
             return String::new();
         }
 
-        let items: Vec<&str> = inventory.iter()
-            .map(|item| item.name.as_str())
-            .collect();
+        let items: Vec<&str> = inventory.iter().map(|item| item.name.as_str()).collect();
 
         format!("Inventory: {}\n", items.join(", "))
     }
@@ -382,9 +400,12 @@ impl AIDungeonMaster {
             .timeout(Duration::from_secs(10))
             .send()
             .await
-            .map_err(|_| GameError::AIConnectionError(
-                format!("Cannot connect to llama.cpp at {}. Is it running?", self.config.server_url)
-            ))?;
+            .map_err(|_| {
+                GameError::AIConnectionError(format!(
+                    "Cannot connect to llama.cpp at {}. Is it running?",
+                    self.config.server_url
+                ))
+            })?;
 
         Ok(())
     }

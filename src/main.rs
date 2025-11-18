@@ -1,19 +1,24 @@
-mod config;
-mod game;
 mod ai;
-mod ui;
+mod config;
 mod error;
+mod game;
 mod tui;
+mod ui;
 
-use game::handlers::{create_new_character, load_game, game_loop};
-use game::tui_game_loop::run_game_with_tui;
-use ai::AIDungeonMaster;
 use ai::extractor::ExtractionAI;
-use ui::UI;
+use ai::AIDungeonMaster;
 use config::Config;
+use game::handlers::{create_new_character, game_loop, load_game};
+use game::tui_game_loop::run_game_with_tui;
+use ui::UI;
 
 #[tokio::main]
 async fn main() {
+    // Initialize logging
+    init_logging();
+
+    tracing::info!("Starting Fallout D&D game");
+
     UI::clear_screen();
     UI::print_header();
 
@@ -32,10 +37,15 @@ async fn main() {
     // Test llama.cpp connection
     UI::print_info("Testing connection to llama.cpp server...");
     match ai_dm.test_connection().await {
-        Ok(_) => UI::print_success(&format!("Connected to narrative AI at {}", config.llama.server_url)),
+        Ok(_) => UI::print_success(&format!(
+            "Connected to narrative AI at {}",
+            config.llama.server_url
+        )),
         Err(e) => {
             UI::print_error(&format!("{}", e));
-            UI::print_info("You can continue without AI (manual mode), or fix the connection and restart.");
+            UI::print_info(
+                "You can continue without AI (manual mode), or fix the connection and restart.",
+            );
             UI::print_info("To start llama.cpp server: ./llama-server -m <model_path> --port 8080");
         }
     }
@@ -44,11 +54,16 @@ async fn main() {
     UI::print_info("Testing connection to extraction AI server...");
     let extractor = ExtractionAI::new(config.llama.extraction_url.clone());
     match extractor.test_connection().await {
-        Ok(_) => UI::print_success(&format!("Connected to extraction AI at {}", config.llama.extraction_url)),
+        Ok(_) => UI::print_success(&format!(
+            "Connected to extraction AI at {}",
+            config.llama.extraction_url
+        )),
         Err(e) => {
             UI::print_error(&format!("{}", e));
             UI::print_info("Worldbook features will be limited without extraction AI.");
-            UI::print_info("To start extraction server: ./llama-server -m <model_path> --port 8081");
+            UI::print_info(
+                "To start extraction server: ./llama-server -m <model_path> --port 8081",
+            );
         }
     }
 
@@ -101,4 +116,23 @@ async fn main() {
             _ => UI::print_error("Invalid choice"),
         }
     }
+
+    tracing::info!("Game exited normally");
+}
+
+/// Initialize tracing subscriber for logging
+fn init_logging() {
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    // Default to info level, but allow override via RUST_LOG env var
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fallout_dnd=info"));
+
+    fmt()
+        .with_env_filter(filter)
+        .with_target(false) // Don't show target module in logs
+        .with_thread_ids(false)
+        .with_file(true)
+        .with_line_number(true)
+        .init();
 }

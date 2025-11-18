@@ -1,27 +1,22 @@
+pub mod animations;
 pub mod app;
-pub mod ui;
+pub mod combat_display;
 pub mod events;
+pub mod narrative;
+pub mod theme;
+pub mod ui;
 pub mod worldbook_browser;
 pub mod worldbook_ui;
-pub mod combat_display;
-pub mod narrative;
-pub mod animations;
-pub mod theme;
 
 pub use app::App;
 pub use events::{Event, EventHandler};
-pub use worldbook_browser::WorldbookBrowser;
-pub use animations::AnimationManager;
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 /// Initialize the terminal for TUI rendering

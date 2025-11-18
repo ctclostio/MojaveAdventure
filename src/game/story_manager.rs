@@ -46,6 +46,7 @@ impl StoryManager {
     }
 
     /// Create a new StoryManager with custom max context size
+    #[allow(dead_code)]
     pub fn with_capacity(max_context: usize) -> Self {
         StoryManager {
             context: VecDeque::with_capacity(max_context),
@@ -69,7 +70,7 @@ impl StoryManager {
 
         // Keep only the most recent entries
         while self.context.len() > self.max_context {
-            self.context.pop_front();  // O(1) operation with VecDeque
+            self.context.pop_front(); // O(1) operation with VecDeque
         }
     }
 
@@ -82,6 +83,7 @@ impl StoryManager {
     /// ```
     /// let recent = story.get_recent(10);
     /// ```
+    #[allow(dead_code)]
     pub fn get_recent(&self, count: usize) -> Vec<&String> {
         let skip_count = self.context.len().saturating_sub(count);
         self.context.iter().skip(skip_count).collect()
@@ -93,16 +95,19 @@ impl StoryManager {
     }
 
     /// Get the number of entries in the story context
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.context.len()
     }
 
     /// Check if the story context is empty
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.context.is_empty()
     }
 
     /// Clear all story context
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.context.clear();
     }
@@ -110,6 +115,7 @@ impl StoryManager {
     /// Set the maximum context size
     ///
     /// If the new max is smaller than current size, old entries are removed.
+    #[allow(dead_code)]
     pub fn set_max_context(&mut self, max: usize) {
         self.max_context = max;
 
@@ -120,6 +126,7 @@ impl StoryManager {
     }
 
     /// Get the maximum context size
+    #[allow(dead_code)]
     pub fn max_context(&self) -> usize {
         self.max_context
     }
@@ -159,7 +166,7 @@ mod tests {
         story.add("Event 1".to_string());
         story.add("Event 2".to_string());
         story.add("Event 3".to_string());
-        story.add("Event 4".to_string());  // Should push out Event 1
+        story.add("Event 4".to_string()); // Should push out Event 1
 
         assert_eq!(story.len(), 3);
         let all = story.get_all();
@@ -217,7 +224,7 @@ mod tests {
         assert_eq!(story.max_context(), 5);
 
         let all = story.get_all();
-        assert_eq!(all[0], "Event 6");  // Oldest entries removed
+        assert_eq!(all[0], "Event 6"); // Oldest entries removed
         assert_eq!(all[4], "Event 10");
     }
 }

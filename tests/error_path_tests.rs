@@ -1,4 +1,7 @@
-use fallout_dnd::game::{GameState, character::{Character, Special}, persistence};
+use fallout_dnd::game::{
+    character::{Character, Special},
+    persistence, GameState,
+};
 
 #[test]
 fn test_load_nonexistent_file() {
@@ -8,8 +11,8 @@ fn test_load_nonexistent_file() {
 
 #[test]
 fn test_load_corrupted_json() {
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     // Create a temporary file with invalid JSON
     let mut temp_file = NamedTempFile::new().unwrap();
@@ -87,8 +90,14 @@ fn test_enemy_creation_with_scaling() {
     let level1 = Enemy::raider(1);
     let level5 = Enemy::raider(5);
 
-    assert!(level5.max_hp > level1.max_hp, "Higher level should have more HP");
-    assert!(level5.skill >= level1.skill, "Higher level should have better or equal skill");
+    assert!(
+        level5.max_hp > level1.max_hp,
+        "Higher level should have more HP"
+    );
+    assert!(
+        level5.skill >= level1.skill,
+        "Higher level should have better or equal skill"
+    );
 }
 
 #[test]

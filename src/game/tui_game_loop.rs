@@ -113,7 +113,11 @@ async fn handle_key_event(
 
     match key.code {
         // Quit
-        KeyCode::Char('c') if key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL) => {
+        KeyCode::Char('c')
+            if key
+                .modifiers
+                .contains(crossterm::event::KeyModifiers::CONTROL) =>
+        {
             app.should_quit = true;
         }
 
@@ -211,7 +215,9 @@ fn handle_worldbook_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
         // Expand/collapse (for locations)
         KeyCode::Enter | KeyCode::Char(' ') => {
             if app.worldbook_browser.active_tab == WorldbookTab::Locations {
-                let locations = app.worldbook_browser.get_sorted_locations(&app.game_state.worldbook);
+                let locations = app
+                    .worldbook_browser
+                    .get_sorted_locations(&app.game_state.worldbook);
                 if app.worldbook_browser.selected_index < locations.len() {
                     let (location_id, _) = &locations[app.worldbook_browser.selected_index];
                     app.worldbook_browser.toggle_expansion(location_id);
@@ -352,7 +358,13 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
                     // Trigger dice roll animation (d20 roll)
                     let modifier = (skill as i32 - 10) / 2;
                     app.animation_manager.start_dice_roll(
-                        if critical { 20 } else if !hit { 1 } else { 10 }, // Approximate result
+                        if critical {
+                            20
+                        } else if !hit {
+                            1
+                        } else {
+                            10
+                        }, // Approximate result
                         modifier,
                     );
 
@@ -370,10 +382,8 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
                             app.game_state.character.add_experience(xp_reward);
 
                             // Trigger XP fill animation
-                            app.animation_manager.start_xp_fill(
-                                old_xp,
-                                app.game_state.character.experience,
-                            );
+                            app.animation_manager
+                                .start_xp_fill(old_xp, app.game_state.character.experience);
 
                             if critical {
                                 app.add_combat_message(format!(
@@ -454,7 +464,13 @@ fn handle_enemy_turn(app: &mut App) {
         .filter(|e| e.is_alive())
         .map(|enemy| {
             let (hit, critical) = attack_roll(enemy.skill, player_ac);
-            (enemy.name.clone(), enemy.damage.clone(), enemy.strength, hit, critical)
+            (
+                enemy.name.clone(),
+                enemy.damage.clone(),
+                enemy.strength,
+                hit,
+                critical,
+            )
         })
         .collect();
 
@@ -469,10 +485,8 @@ fn handle_enemy_turn(app: &mut App) {
             app.game_state.character.take_damage(damage);
 
             // Trigger HP drain animation
-            app.animation_manager.start_health_drain(
-                old_hp,
-                app.game_state.character.current_hp,
-            );
+            app.animation_manager
+                .start_health_drain(old_hp, app.game_state.character.current_hp);
 
             if critical {
                 app.add_combat_message(format!(
@@ -480,10 +494,7 @@ fn handle_enemy_turn(app: &mut App) {
                     enemy_name, damage
                 ));
             } else {
-                app.add_combat_message(format!(
-                    "← {} hits for {} damage!",
-                    enemy_name, damage
-                ));
+                app.add_combat_message(format!("← {} hits for {} damage!", enemy_name, damage));
             }
 
             // Check if player died

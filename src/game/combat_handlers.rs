@@ -1,4 +1,4 @@
-use super::combat::{Enemy, attack_roll, calculate_damage, resolve_stat_modifiers};
+use super::combat::{attack_roll, calculate_damage, resolve_stat_modifiers, Enemy};
 use super::GameState;
 use crate::ui::UI;
 use colored::*;
@@ -18,7 +18,8 @@ pub fn handle_player_attack(game_state: &mut GameState, target_idx: usize) {
 
     let weapon_damage = game_state.character.get_equipped_damage();
     // Resolve stat modifiers in damage string (e.g., "1d8+STR" -> "1d8+3")
-    let resolved_damage = resolve_stat_modifiers(&weapon_damage, game_state.character.special.strength);
+    let resolved_damage =
+        resolve_stat_modifiers(&weapon_damage, game_state.character.special.strength);
 
     // Use appropriate skill based on equipped weapon type
     let skill = game_state.character.get_weapon_skill();
@@ -36,11 +37,14 @@ pub fn handle_player_attack(game_state: &mut GameState, target_idx: usize) {
         game_state.combat.enemies[target_idx].take_damage(damage);
 
         if critical {
-            println!("{} Critical hit! {} damage to {}!",
-                "⚡".yellow(), damage, enemy_name);
+            println!(
+                "{} Critical hit! {} damage to {}!",
+                "⚡".yellow(),
+                damage,
+                enemy_name
+            );
         } else {
-            println!("{} Hit! {} damage to {}!",
-                "→".green(), damage, enemy_name);
+            println!("{} Hit! {} damage to {}!", "→".green(), damage, enemy_name);
         }
     } else {
         println!("{} Missed!", "✗".red());
@@ -71,11 +75,14 @@ pub fn handle_enemy_turns(game_state: &mut GameState) {
             game_state.character.take_damage(damage);
 
             if critical {
-                println!("{} {} lands a CRITICAL hit! {} damage!",
-                    "⚠".red().bold(), enemy.name, damage);
+                println!(
+                    "{} {} lands a CRITICAL hit! {} damage!",
+                    "⚠".red().bold(),
+                    enemy.name,
+                    damage
+                );
             } else {
-                println!("{} {} hits for {} damage!",
-                    "←".red(), enemy.name, damage);
+                println!("{} {} hits for {} damage!", "←".red(), enemy.name, damage);
             }
         } else {
             println!("{} {} misses!", "○".dimmed(), enemy.name);
@@ -108,17 +115,12 @@ pub fn start_combat_encounter(game_state: &mut GameState) {
         1 => {
             // Raider encounter
             UI::print_info("Raiders spot you and attack!");
-            vec![
-                Enemy::raider(level),
-                Enemy::raider(level),
-            ]
+            vec![Enemy::raider(level), Enemy::raider(level)]
         }
         _ => {
             // Super Mutant encounter (harder)
             UI::print_info("A Super Mutant emerges from the ruins!");
-            vec![
-                Enemy::super_mutant(level),
-            ]
+            vec![Enemy::super_mutant(level)]
         }
     };
 
@@ -133,7 +135,10 @@ pub fn end_combat(game_state: &mut GameState) {
 
     UI::print_success(&format!("Combat ended! Gained {} XP", xp));
     if game_state.character.experience >= (game_state.character.level + 1) * 1000 {
-        UI::print_success(&format!("LEVEL UP! Now level {}", game_state.character.level));
+        UI::print_success(&format!(
+            "LEVEL UP! Now level {}",
+            game_state.character.level
+        ));
     }
 
     game_state.combat.end_combat();

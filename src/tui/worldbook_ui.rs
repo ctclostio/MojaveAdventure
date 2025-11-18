@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, BorderType, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Frame,
 };
 
@@ -19,8 +19,8 @@ pub fn render_worldbook(f: &mut Frame, app: &App, area: Rect) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),  // Tab bar
-            Constraint::Min(0),     // Content
+            Constraint::Length(3), // Tab bar
+            Constraint::Min(0),    // Content
         ])
         .split(area);
 
@@ -127,7 +127,11 @@ fn render_locations_list(f: &mut Frame, app: &App, area: Rect) {
         let is_current = Some(&location.id) == worldbook.current_location.as_ref();
 
         let visit_status = get_visit_status(location);
-        let prefix = if browser.is_expanded(&location.id) { "▾" } else { "▸" };
+        let prefix = if browser.is_expanded(&location.id) {
+            "▾"
+        } else {
+            "▸"
+        };
 
         let style = if is_selected {
             Style::default()
@@ -222,7 +226,10 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
         )));
         lines.push(Line::from(format!("Visits: {}", location.visit_count)));
         if let Some(first) = &location.first_visited {
-            lines.push(Line::from(format!("First: {}", format_relative_time(first))));
+            lines.push(Line::from(format!(
+                "First: {}",
+                format_relative_time(first)
+            )));
         }
         if let Some(last) = &location.last_visited {
             lines.push(Line::from(format!("Last: {}", format_relative_time(last))));
@@ -242,7 +249,10 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
                 lines.push(Line::from(vec![
                     Span::styled(" • ", Style::default().fg(Color::Yellow)),
                     Span::styled(&npc.name, Style::default().fg(Color::White)),
-                    Span::styled(format!(" ({}, {})", npc.role, disp_text), Style::default().fg(Color::DarkGray)),
+                    Span::styled(
+                        format!(" ({}, {})", npc.role, disp_text),
+                        Style::default().fg(Color::DarkGray),
+                    ),
                 ]));
             }
         }
@@ -373,7 +383,10 @@ fn render_npc_detail(f: &mut Frame, app: &App, area: Rect) {
     // Disposition
     lines.push(Line::from(vec![
         Span::styled("Disposition: ", Style::default().fg(Color::DarkGray)),
-        Span::styled(format!("{} {} ({}/100)", emoji, disp_text, npc.disposition), Style::default().fg(Color::White)),
+        Span::styled(
+            format!("{} {} ({}/100)", emoji, disp_text, npc.disposition),
+            Style::default().fg(Color::White),
+        ),
     ]));
     lines.push(Line::from(""));
 
@@ -473,7 +486,12 @@ fn render_events_list(f: &mut Frame, app: &App, area: Rect) {
             };
 
             let time = format_relative_time(&event.timestamp);
-            let line = format!("{} {:<15} {}", icon, time, truncate_string(&event.description, 30));
+            let line = format!(
+                "{} {:<15} {}",
+                icon,
+                time,
+                truncate_string(&event.description, 30)
+            );
 
             ListItem::new(line).style(style)
         })
@@ -568,9 +586,11 @@ fn render_search_view(f: &mut Frame, _app: &App, area: Rect) {
     let inner_area = block.inner(area);
     f.render_widget(block, area);
 
-    let text = Paragraph::new("Search functionality coming soon!\n\nPress Tab to switch tabs or Q to close.")
-        .style(Style::default().fg(Color::DarkGray))
-        .alignment(Alignment::Center);
+    let text = Paragraph::new(
+        "Search functionality coming soon!\n\nPress Tab to switch tabs or Q to close.",
+    )
+    .style(Style::default().fg(Color::DarkGray))
+    .alignment(Alignment::Center);
     f.render_widget(text, inner_area);
 }
 

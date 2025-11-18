@@ -29,12 +29,7 @@ impl RollResult {
 
         format!(
             "{} Check: Rolled {}+{} = {} vs DC {} - {}",
-            self.skill_name,
-            self.roll,
-            self.modifier,
-            self.total,
-            self.dc,
-            outcome
+            self.skill_name, self.roll, self.modifier, self.total, self.dc, outcome
         )
     }
 
@@ -84,7 +79,8 @@ pub fn parse_roll_request(text: &str) -> Option<(String, i32)> {
             }
 
             // Strategy 2: Extract first sequence of digits
-            let digits: String = dc_part.chars()
+            let digits: String = dc_part
+                .chars()
                 .take_while(|c| c.is_ascii_digit() || c.is_whitespace())
                 .filter(|c| c.is_ascii_digit())
                 .collect();
@@ -137,10 +133,16 @@ fn get_modifier(character: &Character, name: &str) -> (String, i32) {
         return ("Big Guns".to_string(), character.skills.big_guns as i32);
     }
     if lower.contains("energy") {
-        return ("Energy Weapons".to_string(), character.skills.energy_weapons as i32);
+        return (
+            "Energy Weapons".to_string(),
+            character.skills.energy_weapons as i32,
+        );
     }
     if lower.contains("melee") {
-        return ("Melee Weapons".to_string(), character.skills.melee_weapons as i32);
+        return (
+            "Melee Weapons".to_string(),
+            character.skills.melee_weapons as i32,
+        );
     }
     if lower.contains("unarmed") || lower.contains("fist") {
         return ("Unarmed".to_string(), character.skills.unarmed as i32);
@@ -166,7 +168,10 @@ fn get_modifier(character: &Character, name: &str) -> (String, i32) {
         return ("Strength".to_string(), character.special.strength as i32);
     }
     if lower.contains("perception") || lower.contains("per") {
-        return ("Perception".to_string(), character.special.perception as i32);
+        return (
+            "Perception".to_string(),
+            character.special.perception as i32,
+        );
     }
     if lower.contains("endurance") || lower.contains("end") {
         return ("Endurance".to_string(), character.special.endurance as i32);
@@ -175,7 +180,10 @@ fn get_modifier(character: &Character, name: &str) -> (String, i32) {
         return ("Charisma".to_string(), character.special.charisma as i32);
     }
     if lower.contains("intelligence") || lower.contains("int") {
-        return ("Intelligence".to_string(), character.special.intelligence as i32);
+        return (
+            "Intelligence".to_string(),
+            character.special.intelligence as i32,
+        );
     }
     if lower.contains("agility") || lower.contains("agi") {
         return ("Agility".to_string(), character.special.agility as i32);

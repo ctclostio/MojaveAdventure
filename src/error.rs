@@ -17,9 +17,11 @@ pub enum GameError {
     #[error("Path traversal detected: {0}")]
     PathTraversalError(String),
 
+    #[allow(dead_code)]
     #[error("Combat error: {0}")]
     CombatError(String),
 
+    #[allow(dead_code)]
     #[error("Character creation error: {0}")]
     CharacterError(String),
 

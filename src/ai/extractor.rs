@@ -1,10 +1,11 @@
-use anyhow::{Result, anyhow};
-use serde::{Deserialize, Serialize};
+use crate::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
+use anyhow::{anyhow, Result};
 use reqwest;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use crate::game::worldbook::{Location, NPC, WorldEvent, Worldbook};
 
 /// Function calling schema for entity extraction
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 struct FunctionDefinition {
     name: String,
@@ -91,16 +92,26 @@ impl ExtractionAI {
 
         let url = format!("{}/completion", self.server_url);
 
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&request)
             .timeout(Duration::from_secs(60))
             .send()
             .await
-            .map_err(|e| anyhow!("Failed to connect to extraction AI at {}: {}", self.server_url, e))?;
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to connect to extraction AI at {}: {}",
+                    self.server_url,
+                    e
+                )
+            })?;
 
         if !response.status().is_success() {
-            return Err(anyhow!("Extraction AI returned error: {}", response.status()));
+            return Err(anyhow!(
+                "Extraction AI returned error: {}",
+                response.status()
+            ));
         }
 
         let extraction_response: ExtractionResponse = response.json().await?;
@@ -186,8 +197,13 @@ Output JSON:"#,
             content
         };
 
-        serde_json::from_str(json_str)
-            .map_err(|e| anyhow!("Failed to parse extraction JSON: {}. Content: {}", e, json_str))
+        serde_json::from_str(json_str).map_err(|e| {
+            anyhow!(
+                "Failed to parse extraction JSON: {}. Content: {}",
+                e,
+                json_str
+            )
+        })
     }
 
     /// Test connection to extraction AI server
@@ -199,7 +215,12 @@ Output JSON:"#,
             .timeout(Duration::from_secs(10))
             .send()
             .await
-            .map_err(|_| anyhow!("Cannot connect to extraction AI at {}. Is it running?", self.server_url))?;
+            .map_err(|_| {
+                anyhow!(
+                    "Cannot connect to extraction AI at {}. Is it running?",
+                    self.server_url
+                )
+            })?;
 
         Ok(())
     }
@@ -256,7 +277,11 @@ impl ExtractedEntities {
                 location: event.location.as_ref().map(|l| Worldbook::generate_id(l)),
                 event_type: event.event_type.clone(),
                 description: event.description.clone(),
-                entities: event.entities.iter().map(|e| Worldbook::generate_id(e)).collect(),
+                entities: event
+                    .entities
+                    .iter()
+                    .map(|e| Worldbook::generate_id(e))
+                    .collect(),
             });
         }
 

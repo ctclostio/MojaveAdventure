@@ -1,8 +1,8 @@
 use super::character::{Character, Special};
-use super::GameState;
 use super::stat_allocator::allocate_stats_interactive;
-use crate::ui::UI;
+use super::GameState;
 use crate::config::Config;
+use crate::ui::UI;
 use colored::*;
 
 /// Create a new character through interactive character creation
@@ -40,7 +40,10 @@ pub fn create_new_character(_config: &Config) -> GameState {
 
 /// Print detailed character statistics
 pub fn print_detailed_stats(character: &Character) {
-    println!("{}", "═══ DETAILED STATS ═════════════════════════".cyan().bold());
+    println!(
+        "{}",
+        "═══ DETAILED STATS ═════════════════════════".cyan().bold()
+    );
     println!();
     println!("{}", "SKILLS:".bold());
     println!("  Small Guns: {}", character.skills.small_guns);

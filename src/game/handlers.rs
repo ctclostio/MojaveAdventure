@@ -1,14 +1,16 @@
-use super::GameState;
-use super::combat_handlers::{handle_player_attack, handle_enemy_turns, start_combat_encounter, end_combat};
 use super::char_handlers::print_detailed_stats;
+use super::combat_handlers::{
+    end_combat, handle_enemy_turns, handle_player_attack, start_combat_encounter,
+};
+use super::items::ItemType;
 use super::persistence::save_game;
 use super::rolls::{parse_roll_request, perform_roll};
-use super::items::ItemType;
 use super::worldbook::Worldbook;
+use super::GameState;
+use crate::ai::extractor::{ExtractedEntities, ExtractionAI};
 use crate::ai::AIDungeonMaster;
-use crate::ai::extractor::{ExtractionAI, ExtractedEntities};
-use crate::ui::UI;
 use crate::config::Config;
+use crate::ui::UI;
 use colored::*;
 
 // Re-export for main.rs
@@ -213,7 +215,12 @@ fn parse_numbered_command(command: &str, combat_active: bool) -> String {
 }
 
 /// Handle player action by sending to AI DM
-async fn handle_ai_action(input: &str, game_state: &mut GameState, ai_dm: &AIDungeonMaster, extractor: &ExtractionAI) {
+async fn handle_ai_action(
+    input: &str,
+    game_state: &mut GameState,
+    ai_dm: &AIDungeonMaster,
+    extractor: &ExtractionAI,
+) {
     // Add player input to both conversation systems
     game_state.conversation.add_player_turn(input.to_string());
     game_state.story.add(format!("Player: {}", input)); // Legacy support
@@ -242,7 +249,11 @@ async fn handle_ai_action(input: &str, game_state: &mut GameState, ai_dm: &AIDun
 
 /// Check if narrative suggests combat and prompt to start
 fn check_and_start_combat(response: &str, game_state: &mut GameState) {
-    if !game_state.combat.active && (response.contains("attack") || response.contains("combat") || response.contains("fight")) {
+    if !game_state.combat.active
+        && (response.contains("attack")
+            || response.contains("combat")
+            || response.contains("fight"))
+    {
         if UI::prompt("Start combat? (y/n):").to_lowercase() == "y" {
             start_combat_encounter(game_state);
         }
@@ -338,7 +349,9 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                         game_state.conversation.add_player_turn(roll_context.clone());
                         game_state.conversation.add_dm_turn(outcome.clone());
                         // Legacy support
-                        game_state.story.add(format!("Player rolled for: {}", action));
+                        game_state
+                            .story
+                            .add(format!("Player rolled for: {}", action));
                         game_state.story.add(format!("Result: {}", result_text));
                         game_state.story.add(format!("DM: {}", outcome));
                     }
@@ -443,9 +456,18 @@ fn display_locations(game_state: &GameState) {
     locations.sort_by_key(|l| &l.name);
 
     for (i, loc) in locations.iter().enumerate() {
-        println!("{}. {} ({})", i + 1, loc.name.green().bold(), loc.location_type);
+        println!(
+            "{}. {} ({})",
+            i + 1,
+            loc.name.green().bold(),
+            loc.location_type
+        );
         println!("   {}", loc.description);
-        println!("   Visits: {} | NPCs present: {}", loc.visit_count, loc.npcs_present.len());
+        println!(
+            "   Visits: {} | NPCs present: {}",
+            loc.visit_count,
+            loc.npcs_present.len()
+        );
         println!();
     }
 }
@@ -465,7 +487,11 @@ fn display_npcs(game_state: &GameState) {
     npcs.sort_by_key(|n| &n.name);
 
     for (i, npc) in npcs.iter().enumerate() {
-        let status = if npc.alive { "Alive".green() } else { "Dead".red() };
+        let status = if npc.alive {
+            "Alive".green()
+        } else {
+            "Dead".red()
+        };
         let disposition_color = match npc.disposition {
             d if d >= 50 => "Allied".green(),
             d if d >= 10 => "Friendly".cyan(),
@@ -474,8 +500,17 @@ fn display_npcs(game_state: &GameState) {
             _ => "Hostile".red(),
         };
 
-        println!("{}. {} ({}) - {}", i + 1, npc.name.green().bold(), npc.role, status);
-        println!("   Disposition: {} ({})", disposition_color, npc.disposition);
+        println!(
+            "{}. {} ({}) - {}",
+            i + 1,
+            npc.name.green().bold(),
+            npc.role,
+            status
+        );
+        println!(
+            "   Disposition: {} ({})",
+            disposition_color, npc.disposition
+        );
 
         if !npc.personality.is_empty() {
             println!("   Traits: {}", npc.personality.join(", "));
@@ -571,7 +606,11 @@ fn display_npc_details(npc: &super::worldbook::NPC) {
     println!("{}", format!("═══ {} ═══", npc.name).bold().cyan());
     println!();
 
-    let status = if npc.alive { "Alive".green() } else { "Dead".red() };
+    let status = if npc.alive {
+        "Alive".green()
+    } else {
+        "Dead".red()
+    };
     println!("Status: {}", status);
     println!("Role: {}", npc.role);
     println!("Disposition: {}", npc.disposition);
@@ -600,24 +639,40 @@ fn display_npc_details(npc: &super::worldbook::NPC) {
 }
 
 /// Find location by name (case-insensitive partial match)
-fn find_location_by_name<'a>(game_state: &'a GameState, name: &str) -> Option<&'a super::worldbook::Location> {
+fn find_location_by_name<'a>(
+    game_state: &'a GameState,
+    name: &str,
+) -> Option<&'a super::worldbook::Location> {
     let name_lower = name.to_lowercase();
-    game_state.worldbook.locations.values()
+    game_state
+        .worldbook
+        .locations
+        .values()
         .find(|loc| loc.name_lowercase.contains(&name_lower))
 }
 
 /// Find NPC by name (case-insensitive partial match)
-fn find_npc_by_name<'a>(game_state: &'a GameState, name: &str) -> Option<&'a super::worldbook::NPC> {
+fn find_npc_by_name<'a>(
+    game_state: &'a GameState,
+    name: &str,
+) -> Option<&'a super::worldbook::NPC> {
     let name_lower = name.to_lowercase();
-    game_state.worldbook.npcs.values()
+    game_state
+        .worldbook
+        .npcs
+        .values()
         .find(|npc| npc.name_lowercase.contains(&name_lower))
 }
 
 /// Extract entities from AI narrative and save to worldbook
-async fn extract_and_save_entities(extractor: &ExtractionAI, narrative: &str, game_state: &mut GameState) {
+async fn extract_and_save_entities(
+    extractor: &ExtractionAI,
+    narrative: &str,
+    game_state: &mut GameState,
+) {
     let entities = match extractor.extract_entities(narrative).await {
         Ok(e) if !e.is_empty() => e,
-        Ok(_) => return,  // No entities found
+        Ok(_) => return, // No entities found
         Err(e) => {
             #[cfg(debug_assertions)]
             UI::print_error(&format!("Worldbook extraction error: {}", e));
@@ -687,7 +742,9 @@ fn save_entities_to_worldbook(entities: ExtractedEntities, game_state: &mut Game
 
             // Only set as current location if we don't have one
             if game_state.worldbook.current_location.is_none() {
-                game_state.worldbook.set_current_location(Some(loc_id.clone()));
+                game_state
+                    .worldbook
+                    .set_current_location(Some(loc_id.clone()));
                 game_state.worldbook.visit_location(&loc_id);
             }
         }
@@ -731,15 +788,17 @@ fn display_worldbook_summary(game_state: &GameState) {
 /// Handle equipping weapons or armor from inventory
 fn handle_equip(game_state: &mut GameState) {
     let character = &mut game_state.character;
-    
+
     // Filter equippable items
-    let weapons: Vec<_> = character.inventory
+    let _weapons: Vec<_> = character
+        .inventory
         .iter()
         .filter(|item| matches!(item.item_type, ItemType::Weapon(_)))
         .cloned()
         .collect();
-    
-    let armor: Vec<_> = character.inventory
+
+    let _armor: Vec<_> = character
+        .inventory
         .iter()
         .filter(|item| matches!(item.item_type, ItemType::Armor(_)))
         .cloned()
