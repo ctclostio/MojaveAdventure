@@ -3,7 +3,7 @@ use crate::config::Config;
 use crate::game::GameState;
 use crate::game::rolls::{parse_natural_roll_request, perform_roll, truncate_response_at_skill_check};
 use crate::tui::{self, App, Event, EventHandler};
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use std::io;
 
 /// Run the game loop with the TUI interface
@@ -53,6 +53,9 @@ async fn run_app<B: ratatui::backend::Backend>(
                 if app.should_quit {
                     break;
                 }
+            }
+            Event::Mouse(mouse) => {
+                handle_mouse_event(app, mouse);
             }
             Event::Resize => {
                 // Terminal was resized, will automatically re-render
@@ -564,6 +567,27 @@ fn show_debug_context(app: &mut App) {
     app.add_system_message("".to_string());
     app.add_system_message("Legacy story context:".to_string());
     app.add_info_message(format!("Total events: {}", app.game_state.story.len()));
+}
+
+/// Handle mouse events for scrolling and interaction
+fn handle_mouse_event(app: &mut App, mouse: MouseEvent) {
+    match mouse.kind {
+        MouseEventKind::ScrollUp => {
+            // Scroll up through message history (3 lines at a time for smooth scrolling)
+            for _ in 0..3 {
+                app.scroll_up();
+            }
+        }
+        MouseEventKind::ScrollDown => {
+            // Scroll down through message history (3 lines at a time for smooth scrolling)
+            for _ in 0..3 {
+                app.scroll_down();
+            }
+        }
+        _ => {
+            // Ignore other mouse events (clicks, drags, etc.)
+        }
+    }
 }
 
 /// Check if DM response contains a skill check request and handle it automatically

@@ -1,9 +1,10 @@
-use crossterm::event::{self, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{self, KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub enum Event {
     Key(KeyEvent),
+    Mouse(MouseEvent),
     Tick,
     Resize,
 }
@@ -31,6 +32,7 @@ impl EventHandler {
                         Ok(Event::Tick)
                     }
                 }
+                event::Event::Mouse(mouse) => Ok(Event::Mouse(mouse)),
                 event::Event::Resize(_, _) => Ok(Event::Resize),
                 _ => Ok(Event::Tick),
             }
