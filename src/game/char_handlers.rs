@@ -13,11 +13,14 @@ pub fn create_new_character(_config: &Config) -> GameState {
     println!("{}", "CHARACTER CREATION".bold().green());
     println!();
 
-    let mut name = String::new();
+    let name;
     loop {
-        name = UI::prompt("Enter your character's name:");
-        match crate::validation::validate_character_name(&name) {
-            Ok(_) => break,
+        let input = UI::prompt("Enter your character's name:");
+        match crate::validation::validate_character_name(&input) {
+            Ok(_) => {
+                name = input;
+                break;
+            }
             Err(e) => UI::print_error(&format!("Invalid name: {}", e)),
         }
     }
