@@ -1,0 +1,36 @@
+# Configuration for cargo-tarpaulin code coverage tool
+# To generate coverage report: cargo tarpaulin --out Html --output-dir coverage
+
+[report]
+# Output formats: Html, Lcov, Json, Xml, etc.
+# Html creates a nice browsable report
+# Lcov is useful for CI/CD integration
+out = ["Html", "Lcov"]
+
+[run]
+# Timeout for tests (in seconds)
+timeout = "300s"
+
+# Don't fail on warnings
+all-features = true
+
+# Clean before running
+clean = true
+
+[exclude]
+# Exclude certain files/directories from coverage
+# TUI code is harder to test comprehensively
+exclude-files = [
+    "src/main.rs",
+    "src/tui/*",
+    "src/ui/*",
+]
+
+# Exclude test code itself
+exclude-tests = true
+
+[coverage]
+# Set minimum coverage thresholds
+# Fail if coverage drops below these values
+line-coverage = 60.0  # 60% line coverage minimum
+branch-coverage = 50.0  # 50% branch coverage minimum

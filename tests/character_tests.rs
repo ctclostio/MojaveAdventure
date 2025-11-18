@@ -58,9 +58,8 @@ fn test_add_experience_multiple_level_ups() {
     assert_eq!(character.experience, 2500);
     assert_eq!(character.level, 3, "Should level up to 3 at 2500 XP");
 
-    // Note: Current implementation only applies HP bonus once when jumping multiple levels
-    // This is a known limitation - HP bonus is applied once, not for each level
-    let expected_hp = initial_max_hp + (5 + endurance);
+    // HP increases twice: level 1->2 and level 2->3
+    let expected_hp = initial_max_hp + 2 * (5 + endurance);
     assert_eq!(character.max_hp, expected_hp);
 }
 
