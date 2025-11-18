@@ -4,7 +4,7 @@ use super::combat_handlers::{
 };
 use super::items::ItemType;
 use super::persistence::save_game;
-use super::rolls::{parse_roll_request, parse_natural_roll_request, perform_roll};
+use super::rolls::{parse_roll_request, parse_natural_roll_request, perform_roll, truncate_response_at_skill_check};
 use super::worldbook::Worldbook;
 use super::GameState;
 use crate::ai::extractor::{ExtractedEntities, ExtractionAI};
@@ -240,6 +240,13 @@ async fn handle_ai_action(
                 println!("{}", "═".repeat(80).bright_yellow());
                 println!();
 
+                // Truncate the response to remove any AI commentary after the skill check
+                let response_to_save = if let Some(truncated) = truncate_response_at_skill_check(&response) {
+                    truncated
+                } else {
+                    response.clone()
+                };
+
                 // Perform the roll automatically
                 let result = perform_roll(&game_state.character, &skill_or_stat, dc);
 
@@ -264,9 +271,10 @@ async fn handle_ai_action(
                 println!("{}", "═".repeat(80).bright_yellow());
                 println!();
 
-                // Add the initial DM response to conversation (before roll outcome)
-                game_state.conversation.add_dm_turn(response.clone());
-                game_state.story.add(format!("DM: {}", response));
+                // Add the truncated DM response to conversation (before roll outcome)
+                // This prevents AI commentary after skill checks from entering conversation history
+                game_state.conversation.add_dm_turn(response_to_save.clone());
+                game_state.story.add(format!("DM: {}", response_to_save));
 
                 // Ask AI to narrate the outcome based on the roll result
                 UI::print_info("The DM is narrating the outcome...");

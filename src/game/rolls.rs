@@ -227,8 +227,6 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
 pub fn truncate_response_at_skill_check(text: &str) -> Option<String> {
     // First, check if there's a skill check in this text
     if let Some((_skill, dc)) = parse_natural_roll_request(text) {
-        let lower = text.to_lowercase();
-
         // Look for DC patterns in the text
         let dc_patterns = [
             format!("(dc {})", dc),

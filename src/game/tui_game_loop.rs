@@ -1,7 +1,7 @@
 use crate::ai::AIDungeonMaster;
 use crate::config::Config;
 use crate::game::GameState;
-use crate::game::rolls::{parse_natural_roll_request, perform_roll};
+use crate::game::rolls::{parse_natural_roll_request, perform_roll, truncate_response_at_skill_check};
 use crate::tui::{self, App, Event, EventHandler};
 use crossterm::event::{KeyCode, KeyEvent};
 use std::io;
@@ -574,6 +574,13 @@ async fn handle_skill_check_if_needed(
 ) -> anyhow::Result<()> {
     // Check if the DM response contains a skill check request
     if let Some((skill_or_stat, dc)) = parse_natural_roll_request(dm_response) {
+        // Truncate the response to remove any AI commentary after the skill check
+        if let Some(truncated_response) = truncate_response_at_skill_check(dm_response) {
+            // Replace the last DM turn in conversation with the truncated version
+            // This prevents bad patterns from entering conversation history
+            app.game_state.conversation.replace_last_dm_turn(truncated_response);
+        }
+
         // Perform the roll automatically
         let result = perform_roll(&app.game_state.character, &skill_or_stat, dc);
 
