@@ -14,6 +14,11 @@ use ui::UI;
 
 #[tokio::main]
 async fn main() {
+    // Initialize logging
+    init_logging();
+
+    tracing::info!("Starting Fallout D&D game");
+
     UI::clear_screen();
     UI::print_header();
 
@@ -111,4 +116,23 @@ async fn main() {
             _ => UI::print_error("Invalid choice"),
         }
     }
+
+    tracing::info!("Game exited normally");
+}
+
+/// Initialize tracing subscriber for logging
+fn init_logging() {
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    // Default to info level, but allow override via RUST_LOG env var
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fallout_dnd=info"));
+
+    fmt()
+        .with_env_filter(filter)
+        .with_target(false) // Don't show target module in logs
+        .with_thread_ids(false)
+        .with_file(true)
+        .with_line_number(true)
+        .init();
 }

@@ -49,3 +49,4 @@ pub mod error;
 pub mod game;
 pub mod tui;
 pub mod ui;
+pub mod validation;

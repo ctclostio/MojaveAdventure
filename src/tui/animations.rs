@@ -231,7 +231,11 @@ mod tests {
         let anim = Animation::new(AnimationType::HealthDrain { from: 100, to: 50 });
         // Just created, should be at or near 0.0 (allow for minimal CPU time)
         let initial = anim.progress();
-        assert!(initial < 0.01, "Initial progress should be near 0, got {}", initial);
+        assert!(
+            initial < 0.01,
+            "Initial progress should be near 0, got {}",
+            initial
+        );
 
         thread::sleep(Duration::from_millis(100));
         assert!(anim.progress() > 0.0 && anim.progress() < 1.0);
