@@ -674,8 +674,9 @@ async fn extract_and_save_entities(
         Ok(e) if !e.is_empty() => e,
         Ok(_) => return, // No entities found
         Err(e) => {
-            #[cfg(debug_assertions)]
+            // Always show extraction errors to users
             UI::print_error(&format!("Worldbook extraction error: {}", e));
+            UI::print_info("The worldbook could not be updated automatically. You can add entries manually with 'wb' command.");
             return;
         }
     };

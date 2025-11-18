@@ -260,9 +260,14 @@ impl AIDungeonMaster {
         Ok(rx)
     }
 
+    /// Estimate token count (rough approximation: 1 token ≈ 4 characters)
+    fn estimate_tokens(text: &str) -> usize {
+        text.len() / 4
+    }
+
     /// Build the prompt with game context
     fn build_prompt(&self, game_state: &GameState, player_action: &str) -> String {
-        let mut prompt = String::with_capacity(2048);
+        let mut prompt = String::with_capacity(4096);
 
         // System prompt
         prompt.push_str(&self.config.system_prompt);
@@ -297,6 +302,15 @@ impl AIDungeonMaster {
 
         // Current player action
         prompt.push_str(&format!(">>> PLAYER: {}\n\n>>> DM (YOU):", player_action));
+
+        // Warn if context is getting large (typical context window is 4096-8192 tokens)
+        let estimated_tokens = Self::estimate_tokens(&prompt);
+        if estimated_tokens > 3000 {
+            tracing::warn!(
+                "Large prompt detected: ~{} tokens. Consider reducing worldbook or conversation history.",
+                estimated_tokens
+            );
+        }
 
         prompt
     }

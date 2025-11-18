@@ -11,7 +11,7 @@ extraction_url = "http://localhost:8081"
 temperature = 0.8
 top_p = 0.9
 top_k = 40
-max_tokens = 512
+max_tokens = 2048  # Increased for complex narratives
 repeat_penalty = 1.1
 
 # System prompt for the AI DM

@@ -87,6 +87,9 @@ async fn run_app<B: ratatui::backend::Backend>(
                     // Check if stream has finished
                     if app.check_stream_finished() {
                         app.waiting_for_ai = false;
+                        // TODO: Implement worldbook extraction from the completed response
+                        // This would require passing the extraction AI client to this function
+                        // and calling extract_and_save_entities() like in the classic mode
                     }
                 }
             }

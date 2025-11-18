@@ -98,6 +98,14 @@ impl Config {
             ));
         }
 
+        // Validate repeat_penalty
+        if !(1.0..=2.0).contains(&self.llama.repeat_penalty) {
+            return Err(anyhow!(
+                "Invalid repeat_penalty: {}. Must be between 1.0 and 2.0",
+                self.llama.repeat_penalty
+            ));
+        }
+
         // Validate starting level
         if self.game.starting_level < 1 || self.game.starting_level > 50 {
             return Err(anyhow!(
@@ -126,7 +134,7 @@ impl Config {
                 temperature: 0.8,
                 top_p: 0.9,
                 top_k: 40,
-                max_tokens: 512,
+                max_tokens: 2048,  // Increased for complex narratives
                 repeat_penalty: 1.1,
                 system_prompt: "You are a Fallout universe DM.".to_string(),
             },
