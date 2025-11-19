@@ -266,6 +266,7 @@ impl AIDungeonMaster {
 
     /// Build the prompt with game context
     fn build_prompt(&self, game_state: &GameState, player_action: &str) -> String {
+        // Pre-allocate with a reasonable starting capacity.
         let mut prompt = String::with_capacity(4096);
 
         // System prompt
@@ -273,11 +274,11 @@ impl AIDungeonMaster {
         prompt.push_str("\n\n");
 
         // Build all context sections
-        prompt.push_str(&Self::build_character_section(&game_state.character));
-        prompt.push_str(&Self::build_inventory_section(
-            &game_state.character.inventory,
-        ));
-        prompt.push_str(&format!("Location: {}\n\n", game_state.location));
+        Self::build_character_section(&mut prompt, &game_state.character);
+        Self::build_inventory_section(&mut prompt, &game_state.character.inventory);
+        prompt.push_str("Location: ");
+        prompt.push_str(&game_state.location);
+        prompt.push_str("\n\n");
 
         // Worldbook context (locations, NPCs, events)
         let worldbook_context = game_state.worldbook.build_context();
@@ -288,21 +289,23 @@ impl AIDungeonMaster {
 
         // Combat section
         if game_state.combat.active {
-            prompt.push_str(&Self::build_combat_section(&game_state.combat));
+            Self::build_combat_section(&mut prompt, &game_state.combat);
         }
 
-        // Conversation history section (use new structured system if available, else fall back to legacy)
+        // Conversation history section
         if !game_state.conversation.is_empty() {
-            prompt.push_str(&Self::build_conversation_section(&game_state.conversation));
+            Self::build_conversation_section(&mut prompt, &game_state.conversation);
         } else if !game_state.story.is_empty() {
             // Fallback for old save files
-            prompt.push_str(&Self::build_story_section(game_state.story.get_all()));
+            Self::build_story_section(&mut prompt, game_state.story.get_all());
         }
 
         // Current player action
-        prompt.push_str(&format!(">>> PLAYER: {}\n\n>>> DM (YOU):", player_action));
+        prompt.push_str(">>> PLAYER: ");
+        prompt.push_str(player_action);
+        prompt.push_str("\n\n>>> DM (YOU):");
 
-        // Warn if context is getting large (typical context window is 4096-8192 tokens)
+        // Warn if context is getting large
         let estimated_tokens = Self::estimate_tokens(&prompt);
         if estimated_tokens > 3000 {
             tracing::warn!(
@@ -315,9 +318,13 @@ impl AIDungeonMaster {
     }
 
     /// Build character stats section
-    fn build_character_section(character: &crate::game::character::Character) -> String {
-        // SPECIAL stats - IMPORTANT: These are the actual character stats, do not make up different ones!
-        format!(
+    fn build_character_section(
+        prompt: &mut String,
+        character: &crate::game::character::Character,
+    ) {
+        use std::fmt::Write;
+        write!(
+            prompt,
             "CHARACTER: {} (Level {})\n\
              HP: {}/{} | AP: {}/{} | Caps: {}\n\
              SPECIAL: S:{} P:{} E:{} C:{} I:{} A:{} L:{}\n\
@@ -342,68 +349,66 @@ impl AIDungeonMaster {
             character.skills.science,
             character.skills.sneak
         )
+        .unwrap(); // Writing to a String should not fail
     }
 
     /// Build inventory section
-    fn build_inventory_section(inventory: &[crate::game::items::Item]) -> String {
+    fn build_inventory_section(prompt: &mut String, inventory: &[crate::game::items::Item]) {
         if inventory.is_empty() {
-            return String::new();
+            return;
         }
 
-        let items: Vec<&str> = inventory.iter().map(|item| item.name.as_str()).collect();
-
-        format!("Inventory: {}\n", items.join(", "))
+        prompt.push_str("Inventory: ");
+        let mut first = true;
+        for item in inventory {
+            if !first {
+                prompt.push_str(", ");
+            }
+            prompt.push_str(&item.name);
+            first = false;
+        }
+        prompt.push('\n');
     }
 
     /// Build combat status section
-    fn build_combat_section(combat: &crate::game::combat::CombatState) -> String {
-        // Pre-allocate: ~100 bytes header + ~50 bytes per enemy
-        let mut section = String::with_capacity(100 + combat.enemies.len() * 50);
-
-        section.push_str(&format!("IN COMBAT - Round {}\n", combat.round));
-        section.push_str("Enemies:\n");
+    fn build_combat_section(prompt: &mut String, combat: &crate::game::combat::CombatState) {
+        use std::fmt::Write;
+        writeln!(prompt, "IN COMBAT - Round {}", combat.round).unwrap();
+        prompt.push_str("Enemies:\n");
         for enemy in &combat.enemies {
             if enemy.is_alive() {
-                section.push_str(&format!("  - {} (HP: {})\n", enemy.name, enemy.current_hp));
+                writeln!(prompt, "  - {} (HP: {})", enemy.name, enemy.current_hp).unwrap();
             }
         }
-        section.push('\n');
-
-        section
+        prompt.push('\n');
     }
 
     /// Build recent story context section
-    ///
-    /// DEPRECATED: This uses the old StoryManager. New code should use build_conversation_section.
-    fn build_story_section(story_context: &std::collections::VecDeque<String>) -> String {
+    fn build_story_section(
+        prompt: &mut String,
+        story_context: &std::collections::VecDeque<String>,
+    ) {
         if story_context.is_empty() {
-            return String::new();
+            return;
         }
+
+        prompt.push_str("=== CONVERSATION HISTORY ===\n");
+        prompt.push_str("(You are the DM. The player is the other speaker.)\n\n");
 
         let skip_count = story_context.len().saturating_sub(10);
-        let num_events = story_context.len() - skip_count;
-
-        // Pre-allocate: ~100 bytes header + ~100 bytes per story event
-        let mut section = String::with_capacity(100 + num_events * 100);
-        section.push_str("=== CONVERSATION HISTORY ===\n");
-        section.push_str("(You are the DM. The player is the other speaker.)\n\n");
-
-        // Take last 10 messages (or fewer if not enough)
         for msg in story_context.iter().skip(skip_count) {
-            section.push_str(&format!("{}\n", msg));
+            prompt.push_str(msg);
+            prompt.push('\n');
         }
-        section.push_str("\n=== END HISTORY ===\n\n");
-
-        section
+        prompt.push_str("\n=== END HISTORY ===\n\n");
     }
 
     /// Build conversation context section using structured ConversationManager
-    ///
-    /// This is the preferred method for building conversation context.
     fn build_conversation_section(
+        prompt: &mut String,
         conversation: &crate::game::conversation::ConversationManager,
-    ) -> String {
-        conversation.build_prompt_section(10)
+    ) {
+        conversation.build_prompt_section_into(prompt, 10);
     }
 
     /// Test connection to llama.cpp server

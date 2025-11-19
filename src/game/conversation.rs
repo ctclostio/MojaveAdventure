@@ -44,18 +44,34 @@ impl ConversationTurn {
 
     /// Format this turn as a string for display or prompts
     pub fn format(&self) -> String {
+        let mut s = String::with_capacity(self.message.len() + 10);
+        self.format_into(&mut s);
+        s
+    }
+
+    /// Format this turn into an existing String to avoid allocations
+    pub fn format_into(&self, s: &mut String) {
+        use std::fmt::Write;
         match self.speaker {
-            Speaker::Player => format!("Player: {}", self.message),
-            Speaker::DM => format!("DM: {}", self.message),
-        }
+            Speaker::Player => write!(s, "Player: {}", self.message).unwrap(),
+            Speaker::DM => write!(s, "DM: {}", self.message).unwrap(),
+        };
     }
 
     /// Format this turn with a clear visual separator for prompts
     pub fn format_for_prompt(&self) -> String {
+        let mut s = String::with_capacity(self.message.len() + 15);
+        self.format_for_prompt_into(&mut s);
+        s
+    }
+
+    /// Format for prompt into an existing String to avoid allocations
+    pub fn format_for_prompt_into(&self, s: &mut String) {
+        use std::fmt::Write;
         match self.speaker {
-            Speaker::Player => format!(">>> PLAYER: {}", self.message),
-            Speaker::DM => format!(">>> DM (YOU): {}", self.message),
-        }
+            Speaker::Player => write!(s, ">>> PLAYER: {}", self.message).unwrap(),
+            Speaker::DM => write!(s, ">>> DM (YOU): {}", self.message).unwrap(),
+        };
     }
 }
 
@@ -203,18 +219,27 @@ impl ConversationManager {
 
         // Pre-allocate: ~100 bytes per turn + headers
         let mut section = String::with_capacity(200 + recent_turns.len() * 100);
+        self.build_prompt_section_into(&mut section, include_last_n);
+        section
+    }
 
-        section.push_str("=== CONVERSATION HISTORY ===\n");
-        section.push_str("(You are the DM. The player is the other speaker.)\n");
-        section.push_str("(>>> marks turn boundaries for clarity)\n\n");
-
-        for turn in recent_turns {
-            section.push_str(&turn.format_for_prompt());
-            section.push('\n');
+    /// Append the prompt section to an existing String to avoid allocations.
+    pub fn build_prompt_section_into(&self, prompt: &mut String, num_turns: usize) {
+        if self.turns.is_empty() {
+            return;
         }
 
-        section.push_str("\n=== END HISTORY ===\n\n");
-        section
+        prompt.push_str("=== CONVERSATION HISTORY ===\n");
+        prompt.push_str("(You are the DM. The player is the other speaker.)\n");
+        prompt.push_str("(>>> marks turn boundaries for clarity)\n\n");
+
+        let skip_count = self.turns.len().saturating_sub(num_turns);
+        for turn in self.turns.iter().skip(skip_count) {
+            turn.format_for_prompt_into(prompt);
+            prompt.push('\n');
+        }
+
+        prompt.push_str("\n=== END HISTORY ===\n\n");
     }
 
     /// Build a simple prompt section (backward compatible with old system)
