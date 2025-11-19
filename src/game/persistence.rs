@@ -152,3 +152,186 @@ pub fn load_game() -> Option<GameState> {
 
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::character::{Character, Special};
+    use std::fs;
+
+    fn create_test_game_state() -> GameState {
+        let special = Special {
+            strength: 6,
+            perception: 7,
+            endurance: 5,
+            charisma: 4,
+            intelligence: 8,
+            agility: 6,
+            luck: 5,
+        };
+        let character = Character::new("TestHero".to_string(), special);
+        GameState::new(character)
+    }
+
+    fn cleanup_test_saves() {
+        let _ = fs::remove_dir_all("saves");
+    }
+
+    #[test]
+    fn test_save_and_load_roundtrip() {
+        cleanup_test_saves();
+
+        let game_state = create_test_game_state();
+
+        // Save the game
+        save_to_file(&game_state, "test_roundtrip").unwrap();
+
+        // Load it back
+        let loaded_state = load_from_file("test_roundtrip").unwrap();
+
+        // Verify key fields match
+        assert_eq!(loaded_state.character.name, game_state.character.name);
+        assert_eq!(
+            loaded_state.character.special.strength,
+            game_state.character.special.strength
+        );
+        assert_eq!(loaded_state.day, game_state.day);
+
+        cleanup_test_saves();
+    }
+
+    #[test]
+    fn test_save_creates_directory() {
+        cleanup_test_saves();
+
+        let game_state = create_test_game_state();
+
+        // Saves directory should not exist yet
+        assert!(!Path::new("saves").exists());
+
+        // Save should create it
+        save_to_file(&game_state, "test_creates_dir").unwrap();
+
+        assert!(Path::new("saves").exists());
+        assert!(Path::new("saves/test_creates_dir.json").exists());
+
+        cleanup_test_saves();
+    }
+
+    #[test]
+    fn test_save_rejects_path_traversal() {
+        let game_state = create_test_game_state();
+
+        // Try various path traversal attacks
+        assert!(save_to_file(&game_state, "../escape").is_err());
+        assert!(save_to_file(&game_state, "..\\escape").is_err());
+        assert!(save_to_file(&game_state, "../../etc/passwd").is_err());
+        assert!(save_to_file(&game_state, "/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_load_rejects_path_traversal() {
+        // Try various path traversal attacks
+        assert!(load_from_file("../escape").is_err());
+        assert!(load_from_file("..\\escape").is_err());
+        assert!(load_from_file("../../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_load_nonexistent_file() {
+        fs::create_dir_all("saves").unwrap();
+
+        let result = load_from_file("nonexistent_file_12345");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_list_save_files_empty() {
+        cleanup_test_saves();
+
+        // No saves directory
+        let saves = list_save_files();
+        assert_eq!(saves.len(), 0);
+    }
+
+    #[test]
+    fn test_list_save_files_multiple() {
+        cleanup_test_saves();
+
+        let game_state = create_test_game_state();
+
+        // Create multiple saves
+        save_to_file(&game_state, "test_save1").unwrap();
+        save_to_file(&game_state, "test_save2").unwrap();
+        save_to_file(&game_state, "test_save3").unwrap();
+
+        let saves = list_save_files();
+        assert_eq!(saves.len(), 3);
+        assert!(saves.contains(&"test_save1".to_string()));
+        assert!(saves.contains(&"test_save2".to_string()));
+        assert!(saves.contains(&"test_save3".to_string()));
+
+        cleanup_test_saves();
+    }
+
+    #[test]
+    fn test_save_file_is_valid_json() {
+        cleanup_test_saves();
+
+        let game_state = create_test_game_state();
+        save_to_file(&game_state, "test_json_check").unwrap();
+
+        // Read the file and verify it's valid JSON
+        let json_content = fs::read_to_string("saves/test_json_check.json").unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json_content).unwrap();
+
+        // Verify some expected fields exist in JSON
+        assert!(parsed.get("character").is_some());
+        assert!(parsed.get("day").is_some());
+        assert!(parsed.get("location").is_some());
+
+        cleanup_test_saves();
+    }
+
+    #[test]
+    fn test_save_preserves_game_progress() {
+        cleanup_test_saves();
+
+        let mut game_state = create_test_game_state();
+
+        // Modify game state
+        game_state.character.add_experience(500);
+        game_state.day = 42;
+        game_state.location = "The Wasteland".to_string();
+
+        // Save and reload
+        save_to_file(&game_state, "test_progress").unwrap();
+        let loaded = load_from_file("test_progress").unwrap();
+
+        // Verify progress was preserved
+        assert_eq!(loaded.character.experience, 500);
+        assert_eq!(loaded.day, 42);
+        assert_eq!(loaded.location, "The Wasteland");
+
+        cleanup_test_saves();
+    }
+
+    #[test]
+    fn test_save_filename_validation() {
+        let game_state = create_test_game_state();
+
+        // Invalid filenames should be rejected
+        assert!(save_to_file(&game_state, "").is_err());
+        assert!(save_to_file(&game_state, "   ").is_err());
+        assert!(save_to_file(&game_state, "has/slash").is_err());
+        assert!(save_to_file(&game_state, "has\\backslash").is_err());
+
+        // Valid filename should work
+        cleanup_test_saves();
+        assert!(save_to_file(&game_state, "valid_name_test").is_ok());
+        assert!(save_to_file(&game_state, "name-with-dash").is_ok());
+        assert!(save_to_file(&game_state, "name_with_123").is_ok());
+
+        cleanup_test_saves();
+    }
+}

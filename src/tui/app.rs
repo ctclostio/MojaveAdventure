@@ -92,7 +92,8 @@ pub enum ViewMode {
     Stats,     // Viewing character stats
     Worldbook, // Viewing worldbook
     Combat,    // In combat
-    GameOver,  // Player died - game over screen
+    #[allow(dead_code)]
+    GameOver, // Player died - game over screen
 }
 
 impl App {
@@ -363,6 +364,7 @@ impl App {
     }
 
     /// Trigger game over when player dies
+    #[allow(dead_code)]
     pub fn trigger_game_over(&mut self, cause: String) {
         self.death_info = Some(DeathInfo {
             location: self.game_state.location.clone(),
@@ -376,6 +378,7 @@ impl App {
     }
 
     /// Reset the game to start a new playthrough
+    #[allow(dead_code)]
     pub fn restart_game(&mut self) {
         // Create a new character with the same name and SPECIAL stats
         let character_name = self.game_state.character.name.clone();

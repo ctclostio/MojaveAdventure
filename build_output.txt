@@ -1,101 +1,140 @@
    Compiling fallout-dnd v0.1.0 (C:\Users\Clayton\Programming\FalloutDnD)
-warning: variants `InsufficientAP`, `TargetNotFound`, and `CombatNotActive` are never constructed
-  --> src\error.rs:42:5
-   |
-40 | pub enum CombatError {
-   |          ----------- variants in this enum
-41 |     #[error("Not enough Action Points to perform that action.")]
-42 |     InsufficientAP,
-   |     ^^^^^^^^^^^^^^
-43 |     #[error("Target with ID {0} not found in the current combat.")]
-44 |     TargetNotFound(String),
-   |     ^^^^^^^^^^^^^^
-45 |     #[error("Cannot perform action: combat is not active.")]
-46 |     CombatNotActive,
-   |     ^^^^^^^^^^^^^^^
-   |
-   = note: `CombatError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.40s
+     Running unittests src\lib.rs (target\debug\deps\fallout_dnd-8c3775b96079096b.exe)
 
-warning: variant `InvalidSpecialAllocation` is never constructed
-  --> src\error.rs:52:5
-   |
-50 | pub enum CharacterError {
-   |          -------------- variant in this enum
-51 |     #[error("Invalid SPECIAL stat allocation: {0}.")]
-52 |     InvalidSpecialAllocation(String),
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = note: `CharacterError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+running 107 tests
+test config::tests::test_validate_invalid_starting_level ... ok
+test config::tests::test_validate_invalid_repeat_penalty ... ok
+test config::tests::test_validate_invalid_max_tokens ... ok
+test ai::extractor::tests::test_extracted_entities_is_empty ... ok
+test config::tests::test_validate_invalid_temperature ... ok
+test config::tests::test_validate_invalid_top_k ... ok
+test config::tests::test_validate_invalid_starting_caps ... ok
+test game::character::tests::test_skills_from_special ... ok
+test game::character::tests::test_special_total_points ... ok
+test game::character::tests::test_character_heal ... ok
+test game::character::tests::test_character_creation ... ok
+test game::character::tests::test_use_consumable_not_found ... ok
+test game::character::tests::test_character_leveling ... ok
+test game::character::tests::test_character_take_damage ... ok
+test game::character::tests::test_find_item_by_id ... ok
+test game::character::tests::test_get_equipped_damage ... ok
+test game::character::tests::test_get_skill ... ok
+test game::character::tests::test_get_weapon_skill ... ok
+test config::tests::test_validate_invalid_top_p ... ok
+test game::character::tests::test_special_creation ... ok
+test game::combat::tests::test_roll_dice_basic ... ok
+test config::tests::test_validate_valid_config ... ok
+test game::combat::tests::test_dice_roll ... ok
+test game::character::tests::test_character_ap_system ... ok
+test game::combat::tests::test_all_enemies_dead ... ok
+test game::combat::tests::test_attack_roll ... ok
+test game::combat::tests::test_combat_state ... ok
+test game::combat::tests::test_calculate_damage ... ok
+test game::character::tests::test_character_hp_calculation ... ok
+test ai::extractor::tests::test_parse_extraction ... ok
+test game::combat::tests::test_enemy_damage ... ok
+test game::combat::tests::test_resolve_stat_modifiers ... ok
+test game::character::tests::test_use_consumable_healing ... ok
+test game::combat::tests::test_roll_dice_invalid_format ... ok
+test game::combat::tests::test_enemy_creation ... ok
+test game::combat::tests::test_roll_dice_with_modifier ... ok
+test game::conversation::tests::test_add_turns ... ok
+test game::combat::tests::test_xp_reward ... ok
+test game::conversation::tests::test_build_prompt_section ... ok
+test game::conversation::tests::test_clear ... ok
+test game::conversation::tests::test_fifo_behavior ... ok
+test game::conversation::tests::test_get_recent_turns ... ok
+test game::conversation::tests::test_legacy_migration ... ok
+test game::conversation::tests::test_new_conversation ... ok
+test game::conversation::tests::test_turn_formatting ... ok
+test game::items::tests::test_armor_ac_calculation ... ok
+test game::items::tests::test_armor_creation ... ok
+test game::items::tests::test_consumable_healing_creation ... ok
+test game::items::tests::test_consumable_radaway_creation ... ok
+test game::items::tests::test_consumable_stat_buff ... ok
+test game::items::tests::test_critical_multiplier_default ... ok
+test game::items::tests::test_damage_types ... ok
+test game::items::tests::test_item_default ... ok
+test game::items::tests::test_item_weight_values ... ok
+test game::items::tests::test_melee_weapon_creation ... ok
+test game::items::tests::test_starting_items_contains_expected_items ... ok
+test game::items::tests::test_starting_items_variety ... ok
+test game::items::tests::test_weapon_ap_costs ... ok
+test game::items::tests::test_weapon_creation ... ok
+test game::items::tests::test_item_serialization ... ok
+test game::items::tests::test_weapon_types ... ok
+test game::persistence::tests::test_list_save_files_empty ... ok
+test game::persistence::tests::test_load_rejects_path_traversal ... ok
+test game::persistence::tests::test_save_rejects_path_traversal ... ok
+test game::rolls::tests::test_get_modifier ... ok
+test game::story_manager::tests::test_add_and_get ... ok
+test game::rolls::tests::test_parse_roll_request ... ok
+test game::rolls::tests::test_parse_natural_roll_request ... ok
+test game::story_manager::tests::test_fifo_behavior ... ok
+test game::rolls::tests::test_perform_roll ... ok
+test game::story_manager::tests::test_clear ... ok
+test game::story_manager::tests::test_get_recent_more_than_available ... ok
+test game::story_manager::tests::test_new_story_manager ... ok
+test game::story_manager::tests::test_get_recent ... ok
+test game::worldbook::tests::test_add_location ... ok
+test game::story_manager::tests::test_set_max_context ... ok
+test game::worldbook::tests::test_add_npc ... ok
+test game::worldbook::tests::test_generate_id ... ok
+test game::worldbook::tests::test_get_npcs_at_location ... ok
+test game::worldbook::tests::test_worldbook_creation ... ok
+test game::worldbook::tests::test_worldbook_with_defaults ... ok
+test tui::animations::tests::test_health_animation ... ok
+test tui::animations::tests::test_no_animation_when_same_value ... ok
+test tui::animations::tests::test_xp_animation ... ok
+test game::persistence::tests::test_save_and_load_roundtrip ... FAILED
+test tui::app::tests::test_add_message ... ok
+test tui::app::tests::test_app_creation ... ok
+test tui::app::tests::test_get_visible_messages ... ok
+test tui::app::tests::test_input_handling ... ok
+test game::persistence::tests::test_load_nonexistent_file ... ok
+test tui::app::tests::test_message_log_max_size ... ok
+test tui::app::tests::test_scrolling ... ok
+test game::persistence::tests::test_list_save_files_multiple ... FAILED
+test tui::app::tests::test_view_mode ... ok
+test tui::combat_display::tests::test_create_ap_bar ... ok
+test tui::combat_display::tests::test_create_hp_bar ... ok
+test tui::combat_display::tests::test_get_weapon_display_name_equipped ... ok
+test tui::combat_display::tests::test_get_weapon_display_name_unarmed ... ok
+test validation::tests::test_validate_character_name ... ok
+test validation::tests::test_validate_save_name ... ok
+test validation::tests::test_validate_special_stat ... ok
+test validation::tests::test_validate_special_total ... ok
+test game::persistence::tests::test_save_filename_validation ... FAILED
+test game::persistence::tests::test_save_file_is_valid_json ... ok
+test game::persistence::tests::test_save_preserves_game_progress ... ok
+test game::persistence::tests::test_save_creates_directory ... ok
+test tui::animations::tests::test_animation_progress ... ok
 
-warning: methods `can_level_up` and `level_up` are never used
-   --> src\game\character.rs:248:12
-    |
-194 | impl Character {
-    | -------------- methods in this implementation
-...
-248 |     pub fn can_level_up(&self) -> bool {
-    |            ^^^^^^^^^^^^
-...
-253 |     pub fn level_up(&mut self) {
-    |            ^^^^^^^^
+failures:
 
-warning: associated items `with_capacity`, `get_all_turns`, `clear`, `build_simple_prompt_section`, `get_summary`, and `set_max_turns` are never used
-   --> src\game\conversation.rs:102:12
-    |
- 91 | impl ConversationManager {
-    | ------------------------ associated items in this implementation
-...
-102 |     pub fn with_capacity(max_turns: usize) -> Self {
-    |            ^^^^^^^^^^^^^
-...
-141 |     pub fn get_all_turns(&self) -> &VecDeque<ConversationTurn> {
-    |            ^^^^^^^^^^^^^
-...
-156 |     pub fn clear(&mut self) {
-    |            ^^^^^
-...
-214 |     pub fn build_simple_prompt_section(&self, include_last_n: usize) -> String {
-    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-237 |     pub fn get_summary(&self) -> String {
-    |            ^^^^^^^^^^^
-...
-246 |     pub fn set_max_turns(&mut self, max: usize) {
-    |            ^^^^^^^^^^^^^
+---- game::persistence::tests::test_save_and_load_roundtrip stdout ----
 
-warning: method `to_legacy_story_context` is never used
-   --> src\game\conversation.rs:299:12
-    |
-263 | impl ConversationManager {
-    | ------------------------ method in this implementation
-...
-299 |     pub fn to_legacy_story_context(&self) -> VecDeque<String> {
-    |            ^^^^^^^^^^^^^^^^^^^^^^^
+thread 'game::persistence::tests::test_save_and_load_roundtrip' (73224) panicked at src\game\persistence.rs:187:53:
+called `Result::unwrap()` on an `Err` value: The system cannot find the path specified. (os error 3)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
-warning: methods `scroll_to_bottom` and `scroll_to_top` are never used
-   --> src\tui\app.rs:245:12
-    |
- 95 | impl App {
-    | -------- methods in this implementation
-...
-245 |     pub fn scroll_to_bottom(&mut self) {
-    |            ^^^^^^^^^^^^^^^^
-...
-250 |     pub fn scroll_to_top(&mut self, max_scroll: usize) {
-    |            ^^^^^^^^^^^^^
+---- game::persistence::tests::test_list_save_files_multiple stdout ----
 
-warning: function `validate_special_stat` is never used
-   --> src\validation.rs:131:8
-    |
-131 | pub fn validate_special_stat(stat_name: &str, value: u8) -> Result<(), GameError> {
-    |        ^^^^^^^^^^^^^^^^^^^^^
+thread 'game::persistence::tests::test_list_save_files_multiple' (27740) panicked at src\game\persistence.rs:264:49:
+called `Result::unwrap()` on an `Err` value: The system cannot find the path specified. (os error 3)
 
-warning: function `validate_special_total` is never used
-   --> src\validation.rs:149:8
-    |
-149 | pub fn validate_special_total(points: &[u8], target: u8) -> Result<(), GameError> {
-    |        ^^^^^^^^^^^^^^^^^^^^^^
+---- game::persistence::tests::test_save_filename_validation stdout ----
 
-warning: `fallout-dnd` (bin "fallout-dnd") generated 8 warnings
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.99s
+thread 'game::persistence::tests::test_save_filename_validation' (4884) panicked at src\game\persistence.rs:332:9:
+assertion failed: save_to_file(&game_state, "name-with-dash").is_ok()
+
+
+failures:
+    game::persistence::tests::test_list_save_files_multiple
+    game::persistence::tests::test_save_and_load_roundtrip
+    game::persistence::tests::test_save_filename_validation
+
+test result: FAILED. 104 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `--lib`
