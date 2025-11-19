@@ -20,7 +20,11 @@ Thumbs.db
 
 # Logs
 *.log
+*.txt
 llama-cpp/models/*.gguf
 
 # Proptest regressions
 *.proptest-regressions
+
+# Claude Code settings
+.claude/

@@ -366,8 +366,8 @@ impl App {
     pub fn trigger_game_over(&mut self, cause: String) {
         self.death_info = Some(DeathInfo {
             location: self.game_state.location.clone(),
-            day: self.game_state.day as i32,
-            level: self.game_state.character.level as u8,
+            day: self.game_state.day,
+            level: self.game_state.character.level,
             cause,
         });
         self.view_mode = ViewMode::GameOver;
