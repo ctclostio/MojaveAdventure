@@ -1,0 +1,83 @@
+# cargo-deny configuration for FalloutDnD
+# This file controls dependency licensing, security advisories, and dependency policies
+# Run with: cargo deny check
+
+[graph]
+# Dependency graph configuration
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "x86_64-apple-darwin" },
+]
+
+[advisories]
+# Security vulnerability database
+version = 2
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+
+# Ignore specific advisories (if needed)
+ignore = [
+    # Example: "RUSTSEC-0000-0000",
+]
+
+[licenses]
+# License policy configuration
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+    "0BSD",
+]
+
+# Licenses we're confident are compatible with our project
+confidence-threshold = 0.8
+
+# Deny any license not explicitly allowed
+unlicensed = "deny"
+copyleft = "deny"
+
+# Some crates don't advertise their licenses correctly
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
+
+[bans]
+# Dependency policy - prevent problematic dependencies
+multiple-versions = "warn"
+wildcards = "allow"
+
+# Skip certain crates that commonly have multiple versions
+skip = [
+    { name = "windows-sys" },     # Different versions used by ecosystem
+    { name = "windows_x86_64_msvc" },
+    { name = "windows_x86_64_gnu" },
+    { name = "windows_i686_msvc" },
+]
+
+skip-tree = []
+
+# Deny specific crates (problematic dependencies)
+deny = [
+    # Example: Deny time 0.1 due to RUSTSEC-2020-0071
+    # { name = "time", version = "=0.1" },
+]
+
+[sources]
+# Source code repository configuration
+unknown-registry = "deny"
+unknown-git = "deny"
+
+# Allow only crates.io and git sources
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
