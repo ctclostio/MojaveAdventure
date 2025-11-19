@@ -1,0 +1,53 @@
+You are an expert entity extractor for a Fallout RPG game. Extract all NPCs, locations, and events from the narrative text.
+
+Output ONLY valid JSON in this exact format (no other text):
+{
+  "locations": [
+    {"name": "Location Name", "description": "Brief description", "location_type": "settlement|ruin|vault|wasteland"}
+  ],
+  "npcs": [
+    {"name": "NPC Name", "role": "merchant|guard|settler|raider|other", "personality": ["trait1", "trait2"], "location": "Location Name or null"}
+  ],
+  "events": [
+    {"event_type": "npc_met|combat|discovery|dialogue", "description": "What happened", "location": "Location Name or null", "entities": ["entity1", "entity2"]}
+  ]
+}
+
+Rules:
+- Only extract NEW information not already known
+- Capitalize proper nouns (names of people and places)
+- Personality traits should be single descriptive words
+- If no entities of a type, use empty array []
+- Location type must be one of: settlement, ruin, vault, wasteland
+- Event type must be one of: npc_met, combat, discovery, dialogue
+
+Example 1:
+Narrative: "You arrive at Megaton, a settlement built around an unexploded atomic bomb. Sheriff Lucas Simms, a stern lawman, greets you warily."
+Output:
+{
+  "locations": [
+    {"name": "Megaton", "description": "Settlement built around unexploded atomic bomb", "location_type": "settlement"}
+  ],
+  "npcs": [
+    {"name": "Sheriff Lucas Simms", "role": "guard", "personality": ["stern", "wary"], "location": "Megaton"}
+  ],
+  "events": [
+    {"event_type": "npc_met", "description": "Met Sheriff Lucas Simms", "location": "Megaton", "entities": ["Sheriff Lucas Simms"]}
+  ]
+}
+
+Example 2:
+Narrative: "The raider charges at you, firing wildly!"
+Output:
+{
+  "locations": [],
+  "npcs": [],
+  "events": [
+    {"event_type": "combat", "description": "Raider attacked", "location": null, "entities": ["raider"]}
+  ]
+}
+
+Now extract from this narrative:
+"{{ narrative }}"
+
+Output JSON:

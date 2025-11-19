@@ -304,7 +304,7 @@ impl AIDungeonMaster {
             .character
             .inventory
             .iter()
-            .map(|item| item.name.clone())
+            .map(|item| item.name.to_string())
             .collect();
 
         let combat_ctx = if game_state.combat.active {
@@ -419,7 +419,7 @@ impl AIDungeonMaster {
         conversation
             .get_recent_turns(10)
             .iter()
-            .map(|turn| format!("{}: {}", turn.speaker, turn.player_input))
+            .map(|turn| format!("{:?}: {}", turn.speaker, turn.message))
             .collect()
     }
 

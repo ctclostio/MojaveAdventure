@@ -1,31 +1,47 @@
 use crate::error::{ConfigError, GameError};
+use garde::Validate;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct Config {
+    #[garde(dive)]
     pub llama: LlamaConfig,
+    #[garde(dive)]
     pub game: GameConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct LlamaConfig {
+    #[garde(skip)]
     pub server_url: String,
+    #[garde(skip)]
     pub extraction_url: String,
+    #[garde(range(min = 0.0, max = 2.0))]
     pub temperature: f32,
+    #[garde(range(min = 0.0, max = 1.0))]
     pub top_p: f32,
+    #[garde(range(min = 1))]
     pub top_k: i32,
+    #[garde(range(min = 1, max = 32000))]
     pub max_tokens: i32,
+    #[garde(range(min = 512, max = 131072))]
     pub context_window: i32,
+    #[garde(range(min = 1.0, max = 2.0))]
     pub repeat_penalty: f32,
+    #[garde(skip)]
     pub system_prompt: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct GameConfig {
+    #[garde(range(min = 1, max = 50))]
     pub starting_level: u32,
+    #[garde(range(max = 999999))]
     pub starting_caps: u32,
+    #[garde(skip)]
     pub permadeath: bool,
+    #[garde(skip)]
     pub autosave_interval: u32,
 }
 
@@ -64,47 +80,32 @@ impl Config {
         Ok(config)
     }
 
-    /// Validate configuration values
+    /// Validate configuration values using garde
     pub fn validate(&self) -> Result<(), GameError> {
-        // Validate temperature
-        if !(0.0..=2.0).contains(&self.llama.temperature) {
-            return Err(ConfigError::InvalidTemperature(self.llama.temperature).into());
-        }
+        <Self as Validate>::validate(self).map_err(|e| {
+            // Map garde validation errors to specific ConfigError types
+            let error_msg = e.to_string();
 
-        // Validate top_p
-        if !(0.0..=1.0).contains(&self.llama.top_p) {
-            return Err(ConfigError::InvalidTopP(self.llama.top_p).into());
-        }
-
-        // Validate top_k
-        if self.llama.top_k < 1 {
-            return Err(ConfigError::InvalidTopK(self.llama.top_k).into());
-        }
-
-        // Validate max_tokens
-        if !(1..=32000).contains(&self.llama.max_tokens) {
-            return Err(ConfigError::InvalidMaxTokens(self.llama.max_tokens).into());
-        }
-
-        // Validate context_window
-        if !(512..=131072).contains(&self.llama.context_window) {
-            return Err(ConfigError::InvalidContextWindow(self.llama.context_window).into());
-        }
-
-        // Validate repeat_penalty
-        if !(1.0..=2.0).contains(&self.llama.repeat_penalty) {
-            return Err(ConfigError::InvalidRepeatPenalty(self.llama.repeat_penalty).into());
-        }
-
-        // Validate starting level
-        if !(1..=50).contains(&self.game.starting_level) {
-            return Err(ConfigError::InvalidStartingLevel(self.game.starting_level).into());
-        }
-
-        // Validate starting caps
-        if self.game.starting_caps > 999_999 {
-            return Err(ConfigError::InvalidStartingCaps(self.game.starting_caps).into());
-        }
+            if error_msg.contains("temperature") {
+                ConfigError::InvalidTemperature(self.llama.temperature).into()
+            } else if error_msg.contains("top_p") {
+                ConfigError::InvalidTopP(self.llama.top_p).into()
+            } else if error_msg.contains("top_k") {
+                ConfigError::InvalidTopK(self.llama.top_k).into()
+            } else if error_msg.contains("max_tokens") {
+                ConfigError::InvalidMaxTokens(self.llama.max_tokens).into()
+            } else if error_msg.contains("context_window") {
+                ConfigError::InvalidContextWindow(self.llama.context_window).into()
+            } else if error_msg.contains("repeat_penalty") {
+                ConfigError::InvalidRepeatPenalty(self.llama.repeat_penalty).into()
+            } else if error_msg.contains("starting_level") {
+                ConfigError::InvalidStartingLevel(self.game.starting_level).into()
+            } else if error_msg.contains("starting_caps") {
+                ConfigError::InvalidStartingCaps(self.game.starting_caps).into()
+            } else {
+                GameError::InvalidInput(format!("Configuration validation failed: {}", e))
+            }
+        })?;
 
         tracing::debug!("Configuration validation passed");
         Ok(())
