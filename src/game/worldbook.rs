@@ -52,34 +52,52 @@
 //! ## Example
 //!
 //! ```no_run
-//! use fallout_dnd::game::worldbook::{Worldbook, Location, NPC};
+//! use fallout_dnd::game::worldbook::{Worldbook, Location, NPC, WorldEvent};
+//! use std::collections::HashMap;
 //!
 //! let mut worldbook = Worldbook::new();
 //!
 //! // Add a location
-//! let mut megaton = Location::new(
-//!     "megaton_01",
-//!     "Megaton",
-//!     "A settlement built around an undetonated atomic bomb",
-//!     "settlement"
-//! );
+//! let mut megaton = Location {
+//!    id: "megaton_01".to_string(),
+//!    name: "Megaton".to_string(),
+//!    name_lowercase: "megaton".to_string(),
+//!    description: "A settlement built around an undetonated atomic bomb".to_string(),
+//!    location_type: "settlement".to_string(),
+//!    npcs_present: vec![],
+//!    atmosphere: None,
+//!    first_visited: None,
+//!    last_visited: None,
+//!    visit_count: 0,
+//!    notes: vec![],
+//!    state: HashMap::new(),
+//! };
 //! worldbook.add_location(megaton);
 //!
 //! // Add an NPC
-//! let mut lucas = NPC::new(
-//!     "lucas_simms_01",
-//!     "Lucas Simms",
-//!     "sheriff"
-//! );
-//! lucas.disposition = 50; // Neutral-friendly
+//! let mut lucas = NPC {
+//!     id: "lucas_simms_01".to_string(),
+//!     name: "Lucas Simms".to_string(),
+//!     name_lowercase: "lucas simms".to_string(),
+//!     role: "sheriff".to_string(),
+//!     personality: vec![],
+//!     current_location: None,
+//!     disposition: 50, // Neutral-friendly
+//!     knowledge: vec![],
+//!     notes: "".to_string(),
+//!     alive: true,
+//! };
 //! worldbook.add_npc(lucas);
 //!
 //! // Record an event
-//! worldbook.record_event(
-//!     Some("megaton_01".to_string()),
-//!     "npc_met",
-//!     "Met Sheriff Lucas Simms at the town gates"
-//! );
+//! let event = WorldEvent {
+//!    timestamp: "2277-10-23T10:00:00Z".to_string(),
+//!    location: Some("megaton_01".to_string()),
+//!    event_type: "npc_met".to_string(),
+//!    description: "Met Sheriff Lucas Simms at the town gates".to_string(),
+//!    entities: vec!["lucas_simms_01".to_string()],
+//! };
+//! worldbook.add_event(event);
 //!
 //! println!("Known locations: {}", worldbook.locations.len());
 //! ```

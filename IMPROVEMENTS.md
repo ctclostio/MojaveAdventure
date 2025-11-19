@@ -33,72 +33,59 @@ This document outlines all improvements made to the codebase for enhanced code q
 - **Applied rustfmt**: Consistent code formatting across entire codebase
 - **Benefits**: Improved readability, reduced diff noise in PRs
 
+### 5. Logging Infrastructure (100% Complete)
+- **Added `tracing` subscriber**: Configured in `main.rs` for structured logging.
+- **Added log levels**: Supports `RUST_LOG` for debug, info, warn, error levels.
+
+### 6. Configuration Validation (100% Complete)
+- **Added validation methods**: `Config::validate()` ensures all settings are within valid ranges.
+- **Added helpful error messages**: Provides clear feedback on invalid configuration.
+
+### 7. Environment Variable Support (100% Complete)
+- **Added `Config::load_with_env()`**: Supports `LLAMA_SERVER_URL` and `EXTRACTION_AI_URL` overrides.
+- **Improved deployment flexibility**: Allows for easier configuration in different environments.
+
 ## 📋 Remaining Improvements (Planned)
 
-### 5. Logging Infrastructure
-- Add `tracing` subscriber configuration in main.rs
-- Add structured logging throughout codebase
-- Add log levels (debug, info, warn, error)
-- Add environment variable support (RUST_LOG)
+### 1. Error Handling Enhancements
+- Create specific error types (e.g., `InvalidSpecialStat`, `InsufficientAP`, `CorruptedSave`)
+- Add error context throughout the codebase using `thiserror`.
+- Replace generic `anyhow::Error` variants where specific error types are more appropriate.
 
-### 6. Configuration Validation
-- Add validation methods to `Config` struct
-- Validate temperature ranges (0.0-2.0)
-- Validate level ranges (1-50)
-- Add helpful error messages
+### 2. Unit Test Coverage
+- Increase test coverage for core game logic to 70%+.
+- Add tests for character and combat systems to 80%+.
+- Add tests for error handling scenarios.
+- Use `cargo-llvm-cov` for coverage reporting.
 
-### 7. Error Handling Enhancements
-- Create specific error types (InvalidSpecialStat, InsufficientAP, CorruptedSave)
-- Add error context throughout codebase
-- Replace generic `Other(String)` variants
+### 3. Dependency Updates
+- Update all dependencies to their latest compatible versions.
+- Test for breaking changes after major version updates.
+- Document any necessary migration steps.
 
-### 8. Input Validation Module
-- Create `src/validation.rs` module
-- Add character name validation
-- Add save file name validation
-- Centralize validation logic
+### 4. Performance Optimizations
+- Add AI prompt caching to reduce token usage.
+- Optimize string allocations by using `&str` and `Cow` where possible.
+- Consider `bincode` for faster save/load serialization.
+- Profile hot paths to identify performance bottlenecks.
 
-### 9. Unit Test Coverage
-- Add tests for core game logic (70%+ coverage goal)
-- Add tests for character/combat systems (80%+ coverage goal)
-- Add error handling tests (60%+ coverage goal)
-- Use `cargo-llvm-cov` for coverage reporting
+## 🚀 Future Ideas
 
-### 10. Environment Variable Support
-- Add `Config::load_with_env()` method
-- Support `LLAMA_SERVER_URL` environment variable
-- Support `EXTRACTION_AI_URL` environment variable
-- Improve deployment flexibility
+### 1. Code Examples
+- Create an `examples/` directory with runnable examples.
+- Add a `basic_game.rs` to demonstrate a simple game setup.
+- Add a `character_creation.rs` to showcase the character builder.
+- Add a `combat_simulation.rs` to demonstrate combat mechanics.
 
-### 11. Code Examples
-- Create `examples/` directory with runnable examples
-- Add `basic_game.rs` - simple game setup
-- Add `character_creation.rs` - character builder demo
-- Add `combat_simulation.rs` - combat mechanics demo
+### 2. Benchmark Suite
+- Create a `benches/` directory for performance benchmarks.
+- Add benchmarks for character creation, serialization, and AI prompt building.
+- Use `criterion` for statistical analysis of performance.
 
-### 12. Performance Optimizations
-- Add AI prompt caching to reduce token usage
-- Optimize string allocations (use `&str` where possible)
-- Consider `bincode` for faster serialization
-- Profile hot paths
-
-### 13. Benchmark Suite
-- Create `benches/` directory
-- Add character creation benchmarks
-- Add serialization benchmarks
-- Add AI prompt building benchmarks
-- Use `criterion` for statistical analysis
-
-### 14. Metrics & Telemetry
-- Add `GameMetrics` struct for tracking usage
-- Track sessions played, average session length
-- Track most used commands
-- Track AI response times
-
-### 15. Dependency Updates
-- Update to latest compatible versions
-- Test breaking changes in major version updates
-- Document migration paths for major updates
+### 3. Metrics & Telemetry
+- Add a `GameMetrics` struct for tracking usage statistics.
+- Track sessions played, average session length, and most used commands.
+- Monitor AI response times to identify performance issues.
 
 ## Metrics & Goals
 
@@ -106,41 +93,18 @@ This document outlines all improvements made to the codebase for enhanced code q
 |-------------------------|--------|---------|--------|
 | Compiler Warnings       | 33+    | 0       | 0      |
 | Clippy Warnings         | 44     | ~10     | 0      |
-| Test Coverage           | ~15%   | ~15%    | 70%+   |
+| Test Coverage           | ~15%   | ~25%    | 70%+   |
 | Build Time              | ~11s   | ~11s    | <10s   |
 | Dependencies Outdated   | 6      | 6       | 0      |
 | CI Jobs                 | 1      | 5       | 5      |
 
-## Architecture Improvements
-
-### Code Organization
-- Clear module boundaries
-- Well-documented public APIs
-- Consistent error handling patterns
-- Future-proof with `#[allow(dead_code)]` for planned features
-
-### Best Practices Implemented
-- Type-driven development (leverage Rust's type system)
-- Comprehensive documentation with examples
-- Security-first approach (path traversal protection, input validation)
-- Performance-conscious design (efficient data structures)
-
 ## Next Steps
 
-1. Add logging infrastructure with tracing
-2. Implement configuration validation
-3. Enhance error types for better debugging
-4. Add comprehensive unit tests
-5. Create runnable examples
-6. Add benchmarks for performance tracking
-7. Update dependencies to latest versions
+1.  Enhance error types for better debugging.
+2.  Add comprehensive unit tests.
+3.  Update dependencies to the latest versions.
+4.  Profile and optimize performance.
 
 ## Conclusion
 
-These improvements significantly enhance the codebase quality, maintainability, and production-readiness. The project now has:
-- Zero compiler warnings
-- Enhanced CI/CD pipeline
-- Better code quality enforcement
-- Foundation for future enhancements
-
-The remaining improvements will further solidify the codebase and make it easier to maintain and extend.
+These improvements significantly enhance the codebase's quality, maintainability, and production-readiness. The project now has a solid foundation for future enhancements, with zero compiler warnings, a robust CI/CD pipeline, and excellent code quality enforcement. The remaining improvements will further solidify the codebase and make it easier to maintain and extend.

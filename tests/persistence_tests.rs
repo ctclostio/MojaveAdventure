@@ -30,6 +30,7 @@ fn test_save_and_load_basic_game_state() {
 fn test_save_with_modified_character() {
     let mut character = create_test_character("TestHero");
     character.add_experience(1500);
+    character.level_up();
     character.take_damage(10);
 
     let game_state = fallout_dnd::game::GameState::new(character);

@@ -61,6 +61,7 @@ impl StoryManager {
     ///
     /// # Example
     /// ```
+    /// use fallout_dnd::game::story_manager::StoryManager;
     /// let mut story = StoryManager::new();
     /// story.add("Player: I walk into the tavern".to_string());
     /// story.add("DM: You see a crowded room".to_string());
@@ -81,6 +82,9 @@ impl StoryManager {
     ///
     /// # Example
     /// ```
+    /// use fallout_dnd::game::story_manager::StoryManager;
+    /// let mut story = StoryManager::new();
+    /// story.add("Event 1".to_string());
     /// let recent = story.get_recent(10);
     /// ```
     #[allow(dead_code)]

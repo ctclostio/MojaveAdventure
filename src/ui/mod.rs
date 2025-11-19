@@ -32,9 +32,10 @@
 //!
 //! ```no_run
 //! use fallout_dnd::ui::UI;
-//! use fallout_dnd::game::character::Character;
+//! use fallout_dnd::game::character::{Character, Special};
 //!
-//! let character = Character::new("Vault Dweller".to_string());
+//! let special = Special::new();
+//! let character = Character::new("Vault Dweller".to_string(), special);
 //!
 //! UI::clear_screen();
 //! UI::print_header();

@@ -20,6 +20,7 @@ fn test_add_experience_no_level_up() {
     character.add_experience(500);
 
     assert_eq!(character.experience, 500);
+    assert!(!character.can_level_up());
     assert_eq!(character.level, initial_level, "Should not level up with 500 XP");
     assert_eq!(character.max_hp, initial_max_hp, "HP should not change without level up");
 }
@@ -31,6 +32,8 @@ fn test_add_experience_single_level_up() {
     let endurance = character.special.endurance as i32;
 
     character.add_experience(1000);
+    assert!(character.can_level_up());
+    character.level_up();
 
     assert_eq!(character.experience, 1000);
     assert_eq!(character.level, 2, "Should level up to 2 at 1000 XP");
@@ -54,6 +57,8 @@ fn test_add_experience_multiple_level_ups() {
 
     // Add 2500 XP = should reach level 3 (1 + 2500/1000 = 3)
     character.add_experience(2500);
+    assert!(character.can_level_up());
+    character.level_up();
 
     assert_eq!(character.experience, 2500);
     assert_eq!(character.level, 3, "Should level up to 3 at 2500 XP");
@@ -69,10 +74,13 @@ fn test_experience_threshold_boundary() {
 
     // Test just before level up (999 XP)
     character.add_experience(999);
+    assert!(!character.can_level_up());
     assert_eq!(character.level, 1, "Should still be level 1 at 999 XP");
 
     // Add 1 more XP to cross threshold
     character.add_experience(1);
+    assert!(character.can_level_up());
+    character.level_up();
     assert_eq!(character.experience, 1000);
     assert_eq!(character.level, 2, "Should be level 2 at 1000 XP");
 }
@@ -83,12 +91,16 @@ fn test_experience_accumulation() {
 
     character.add_experience(300);
     assert_eq!(character.experience, 300);
+    assert!(!character.can_level_up());
 
     character.add_experience(200);
     assert_eq!(character.experience, 500);
+    assert!(!character.can_level_up());
 
     character.add_experience(600);
     assert_eq!(character.experience, 1100);
+    assert!(character.can_level_up());
+    character.level_up();
     assert_eq!(character.level, 2, "Should have leveled up");
 }
 
@@ -98,6 +110,8 @@ fn test_high_experience_multiple_levels() {
 
     // Add enough XP for 5 levels (5000 XP = level 6)
     character.add_experience(5000);
+    assert!(character.can_level_up());
+    character.level_up();
 
     assert_eq!(character.level, 6, "Should reach level 6 with 5000 XP");
     assert_eq!(character.experience, 5000);
@@ -113,6 +127,8 @@ fn test_level_up_restores_hp() {
 
     // Level up
     character.add_experience(1000);
+    assert!(character.can_level_up());
+    character.level_up();
 
     assert_eq!(character.level, 2);
     assert!(
@@ -156,7 +172,9 @@ fn test_endurance_affects_hp_gain() {
 
     // Level both up
     char_low.add_experience(1000);
+    char_low.level_up();
     char_high.add_experience(1000);
+    char_high.level_up();
 
     let low_hp_gain = char_low.max_hp - low_initial_hp;
     let high_hp_gain = char_high.max_hp - high_initial_hp;

@@ -16,6 +16,7 @@ fn test_regression_multi_level_hp_bonus() {
 
     // Jump from level 1 to level 6 (5000 XP)
     character.add_experience(5000);
+    character.level_up();
 
     // Should have gained 5 levels (2, 3, 4, 5, 6)
     assert_eq!(character.level, 6);

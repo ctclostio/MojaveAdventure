@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use crate::error::{ConfigError, GameError};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -29,11 +29,10 @@ pub struct GameConfig {
 }
 
 impl Config {
-    pub fn load() -> Result<Self> {
+    pub fn load() -> Result<Self, GameError> {
         tracing::debug!("Loading configuration from config.toml");
-        let config_str = fs::read_to_string("config.toml").context("Failed to read config.toml")?;
-        let config: Config = toml::from_str(&config_str)
-            .context("Failed to parse config.toml - check TOML syntax")?;
+        let config_str = fs::read_to_string("config.toml")?;
+        let config: Config = toml::from_str(&config_str)?;
 
         // Validate configuration
         config.validate()?;
@@ -43,7 +42,7 @@ impl Config {
     }
 
     /// Load configuration with environment variable overrides
-    pub fn load_with_env() -> Result<Self> {
+    pub fn load_with_env() -> Result<Self, GameError> {
         let mut config = Self::load().unwrap_or_else(|_| {
             tracing::warn!("Failed to load config.toml, using defaults");
             Self::default()
@@ -65,61 +64,40 @@ impl Config {
     }
 
     /// Validate configuration values
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self) -> Result<(), GameError> {
         // Validate temperature
         if !(0.0..=2.0).contains(&self.llama.temperature) {
-            return Err(anyhow!(
-                "Invalid temperature: {}. Must be between 0.0 and 2.0",
-                self.llama.temperature
-            ));
+            return Err(ConfigError::InvalidTemperature(self.llama.temperature).into());
         }
 
         // Validate top_p
         if !(0.0..=1.0).contains(&self.llama.top_p) {
-            return Err(anyhow!(
-                "Invalid top_p: {}. Must be between 0.0 and 1.0",
-                self.llama.top_p
-            ));
+            return Err(ConfigError::InvalidTopP(self.llama.top_p).into());
         }
 
         // Validate top_k
         if self.llama.top_k < 1 {
-            return Err(anyhow!(
-                "Invalid top_k: {}. Must be at least 1",
-                self.llama.top_k
-            ));
+            return Err(ConfigError::InvalidTopK(self.llama.top_k).into());
         }
 
         // Validate max_tokens
-        if self.llama.max_tokens < 1 || self.llama.max_tokens > 32000 {
-            return Err(anyhow!(
-                "Invalid max_tokens: {}. Must be between 1 and 32000",
-                self.llama.max_tokens
-            ));
+        if !(1..=32000).contains(&self.llama.max_tokens) {
+            return Err(ConfigError::InvalidMaxTokens(self.llama.max_tokens).into());
         }
 
         // Validate repeat_penalty
         if !(1.0..=2.0).contains(&self.llama.repeat_penalty) {
-            return Err(anyhow!(
-                "Invalid repeat_penalty: {}. Must be between 1.0 and 2.0",
-                self.llama.repeat_penalty
-            ));
+            return Err(ConfigError::InvalidRepeatPenalty(self.llama.repeat_penalty).into());
         }
 
         // Validate starting level
-        if self.game.starting_level < 1 || self.game.starting_level > 50 {
-            return Err(anyhow!(
-                "Invalid starting_level: {}. Must be between 1 and 50",
-                self.game.starting_level
-            ));
+        if !(1..=50).contains(&self.game.starting_level) {
+            return Err(ConfigError::InvalidStartingLevel(self.game.starting_level).into());
         }
 
         // Validate starting caps
-        if self.game.starting_caps > 999999 {
-            return Err(anyhow!(
-                "Invalid starting_caps: {}. Must be less than 1000000",
-                self.game.starting_caps
-            ));
+        if self.game.starting_caps > 999_999 {
+            return Err(ConfigError::InvalidStartingCaps(self.game.starting_caps).into());
         }
 
         tracing::debug!("Configuration validation passed");
@@ -145,5 +123,79 @@ impl Config {
                 autosave_interval: 5,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_valid_config() -> Config {
+        Config::default()
+    }
+
+    #[test]
+    fn test_validate_valid_config() {
+        let config = get_valid_config();
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_invalid_temperature() {
+        let mut config = get_valid_config();
+        config.llama.temperature = -1.0;
+        assert!(config.validate().is_err());
+        config.llama.temperature = 3.0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_top_p() {
+        let mut config = get_valid_config();
+        config.llama.top_p = -1.0;
+        assert!(config.validate().is_err());
+        config.llama.top_p = 2.0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_top_k() {
+        let mut config = get_valid_config();
+        config.llama.top_k = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_max_tokens() {
+        let mut config = get_valid_config();
+        config.llama.max_tokens = 0;
+        assert!(config.validate().is_err());
+        config.llama.max_tokens = 100_000;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_repeat_penalty() {
+        let mut config = get_valid_config();
+        config.llama.repeat_penalty = 0.0;
+        assert!(config.validate().is_err());
+        config.llama.repeat_penalty = 3.0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_starting_level() {
+        let mut config = get_valid_config();
+        config.game.starting_level = 0;
+        assert!(config.validate().is_err());
+        config.game.starting_level = 100;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_starting_caps() {
+        let mut config = get_valid_config();
+        config.game.starting_caps = 1_000_000;
+        assert!(config.validate().is_err());
     }
 }

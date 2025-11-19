@@ -2,7 +2,7 @@
 //!
 //! Centralizes all input validation logic to ensure data integrity and security.
 
-use crate::error::GameError;
+use crate::error::{CharacterError, GameError};
 
 /// Validate character name
 ///
@@ -23,15 +23,14 @@ pub fn validate_character_name(name: &str) -> Result<(), GameError> {
     let trimmed = name.trim();
 
     if trimmed.is_empty() {
-        return Err(GameError::InvalidInput(
-            "Character name cannot be empty".to_string(),
-        ));
+        return Err(CharacterError::InvalidName("Character name cannot be empty".to_string()).into());
     }
 
     if trimmed.len() > 50 {
-        return Err(GameError::InvalidInput(
+        return Err(CharacterError::InvalidName(
             "Character name must be 50 characters or less".to_string(),
-        ));
+        )
+        .into());
     }
 
     // Check for valid characters (alphanumeric, space, hyphen, apostrophe)
@@ -39,17 +38,19 @@ pub fn validate_character_name(name: &str) -> Result<(), GameError> {
         .chars()
         .all(|c| c.is_alphanumeric() || c.is_whitespace() || c == '-' || c == '\'')
     {
-        return Err(GameError::InvalidInput(
+        return Err(CharacterError::InvalidName(
             "Character name can only contain letters, numbers, spaces, hyphens, and apostrophes"
                 .to_string(),
-        ));
+        )
+        .into());
     }
 
     // Check for leading/trailing whitespace (different from trimmed)
     if name != trimmed {
-        return Err(GameError::InvalidInput(
+        return Err(CharacterError::InvalidName(
             "Character name cannot start or end with whitespace".to_string(),
-        ));
+        )
+        .into());
     }
 
     tracing::debug!("Character name validation passed: {}", name);
@@ -129,10 +130,11 @@ pub fn validate_save_name(name: &str) -> Result<(), GameError> {
 /// ```
 pub fn validate_special_stat(stat_name: &str, value: u8) -> Result<(), GameError> {
     if !(1..=10).contains(&value) {
-        return Err(GameError::CharacterError(format!(
+        return Err(CharacterError::InvalidSpecialAllocation(format!(
             "Invalid {} value: {}. Must be between 1 and 10",
             stat_name, value
-        )));
+        ))
+        .into());
     }
 
     Ok(())
@@ -148,10 +150,11 @@ pub fn validate_special_total(points: &[u8], target: u8) -> Result<(), GameError
     let total: u32 = points.iter().map(|&p| p as u32).sum();
 
     if total != target as u32 {
-        return Err(GameError::CharacterError(format!(
+        return Err(CharacterError::InvalidSpecialAllocation(format!(
             "Total SPECIAL points must be {}. Current total: {}",
             target, total
-        )));
+        ))
+        .into());
     }
 
     Ok(())
