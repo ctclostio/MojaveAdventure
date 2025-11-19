@@ -112,7 +112,7 @@ impl Config {
                 temperature: 0.8,
                 top_p: 0.9,
                 top_k: 40,
-                max_tokens: 2048,  // Increased for complex narratives
+                max_tokens: 2048, // Increased for complex narratives
                 repeat_penalty: 1.1,
                 system_prompt: "You are a Fallout universe DM.".to_string(),
             },

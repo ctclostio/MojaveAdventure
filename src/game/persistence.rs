@@ -16,8 +16,6 @@ use colored::*;
 use std::fs;
 use std::path::Path;
 
-
-
 /// Save a game state to a file
 ///
 /// Validates the filename, creates the saves directory if needed,

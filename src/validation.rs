@@ -23,7 +23,9 @@ pub fn validate_character_name(name: &str) -> Result<(), GameError> {
     let trimmed = name.trim();
 
     if trimmed.is_empty() {
-        return Err(CharacterError::InvalidName("Character name cannot be empty".to_string()).into());
+        return Err(
+            CharacterError::InvalidName("Character name cannot be empty".to_string()).into(),
+        );
     }
 
     if trimmed.len() > 50 {

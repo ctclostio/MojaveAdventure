@@ -402,7 +402,9 @@ impl AIDungeonMaster {
     /// Build conversation context section using structured ConversationManager
     ///
     /// This is the preferred method for building conversation context.
-    fn build_conversation_section(conversation: &crate::game::conversation::ConversationManager) -> String {
+    fn build_conversation_section(
+        conversation: &crate::game::conversation::ConversationManager,
+    ) -> String {
         conversation.build_prompt_section(10)
     }
 

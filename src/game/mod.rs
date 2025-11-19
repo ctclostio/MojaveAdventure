@@ -160,7 +160,8 @@ impl GameState {
     /// the string-based story context to structured conversation turns.
     pub fn migrate_story_to_conversation(&mut self) {
         if self.conversation.is_empty() && !self.story.is_empty() {
-            self.conversation = ConversationManager::from_legacy_story_context(self.story.get_all());
+            self.conversation =
+                ConversationManager::from_legacy_story_context(self.story.get_all());
         }
     }
 }

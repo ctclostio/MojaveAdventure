@@ -1,9 +1,9 @@
 /// Common test helpers and fixtures for integration tests
 use fallout_dnd::game::{
-    GameState,
     character::{Character, Special},
-    items::{Item, ItemType, ConsumableEffect, DamageType, WeaponType},
     combat::Enemy,
+    items::{ConsumableEffect, DamageType, Item, ItemType, WeaponType},
+    GameState,
 };
 
 /// Create a test character with default stats

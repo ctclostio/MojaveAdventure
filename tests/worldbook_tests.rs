@@ -1,7 +1,7 @@
 /// Comprehensive tests for worldbook system
-use fallout_dnd::game::worldbook::{Worldbook, Location, NPC, WorldEvent};
-use std::path::Path;
+use fallout_dnd::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
 use std::collections::HashMap;
+use std::path::Path;
 use tempfile::TempDir;
 
 // Helper function to create a test location
@@ -80,9 +80,19 @@ fn test_add_location() {
 fn test_add_multiple_locations() {
     let mut worldbook = Worldbook::new();
 
-    worldbook.add_location(create_test_location("loc1", "Location 1", "Desc 1", "settlement"));
+    worldbook.add_location(create_test_location(
+        "loc1",
+        "Location 1",
+        "Desc 1",
+        "settlement",
+    ));
     worldbook.add_location(create_test_location("loc2", "Location 2", "Desc 2", "ruin"));
-    worldbook.add_location(create_test_location("loc3", "Location 3", "Desc 3", "vault"));
+    worldbook.add_location(create_test_location(
+        "loc3",
+        "Location 3",
+        "Desc 3",
+        "vault",
+    ));
 
     assert_eq!(worldbook.locations.len(), 3);
 }
@@ -98,7 +108,11 @@ fn test_update_existing_location() {
     location.description = "Updated description".to_string();
     worldbook.add_location(location);
 
-    assert_eq!(worldbook.locations.len(), 1, "Should still have only 1 location");
+    assert_eq!(
+        worldbook.locations.len(),
+        1,
+        "Should still have only 1 location"
+    );
     let stored = worldbook.locations.get("test").unwrap();
     assert_eq!(stored.description, "Updated description");
 }
@@ -195,9 +209,21 @@ fn test_record_event() {
 fn test_multiple_events() {
     let mut worldbook = Worldbook::new();
 
-    worldbook.add_event(create_test_event(Some("loc1".to_string()), "discovery", "Found a vault"));
-    worldbook.add_event(create_test_event(Some("loc2".to_string()), "combat", "Fought raiders"));
-    worldbook.add_event(create_test_event(None, "dialogue", "Talked to mysterious stranger"));
+    worldbook.add_event(create_test_event(
+        Some("loc1".to_string()),
+        "discovery",
+        "Found a vault",
+    ));
+    worldbook.add_event(create_test_event(
+        Some("loc2".to_string()),
+        "combat",
+        "Fought raiders",
+    ));
+    worldbook.add_event(create_test_event(
+        None,
+        "dialogue",
+        "Talked to mysterious stranger",
+    ));
 
     assert_eq!(worldbook.events.len(), 3);
 }
@@ -217,7 +243,10 @@ fn test_event_timeline_order() {
     // Events should be in chronological order
     let timestamps: Vec<&String> = worldbook.events.iter().map(|e| &e.timestamp).collect();
     for i in 1..timestamps.len() {
-        assert!(timestamps[i] >= timestamps[i - 1], "Events should be in chronological order");
+        assert!(
+            timestamps[i] >= timestamps[i - 1],
+            "Events should be in chronological order"
+        );
     }
 }
 
@@ -246,8 +275,14 @@ fn test_location_visit_tracking() {
 
     let loc = worldbook.get_location("test").unwrap();
     assert_eq!(loc.visit_count, 2);
-    assert_eq!(loc.first_visited, first_visit, "First visit should not change");
-    assert!(loc.last_visited > first_visit, "Last visit should be updated");
+    assert_eq!(
+        loc.first_visited, first_visit,
+        "First visit should not change"
+    );
+    assert!(
+        loc.last_visited > first_visit,
+        "Last visit should be updated"
+    );
 }
 
 #[test]
@@ -280,7 +315,9 @@ fn test_location_notes() {
     let mut location = create_test_location("test", "Test", "Desc", "settlement");
 
     location.notes.push("Found a secret stash here".to_string());
-    location.notes.push("Guard mentioned a password".to_string());
+    location
+        .notes
+        .push("Guard mentioned a password".to_string());
 
     assert_eq!(location.notes.len(), 2);
 }
@@ -289,18 +326,30 @@ fn test_location_notes() {
 fn test_location_state() {
     let mut location = create_test_location("test", "Test", "Desc", "settlement");
 
-    location.state.insert("quest_completed".to_string(), "true".to_string());
-    location.state.insert("door_unlocked".to_string(), "false".to_string());
+    location
+        .state
+        .insert("quest_completed".to_string(), "true".to_string());
+    location
+        .state
+        .insert("door_unlocked".to_string(), "false".to_string());
 
     assert_eq!(location.state.len(), 2);
-    assert_eq!(location.state.get("quest_completed"), Some(&"true".to_string()));
+    assert_eq!(
+        location.state.get("quest_completed"),
+        Some(&"true".to_string())
+    );
 }
 
 #[test]
 fn test_get_location() {
     let mut worldbook = Worldbook::new();
 
-    worldbook.add_location(create_test_location("test", "Test Location", "Desc", "settlement"));
+    worldbook.add_location(create_test_location(
+        "test",
+        "Test Location",
+        "Desc",
+        "settlement",
+    ));
 
     let location = worldbook.get_location("test");
     assert!(location.is_some());
@@ -366,7 +415,11 @@ fn test_worldbook_save_and_load() {
     let mut worldbook = Worldbook::new();
     worldbook.add_location(create_test_location("test", "Test", "Desc", "settlement"));
     worldbook.add_npc(create_test_npc("npc1", "NPC", "merchant"));
-    worldbook.add_event(create_test_event(Some("test".to_string()), "discovery", "Found location"));
+    worldbook.add_event(create_test_event(
+        Some("test".to_string()),
+        "discovery",
+        "Found location",
+    ));
 
     // Save
     let save_result = worldbook.save_to_file(&file_path);
@@ -467,9 +520,21 @@ fn test_complex_worldbook_scenario() {
     worldbook.add_npc(moira);
 
     // Record events
-    worldbook.add_event(create_test_event(Some("megaton_01".to_string()), "arrival", "Entered Megaton for the first time"));
-    worldbook.add_event(create_test_event(Some("megaton_01".to_string()), "npc_met", "Met Sheriff Lucas Simms"));
-    worldbook.add_event(create_test_event(Some("megaton_01".to_string()), "dialogue", "Talked to Moira about the wasteland"));
+    worldbook.add_event(create_test_event(
+        Some("megaton_01".to_string()),
+        "arrival",
+        "Entered Megaton for the first time",
+    ));
+    worldbook.add_event(create_test_event(
+        Some("megaton_01".to_string()),
+        "npc_met",
+        "Met Sheriff Lucas Simms",
+    ));
+    worldbook.add_event(create_test_event(
+        Some("megaton_01".to_string()),
+        "dialogue",
+        "Talked to Moira about the wasteland",
+    ));
 
     // Verify state
     assert_eq!(worldbook.locations.len(), 1);

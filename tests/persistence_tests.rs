@@ -1,7 +1,7 @@
 /// Tests for game state persistence (simplified version)
 mod helpers;
 
-use fallout_dnd::game::{persistence};
+use fallout_dnd::game::persistence;
 use helpers::*;
 
 #[test]
@@ -13,11 +13,19 @@ fn test_save_and_load_basic_game_state() {
 
     // Save
     let save_result = persistence::save_to_file(&game_state, filename);
-    assert!(save_result.is_ok(), "Save should succeed: {:?}", save_result.err());
+    assert!(
+        save_result.is_ok(),
+        "Save should succeed: {:?}",
+        save_result.err()
+    );
 
     // Load
     let load_result = persistence::load_from_file(filename);
-    assert!(save_result.is_ok(), "Load should succeed: {:?}", load_result.err());
+    assert!(
+        save_result.is_ok(),
+        "Load should succeed: {:?}",
+        load_result.err()
+    );
 
     let loaded = load_result.unwrap();
     assert_eq!(loaded.character.name, "Hero");

@@ -162,7 +162,11 @@ impl ConversationManager {
     /// Returns true if a DM turn was removed, false otherwise
     pub fn remove_last_dm_turn(&mut self) -> bool {
         // Find the last DM turn by iterating backwards
-        if let Some(pos) = self.turns.iter().rposition(|turn| turn.speaker == Speaker::DM) {
+        if let Some(pos) = self
+            .turns
+            .iter()
+            .rposition(|turn| turn.speaker == Speaker::DM)
+        {
             self.turns.remove(pos);
             return true;
         }

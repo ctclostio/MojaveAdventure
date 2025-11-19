@@ -103,22 +103,52 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
 
     // List of all possible skills and stats to detect
     let skills = [
-        "small guns", "big guns", "energy weapons", "melee weapons", "unarmed",
-        "speech", "sneak", "lockpick", "science", "repair", "barter",
-        "explosives", "medicine", "survival", "throwing", "first aid",
-        "doctor", "outdoorsman"
+        "small guns",
+        "big guns",
+        "energy weapons",
+        "melee weapons",
+        "unarmed",
+        "speech",
+        "sneak",
+        "lockpick",
+        "science",
+        "repair",
+        "barter",
+        "explosives",
+        "medicine",
+        "survival",
+        "throwing",
+        "first aid",
+        "doctor",
+        "outdoorsman",
     ];
 
     let stats = [
-        "strength", "perception", "endurance", "charisma",
-        "intelligence", "agility", "luck"
+        "strength",
+        "perception",
+        "endurance",
+        "charisma",
+        "intelligence",
+        "agility",
+        "luck",
     ];
 
     // Common trigger phrases that indicate a skill check request
     let check_phrases = [
-        "roll", "check", "make a", "requires a", "need a", "needs a",
-        "attempt a", "try a", "successful", "roll under your",
-        "requires an", "needs an", "make an", "attempt an"
+        "roll",
+        "check",
+        "make a",
+        "requires a",
+        "need a",
+        "needs a",
+        "attempt a",
+        "try a",
+        "successful",
+        "roll under your",
+        "requires an",
+        "needs an",
+        "make an",
+        "attempt an",
     ];
 
     // Check if the text contains any check trigger phrases
@@ -156,13 +186,11 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
             let after_dc = &text[dc_pos + 2..];
 
             // Skip any whitespace, colons, or equal signs
-            let trimmed = after_dc.trim_start_matches(|c: char| c.is_whitespace() || c == ':' || c == '=');
+            let trimmed =
+                after_dc.trim_start_matches(|c: char| c.is_whitespace() || c == ':' || c == '=');
 
             // Extract consecutive digits
-            let digits: String = trimmed
-                .chars()
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
+            let digits: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
 
             if !digits.is_empty() {
                 if let Ok(dc) = digits.parse::<i32>() {
@@ -188,11 +216,10 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
         // Strategy 3: Look for "difficulty X" or "difficulty of X" patterns
         if let Some(diff_pos) = lower.find("difficulty") {
             let after_diff = &text[diff_pos + 10..];
-            let trimmed = after_diff.trim_start_matches(|c: char| c.is_whitespace() || c == ':' || c == 'o' || c == 'f');
-            let digits: String = trimmed
-                .chars()
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
+            let trimmed = after_diff.trim_start_matches(|c: char| {
+                c.is_whitespace() || c == ':' || c == 'o' || c == 'f'
+            });
+            let digits: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
 
             if !digits.is_empty() {
                 if let Ok(dc) = digits.parse::<i32>() {
@@ -205,10 +232,7 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
         if let Some(against_pos) = lower.find("against dc") {
             let after_against = &text[against_pos + 10..];
             let trimmed = after_against.trim_start();
-            let digits: String = trimmed
-                .chars()
-                .take_while(|c| c.is_ascii_digit())
-                .collect();
+            let digits: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
 
             if !digits.is_empty() {
                 if let Ok(dc) = digits.parse::<i32>() {
@@ -430,17 +454,16 @@ mod tests {
         assert_eq!(result, Some(("science".to_string(), 15)));
 
         let result = parse_natural_roll_request(
-            "This requires a Lockpick roll against DC 18 to open the safe."
+            "This requires a Lockpick roll against DC 18 to open the safe.",
         );
         assert_eq!(result, Some(("lockpick".to_string(), 18)));
 
-        let result = parse_natural_roll_request(
-            "Make a Perception check DC 12 to notice the trap."
-        );
+        let result =
+            parse_natural_roll_request("Make a Perception check DC 12 to notice the trap.");
         assert_eq!(result, Some(("perception".to_string(), 12)));
 
         let result = parse_natural_roll_request(
-            "You need to roll Intelligence [DC 20] to hack this terminal."
+            "You need to roll Intelligence [DC 20] to hack this terminal.",
         );
         assert_eq!(result, Some(("intelligence".to_string(), 20)));
 
@@ -451,21 +474,16 @@ mod tests {
         assert_eq!(result, Some(("speech".to_string(), 15)));
 
         // Test difficulty pattern
-        let result = parse_natural_roll_request(
-            "This needs a Science roll with difficulty 14 to succeed."
-        );
+        let result =
+            parse_natural_roll_request("This needs a Science roll with difficulty 14 to succeed.");
         assert_eq!(result, Some(("science".to_string(), 14)));
 
         // Test DC: pattern with colon
-        let result = parse_natural_roll_request(
-            "Make a Lockpick check DC: 16"
-        );
+        let result = parse_natural_roll_request("Make a Lockpick check DC: 16");
         assert_eq!(result, Some(("lockpick".to_string(), 16)));
 
         // Test that non-skill check text doesn't trigger
-        let result = parse_natural_roll_request(
-            "You walk into the room and see a desk."
-        );
+        let result = parse_natural_roll_request("You walk into the room and see a desk.");
         assert_eq!(result, None);
     }
 }

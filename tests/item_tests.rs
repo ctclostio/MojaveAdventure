@@ -2,8 +2,8 @@
 mod helpers;
 
 use fallout_dnd::game::{
-    items::{Item, ItemType, ConsumableEffect, DamageType, WeaponType},
     character::{Character, Special},
+    items::{ConsumableEffect, DamageType, Item, ItemType, WeaponType},
 };
 use helpers::*;
 
@@ -36,13 +36,7 @@ fn test_create_weapon_item() {
 
 #[test]
 fn test_create_armor_item() {
-    let armor = Item::new_armor(
-        "test_armor",
-        "Test Armor",
-        "A test armor",
-        10,
-        200,
-    );
+    let armor = Item::new_armor("test_armor", "Test Armor", "A test armor", 10, 200);
 
     assert_eq!(armor.id, "test_armor");
     assert_eq!(armor.value, 200);
@@ -83,7 +77,10 @@ fn test_consumable_healing_effect() {
     let result = character.use_consumable("stimpak");
 
     assert!(result.is_ok(), "Using stimpak should succeed");
-    assert!(character.current_hp > 50, "HP should increase after using stimpak");
+    assert!(
+        character.current_hp > 50,
+        "HP should increase after using stimpak"
+    );
 }
 
 #[test]
@@ -116,7 +113,10 @@ fn test_healing_doesnt_exceed_max_hp() {
     // Use stimpak (heals 30 HP from starting items)
     let _ = character.use_consumable("stimpak");
 
-    assert_eq!(character.current_hp, character.max_hp, "HP should not exceed max");
+    assert_eq!(
+        character.current_hp, character.max_hp,
+        "HP should not exceed max"
+    );
     assert_eq!(character.max_hp, initial_max, "Max HP should not change");
 }
 
@@ -162,18 +162,36 @@ fn test_weapon_types_map_to_correct_skills() {
 
     // Test different weapon types
     let small_gun = Item::new_weapon(
-        "pistol", "Pistol", "Test", "1d8",
-        DamageType::Normal, WeaponType::SmallGun, 3, 100
+        "pistol",
+        "Pistol",
+        "Test",
+        "1d8",
+        DamageType::Normal,
+        WeaponType::SmallGun,
+        3,
+        100,
     );
 
     let energy_weapon = Item::new_weapon(
-        "laser", "Laser", "Test", "2d6",
-        DamageType::Laser, WeaponType::EnergyWeapon, 4, 200
+        "laser",
+        "Laser",
+        "Test",
+        "2d6",
+        DamageType::Laser,
+        WeaponType::EnergyWeapon,
+        4,
+        200,
     );
 
     let melee = Item::new_weapon(
-        "sword", "Sword", "Test", "1d10",
-        DamageType::Normal, WeaponType::MeleeWeapon, 2, 50
+        "sword",
+        "Sword",
+        "Test",
+        "1d10",
+        DamageType::Normal,
+        WeaponType::MeleeWeapon,
+        2,
+        50,
     );
 
     // Add weapons to inventory
@@ -187,7 +205,10 @@ fn test_weapon_types_map_to_correct_skills() {
 
     // Test energy weapon
     character.equipped_weapon = Some("laser".to_string());
-    assert_eq!(character.get_weapon_skill(), character.skills.energy_weapons);
+    assert_eq!(
+        character.get_weapon_skill(),
+        character.skills.energy_weapons
+    );
 
     // Test melee
     character.equipped_weapon = Some("sword".to_string());
@@ -200,7 +221,10 @@ fn test_find_item_by_id() {
 
     // Should find starting item
     let item = character.find_item_by_id("10mm_pistol");
-    assert!(item.is_some(), "Should find 10mm pistol in starting inventory");
+    assert!(
+        item.is_some(),
+        "Should find 10mm pistol in starting inventory"
+    );
 
     // Should not find nonexistent item
     let item = character.find_item_by_id("nonexistent");
@@ -242,7 +266,12 @@ fn test_stat_buff_consumable_effect() {
         quantity: 1,
     };
 
-    if let ItemType::Consumable(ConsumableEffect::StatBuff { stat, amount, duration }) = buff.item_type {
+    if let ItemType::Consumable(ConsumableEffect::StatBuff {
+        stat,
+        amount,
+        duration,
+    }) = buff.item_type
+    {
         assert_eq!(stat, "strength");
         assert_eq!(amount, 2);
         assert_eq!(duration, 300);
@@ -301,8 +330,14 @@ fn test_armor_class_calculation() {
 #[test]
 fn test_weapon_critical_multiplier() {
     let weapon = Item::new_weapon(
-        "test", "Test", "Test", "1d6",
-        DamageType::Normal, WeaponType::SmallGun, 3, 100
+        "test",
+        "Test",
+        "Test",
+        "1d6",
+        DamageType::Normal,
+        WeaponType::SmallGun,
+        3,
+        100,
     );
 
     if let ItemType::Weapon(stats) = weapon.item_type {

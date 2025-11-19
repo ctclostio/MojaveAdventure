@@ -1,6 +1,6 @@
+use fallout_dnd::game::combat::roll_dice;
 /// Property-based tests using proptest for invariants
 use proptest::prelude::*;
-use fallout_dnd::game::combat::roll_dice;
 
 proptest! {
     /// Test that dice rolls always return values within expected bounds

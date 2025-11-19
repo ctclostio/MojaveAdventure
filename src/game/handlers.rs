@@ -4,7 +4,9 @@ use super::combat_handlers::{
 };
 use super::items::ItemType;
 use super::persistence::save_game;
-use super::rolls::{parse_roll_request, parse_natural_roll_request, perform_roll, truncate_response_at_skill_check};
+use super::rolls::{
+    parse_natural_roll_request, parse_roll_request, perform_roll, truncate_response_at_skill_check,
+};
 use super::worldbook::Worldbook;
 use super::GameState;
 use crate::ai::extractor::{ExtractedEntities, ExtractionAI};
@@ -250,18 +252,23 @@ async fn handle_ai_action(
             // Check if DM is requesting a skill check and handle it automatically
             if let Some((skill_or_stat, dc)) = parse_natural_roll_request(&cleaned_response) {
                 println!(); // Add spacing
-                println!("{}","═".repeat(80).bright_yellow());
-                UI::print_info(&format!("🎲 SKILL CHECK DETECTED: {} (DC {})", skill_or_stat.to_uppercase(), dc));
+                println!("{}", "═".repeat(80).bright_yellow());
+                UI::print_info(&format!(
+                    "🎲 SKILL CHECK DETECTED: {} (DC {})",
+                    skill_or_stat.to_uppercase(),
+                    dc
+                ));
                 UI::print_info("Rolling dice automatically...");
                 println!("{}", "═".repeat(80).bright_yellow());
                 println!();
 
                 // Truncate the response to remove any AI commentary after the skill check
-                let response_to_save = if let Some(truncated) = truncate_response_at_skill_check(&cleaned_response) {
-                    truncated
-                } else {
-                    cleaned_response.clone()
-                };
+                let response_to_save =
+                    if let Some(truncated) = truncate_response_at_skill_check(&cleaned_response) {
+                        truncated
+                    } else {
+                        cleaned_response.clone()
+                    };
 
                 // Perform the roll automatically
                 let result = perform_roll(&game_state.character, &skill_or_stat, dc);
@@ -269,9 +276,19 @@ async fn handle_ai_action(
                 // Display the roll result with color coding and details
                 let result_text = result.format();
                 println!("🎲 DICE ROLL:");
-                println!("   d20 roll: {}", format!("{}", result.roll).bright_cyan().bold());
-                println!("   Modifier: +{} (from {} skill/stat)", result.modifier, result.skill_name);
-                println!("   Total: {} vs DC {}", format!("{}", result.total).bright_cyan().bold(), result.dc);
+                println!(
+                    "   d20 roll: {}",
+                    format!("{}", result.roll).bright_cyan().bold()
+                );
+                println!(
+                    "   Modifier: +{} (from {} skill/stat)",
+                    result.modifier, result.skill_name
+                );
+                println!(
+                    "   Total: {} vs DC {}",
+                    format!("{}", result.total).bright_cyan().bold(),
+                    result.dc
+                );
                 println!();
 
                 if result.critical {
@@ -289,7 +306,9 @@ async fn handle_ai_action(
 
                 // Add the truncated DM response to conversation (before roll outcome)
                 // This prevents AI commentary after skill checks from entering conversation history
-                game_state.conversation.add_dm_turn(response_to_save.clone());
+                game_state
+                    .conversation
+                    .add_dm_turn(response_to_save.clone());
                 game_state.story.add(format!("DM: {}", response_to_save));
 
                 // Ask AI to narrate the outcome based on the roll result
@@ -385,7 +404,9 @@ async fn handle_ai_action(
             } else {
                 // No skill check detected, just add response to conversation normally
                 // Add DM response to both conversation systems
-                game_state.conversation.add_dm_turn(cleaned_response.clone());
+                game_state
+                    .conversation
+                    .add_dm_turn(cleaned_response.clone());
                 game_state.story.add(format!("DM: {}", cleaned_response)); // Legacy support
 
                 // Extract entities from AI response in background
@@ -468,9 +489,19 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 // Display enhanced roll result with detailed breakdown
                 println!("{}", "═".repeat(80).bright_yellow());
                 println!("🎲 DICE ROLL:");
-                println!("   d20 roll: {}", format!("{}", result.roll).bright_cyan().bold());
-                println!("   Modifier: +{} (from {} skill/stat)", result.modifier, result.skill_name);
-                println!("   Total: {} vs DC {}", format!("{}", result.total).bright_cyan().bold(), result.dc);
+                println!(
+                    "   d20 roll: {}",
+                    format!("{}", result.roll).bright_cyan().bold()
+                );
+                println!(
+                    "   Modifier: +{} (from {} skill/stat)",
+                    result.modifier, result.skill_name
+                );
+                println!(
+                    "   Total: {} vs DC {}",
+                    format!("{}", result.total).bright_cyan().bold(),
+                    result.dc
+                );
                 println!();
 
                 let result_text = result.format();
@@ -548,8 +579,11 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
 
                         UI::print_dm_response(&outcome);
                         // Add roll context to both conversation systems
-                        let roll_context = format!("rolled for: {} - Result: {}", action, result_text);
-                        game_state.conversation.add_player_turn(roll_context.clone());
+                        let roll_context =
+                            format!("rolled for: {} - Result: {}", action, result_text);
+                        game_state
+                            .conversation
+                            .add_player_turn(roll_context.clone());
                         game_state.conversation.add_dm_turn(outcome.clone());
                         // Legacy support
                         game_state
@@ -563,9 +597,14 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                         UI::print_info("The roll succeeded but the DM couldn't narrate the outcome. Continuing...");
 
                         // Still add to conversation even if narration fails
-                        let roll_context = format!("rolled for: {} - Result: {}", action, result_text);
-                        game_state.conversation.add_player_turn(roll_context.clone());
-                        game_state.story.add(format!("Player rolled for: {}", action));
+                        let roll_context =
+                            format!("rolled for: {} - Result: {}", action, result_text);
+                        game_state
+                            .conversation
+                            .add_player_turn(roll_context.clone());
+                        game_state
+                            .story
+                            .add(format!("Player rolled for: {}", action));
                         game_state.story.add(format!("Result: {}", result_text));
                     }
                 }

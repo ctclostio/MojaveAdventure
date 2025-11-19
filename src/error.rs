@@ -72,7 +72,6 @@ pub enum ConfigError {
     InvalidStartingCaps(u32),
 }
 
-
 // Convenience conversion from anyhow::Error
 impl From<anyhow::Error> for GameError {
     fn from(err: anyhow::Error) -> Self {
