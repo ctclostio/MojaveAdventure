@@ -481,8 +481,8 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
     // Run command
     if lower == "run" || lower == "flee" {
         use rand::Rng;
-        let mut rng = rand::thread_rng();
-        if rng.gen_bool(0.6) {
+        let mut rng = rand::rng();
+        if rng.random_bool(0.6) {
             // 60% chance to escape
             app.add_combat_message("You successfully fled from combat!".to_string());
             app.game_state.combat.active = false;

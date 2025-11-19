@@ -262,8 +262,8 @@ pub fn truncate_response_at_skill_check(text: &str) -> Option<String> {
 
 /// Perform a skill or stat check
 pub fn perform_roll(character: &Character, skill_or_stat: &str, dc: i32) -> RollResult {
-    let mut rng = rand::thread_rng();
-    let roll = rng.gen_range(1..=20);
+    let mut rng = rand::rng();
+    let roll = rng.random_range(1..=20);
 
     // Determine modifier based on skill or stat name
     let (skill_name, modifier) = get_modifier(character, skill_or_stat);
