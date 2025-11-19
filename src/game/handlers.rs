@@ -17,6 +17,18 @@ use colored::*;
 pub use super::char_handlers::create_new_character;
 pub use super::persistence::load_game;
 
+/// Strip [STOP HERE] marker and any text after it from DM responses
+/// This marker is used in the system prompt but shouldn't be visible to players
+fn strip_stop_here_marker(response: &str) -> String {
+    if let Some(pos) = response.find("[STOP HERE") {
+        // Find the end of the sentence before [STOP HERE]
+        let before_marker = &response[..pos];
+        before_marker.trim().to_string()
+    } else {
+        response.to_string()
+    }
+}
+
 /// Main game loop handling player input and game state
 pub async fn game_loop(mut game_state: GameState, ai_dm: &AIDungeonMaster, config: Config) {
     UI::clear_screen();
@@ -155,11 +167,13 @@ async fn show_opening_message(ai_dm: &AIDungeonMaster, game_state: &mut GameStat
             "You emerge from the vault into the harsh wasteland. The sun beats down mercilessly. What do you do?".to_string()
         });
 
+    let cleaned_opening = strip_stop_here_marker(&opening);
+
     UI::clear_screen();
-    UI::print_dm_response(&opening);
+    UI::print_dm_response(&cleaned_opening);
     // Add to both conversation systems
-    game_state.conversation.add_dm_turn(opening.clone());
-    game_state.story.add(format!("DM: {}", opening)); // Legacy support
+    game_state.conversation.add_dm_turn(cleaned_opening.clone());
+    game_state.story.add(format!("DM: {}", cleaned_opening)); // Legacy support
 }
 
 /// Display character and combat status
@@ -228,11 +242,13 @@ async fn handle_ai_action(
 
     match ai_dm.generate_response(&game_state, &input).await {
         Ok(response) => {
+            let cleaned_response = strip_stop_here_marker(&response);
+
             UI::clear_screen();
-            UI::print_dm_response(&response);
+            UI::print_dm_response(&cleaned_response);
 
             // Check if DM is requesting a skill check and handle it automatically
-            if let Some((skill_or_stat, dc)) = parse_natural_roll_request(&response) {
+            if let Some((skill_or_stat, dc)) = parse_natural_roll_request(&cleaned_response) {
                 println!(); // Add spacing
                 println!("{}","═".repeat(80).bright_yellow());
                 UI::print_info(&format!("🎲 SKILL CHECK DETECTED: {} (DC {})", skill_or_stat.to_uppercase(), dc));
@@ -241,10 +257,10 @@ async fn handle_ai_action(
                 println!();
 
                 // Truncate the response to remove any AI commentary after the skill check
-                let response_to_save = if let Some(truncated) = truncate_response_at_skill_check(&response) {
+                let response_to_save = if let Some(truncated) = truncate_response_at_skill_check(&cleaned_response) {
                     truncated
                 } else {
-                    response.clone()
+                    cleaned_response.clone()
                 };
 
                 // Perform the roll automatically
@@ -282,13 +298,19 @@ async fn handle_ai_action(
 
                 let outcome_prompt = format!(
                     "GAME SYSTEM UPDATE:\n\
-                    The player attempted: {}\n\
+                    The player's EXACT action was: \"{}\"\n\
                     You requested a {} check (DC {}).\n\
                     The dice have been rolled automatically by the game system.\n\
                     Result: {} - d20 rolled {}, modifier +{}, total {} vs DC {}\n\n\
+                    CRITICAL INSTRUCTIONS FOR NARRATION:\n\
+                    - Narrate what happens when the player attempts THEIR SPECIFIC ACTION stated above\n\
+                    - Even if the action is unusual, unconventional, or self-destructive, narrate the outcome of what THEY intended to do\n\
+                    - DO NOT reinterpret their intent or assume they meant something else\n\
+                    - DO NOT default to typical/common uses of this skill if the player's intent was different\n\
+                    - Stay true to their stated action, then describe what happens based on the {} result\n\n\
                     NOW NARRATE: Describe what happens as a result of this {}. \
                     DO NOT mention the dice roll or ask the player to roll - that already happened. \
-                    Just describe the outcome narratively. Be vivid and engaging.\n\n\
+                    Be vivid, atmospheric, and faithful to the player's actual intent.\n\n\
                     Start your response immediately with the narrative outcome:",
                     input,
                     result.skill_name,
@@ -298,6 +320,7 @@ async fn handle_ai_action(
                     result.modifier,
                     result.total,
                     result.dc,
+                    if result.success { "SUCCESS" } else { "FAILURE" },
                     if result.critical {
                         "CRITICAL SUCCESS"
                     } else if result.fumble {
@@ -362,14 +385,14 @@ async fn handle_ai_action(
             } else {
                 // No skill check detected, just add response to conversation normally
                 // Add DM response to both conversation systems
-                game_state.conversation.add_dm_turn(response.clone());
-                game_state.story.add(format!("DM: {}", response)); // Legacy support
+                game_state.conversation.add_dm_turn(cleaned_response.clone());
+                game_state.story.add(format!("DM: {}", cleaned_response)); // Legacy support
 
                 // Extract entities from AI response in background
-                extract_and_save_entities(&extractor, &response, game_state).await;
+                extract_and_save_entities(&extractor, &cleaned_response, game_state).await;
 
                 // Check if DM initiated combat (simplified detection)
-                check_and_start_combat(&response, game_state);
+                check_and_start_combat(&cleaned_response, game_state);
             }
         }
         Err(e) => {
@@ -427,14 +450,16 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
 
     match ai_dm.generate_response(game_state, &roll_prompt).await {
         Ok(response) => {
+            let cleaned_response = strip_stop_here_marker(&response);
+
             // Try to parse the skill/stat and DC from AI response
             // First try strict format, then fallback to natural language
-            let parse_result = parse_roll_request(&response)
-                .or_else(|| parse_natural_roll_request(&response));
+            let parse_result = parse_roll_request(&cleaned_response)
+                .or_else(|| parse_natural_roll_request(&cleaned_response));
 
             if let Some((skill_or_stat, dc)) = parse_result {
                 println!();
-                UI::print_dm_response(&response);
+                UI::print_dm_response(&cleaned_response);
                 println!();
 
                 // Perform the roll
@@ -464,13 +489,19 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 // Ask AI to narrate the outcome
                 let outcome_prompt = format!(
                     "GAME SYSTEM UPDATE:\n\
-                    The player attempted: {}\n\
+                    The player's EXACT action was: \"{}\"\n\
                     You determined this required a {} check (DC {}).\n\
                     The dice have been rolled automatically by the game system.\n\
                     Result: {} - d20 rolled {}, modifier +{}, total {} vs DC {}\n\n\
+                    CRITICAL INSTRUCTIONS FOR NARRATION:\n\
+                    - Narrate what happens when the player attempts THEIR SPECIFIC ACTION stated above\n\
+                    - Even if the action is unusual, unconventional, or self-destructive, narrate the outcome of what THEY intended to do\n\
+                    - DO NOT reinterpret their intent or assume they meant something else\n\
+                    - DO NOT default to typical/common uses of this skill if the player's intent was different\n\
+                    - Stay true to their stated action, then describe what happens based on the {} result\n\n\
                     NOW NARRATE: Describe what happens as a result of this {}. \
                     DO NOT mention the dice roll - that already happened. \
-                    Just describe the outcome narratively. Be vivid and atmospheric.\n\n\
+                    Be vivid, atmospheric, and faithful to the player's actual intent.\n\n\
                     Start your response immediately with the narrative outcome:",
                     action,
                     result.skill_name,
@@ -480,6 +511,7 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                     result.modifier,
                     result.total,
                     result.dc,
+                    if result.success { "SUCCESS" } else { "FAILURE" },
                     if result.critical {
                         "CRITICAL SUCCESS"
                     } else if result.fumble {
@@ -539,7 +571,7 @@ async fn handle_skill_roll(game_state: &mut GameState, ai_dm: &AIDungeonMaster, 
                 }
             } else {
                 UI::print_error("AI DM didn't provide a clear skill/DC. Try again or describe your action differently.");
-                UI::print_info(&format!("DM Response: {}", response));
+                UI::print_info(&format!("DM Response: {}", cleaned_response));
             }
         }
         Err(e) => {
