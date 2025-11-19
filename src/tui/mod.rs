@@ -38,5 +38,10 @@ pub fn restore_terminal(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) ->
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
+
+    // Ensure terminal output is flushed
+    use std::io::Write;
+    io::stdout().flush()?;
+
     Ok(())
 }

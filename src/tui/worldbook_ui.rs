@@ -68,6 +68,8 @@ fn render_worldbook_tabs(f: &mut Frame, browser: &WorldbookBrowser, area: Rect) 
         WorldbookTab::Search,
     ];
 
+    let is_tab_focused = browser.is_tab_bar_focused();
+
     let mut tab_spans = vec![Span::styled("  ", Style::default())];
 
     for (i, tab) in tabs.iter().enumerate() {
@@ -88,9 +90,21 @@ fn render_worldbook_tabs(f: &mut Frame, browser: &WorldbookBrowser, area: Rect) 
         tab_spans.push(Span::styled(format!(" {} ", tab.as_str()), style));
     }
 
+    // Add focus indicator if tab bar is focused
+    if is_tab_focused {
+        tab_spans.push(Span::styled(
+            "  ◄ Use ←→ arrows to navigate tabs",
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::DIM),
+        ));
+    }
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan))
+        .border_style(if is_tab_focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default().fg(Color::Cyan)
+        })
         .border_type(BorderType::Rounded);
 
     let paragraph = Paragraph::new(Line::from(tab_spans)).block(block);
@@ -101,11 +115,16 @@ fn render_worldbook_tabs(f: &mut Frame, browser: &WorldbookBrowser, area: Rect) 
 fn render_locations_list(f: &mut Frame, app: &App, area: Rect) {
     let worldbook = &app.game_state.worldbook;
     let browser = &app.worldbook_browser;
+    let is_list_focused = browser.is_list_focused();
 
     let block = Block::default()
         .title("📍 Locations")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Green))
+        .border_style(if is_list_focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default().fg(Color::Green)
+        })
         .border_type(BorderType::Rounded);
 
     let inner_area = block.inner(area);
@@ -133,20 +152,33 @@ fn render_locations_list(f: &mut Frame, app: &App, area: Rect) {
             "▸"
         };
 
-        let style = if is_selected {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
+        // Enhanced highlighting when list is focused and item is selected
+        let (style, selector) = if is_selected && is_list_focused {
+            (
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+                "► ",
+            )
+        } else if is_selected {
+            (
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+                "  ",
+            )
         } else if is_current {
-            Style::default().fg(Color::Cyan)
+            (Style::default().fg(Color::Cyan), "  ")
         } else {
-            Style::default().fg(Color::White)
+            (Style::default().fg(Color::White), "  ")
         };
 
         let line = format!(
-            "{} {:<30} {:>15}",
+            "{}{} {:<28} {:>15}",
+            selector,
             prefix,
-            truncate_string(&location.name, 28),
+            truncate_string(&location.name, 26),
             visit_status
         );
 
@@ -156,7 +188,7 @@ fn render_locations_list(f: &mut Frame, app: &App, area: Rect) {
         if browser.is_expanded(&location.id) && !location.npcs_present.is_empty() {
             for npc_id in &location.npcs_present {
                 if let Some(npc) = worldbook.npcs.get(npc_id) {
-                    let child_line = format!("    └─ {}", npc.name);
+                    let child_line = format!("      └─ {}", npc.name);
                     let child_style = Style::default().fg(Color::DarkGray);
                     items.push(ListItem::new(child_line).style(child_style));
                 }
@@ -278,11 +310,16 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
 fn render_npcs_list(f: &mut Frame, app: &App, area: Rect) {
     let worldbook = &app.game_state.worldbook;
     let browser = &app.worldbook_browser;
+    let is_list_focused = browser.is_list_focused();
 
     let block = Block::default()
         .title("👥 NPCs")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Green))
+        .border_style(if is_list_focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default().fg(Color::Green)
+        })
         .border_type(BorderType::Rounded);
 
     let inner_area = block.inner(area);
@@ -303,14 +340,26 @@ fn render_npcs_list(f: &mut Frame, app: &App, area: Rect) {
         .map(|(i, (_id, npc))| {
             let is_selected = i == browser.selected_index;
 
-            let style = if is_selected {
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD)
+            // Enhanced highlighting when list is focused and item is selected
+            let (style, selector) = if is_selected && is_list_focused {
+                (
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                    "► ",
+                )
+            } else if is_selected {
+                (
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                    "  ",
+                )
             } else if !npc.alive {
-                Style::default().fg(Color::DarkGray)
+                (Style::default().fg(Color::DarkGray), "  ")
             } else {
-                Style::default().fg(Color::White)
+                (Style::default().fg(Color::White), "  ")
             };
 
             let status = if !npc.alive { " [DEAD]" } else { "" };
@@ -323,9 +372,10 @@ fn render_npcs_list(f: &mut Frame, app: &App, area: Rect) {
             };
 
             let line = format!(
-                " {} {:<25} {:<10}{}",
+                "{}{} {:<23} {:<10}{}",
+                selector,
                 disp_indicator,
-                truncate_string(&npc.name, 23),
+                truncate_string(&npc.name, 21),
                 npc.role,
                 status
             );
@@ -444,11 +494,16 @@ fn render_npc_detail(f: &mut Frame, app: &App, area: Rect) {
 fn render_events_list(f: &mut Frame, app: &App, area: Rect) {
     let worldbook = &app.game_state.worldbook;
     let browser = &app.worldbook_browser;
+    let is_list_focused = browser.is_list_focused();
 
     let block = Block::default()
         .title("📅 Events")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Green))
+        .border_style(if is_list_focused {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default().fg(Color::Green)
+        })
         .border_type(BorderType::Rounded);
 
     let inner_area = block.inner(area);
@@ -469,12 +524,24 @@ fn render_events_list(f: &mut Frame, app: &App, area: Rect) {
         .map(|(i, event)| {
             let is_selected = i == browser.selected_index;
 
-            let style = if is_selected {
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD)
+            // Enhanced highlighting when list is focused and item is selected
+            let (style, selector) = if is_selected && is_list_focused {
+                (
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                    "► ",
+                )
+            } else if is_selected {
+                (
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                    "  ",
+                )
             } else {
-                Style::default().fg(Color::White)
+                (Style::default().fg(Color::White), "  ")
             };
 
             let icon = match event.event_type.as_str() {
@@ -487,10 +554,11 @@ fn render_events_list(f: &mut Frame, app: &App, area: Rect) {
 
             let time = format_relative_time(&event.timestamp);
             let line = format!(
-                "{} {:<15} {}",
+                "{}{} {:<15} {}",
+                selector,
                 icon,
                 time,
-                truncate_string(&event.description, 30)
+                truncate_string(&event.description, 28)
             );
 
             ListItem::new(line).style(style)
@@ -603,7 +671,7 @@ fn render_worldbook_help(f: &mut Frame, area: Rect) {
         height: 1,
     };
 
-    let help_text = "↑↓: Navigate  Enter: Expand  Tab: Switch  Q: Close";
+    let help_text = "←→: Switch Tabs  ↑↓: Navigate/Focus  Enter: Expand  Q: Close";
     let paragraph = Paragraph::new(help_text)
         .style(Style::default().fg(Color::Black).bg(Color::DarkGray))
         .alignment(Alignment::Center);

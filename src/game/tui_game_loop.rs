@@ -51,6 +51,10 @@ async fn run_app<B: ratatui::backend::Backend>(
                 }
 
                 if app.should_quit {
+                    // Render one final time to show exit message
+                    terminal.draw(|f| tui::ui::render(f, app))?;
+                    // Small delay to let user see the exit message
+                    std::thread::sleep(std::time::Duration::from_millis(800));
                     break;
                 }
             }
@@ -195,7 +199,7 @@ fn handle_worldbook_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.set_view_mode(crate::tui::app::ViewMode::Normal);
         }
 
-        // Tab navigation
+        // Tab navigation (legacy - still works)
         KeyCode::Tab => {
             app.worldbook_browser.next_tab();
         }
@@ -203,24 +207,53 @@ fn handle_worldbook_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.worldbook_browser.prev_tab();
         }
 
-        // List navigation
-        KeyCode::Up => {
-            let max_items = match app.worldbook_browser.active_tab {
-                WorldbookTab::Locations => app.game_state.worldbook.locations.len(),
-                WorldbookTab::NPCs => app.game_state.worldbook.npcs.len(),
-                WorldbookTab::Events => app.game_state.worldbook.events.len(),
-                WorldbookTab::Search => 0,
-            };
-            app.worldbook_browser.select_prev(max_items);
+        // Arrow key navigation - behavior depends on focus
+        KeyCode::Left => {
+            if app.worldbook_browser.is_tab_bar_focused() {
+                // Navigate to previous tab when focused on tab bar
+                app.worldbook_browser.prev_tab();
+            }
         }
+        KeyCode::Right => {
+            if app.worldbook_browser.is_tab_bar_focused() {
+                // Navigate to next tab when focused on tab bar
+                app.worldbook_browser.next_tab();
+            }
+        }
+
+        KeyCode::Up => {
+            if app.worldbook_browser.is_list_focused() {
+                // Navigate up in list
+                let max_items = match app.worldbook_browser.active_tab {
+                    WorldbookTab::Locations => app.game_state.worldbook.locations.len(),
+                    WorldbookTab::NPCs => app.game_state.worldbook.npcs.len(),
+                    WorldbookTab::Events => app.game_state.worldbook.events.len(),
+                    WorldbookTab::Search => 0,
+                };
+
+                // If at the top of the list, move focus to tab bar
+                if app.worldbook_browser.selected_index == 0 {
+                    app.worldbook_browser.focus_tab_bar();
+                } else {
+                    app.worldbook_browser.select_prev(max_items);
+                }
+            }
+        }
+
         KeyCode::Down => {
-            let max_items = match app.worldbook_browser.active_tab {
-                WorldbookTab::Locations => app.game_state.worldbook.locations.len(),
-                WorldbookTab::NPCs => app.game_state.worldbook.npcs.len(),
-                WorldbookTab::Events => app.game_state.worldbook.events.len(),
-                WorldbookTab::Search => 0,
-            };
-            app.worldbook_browser.select_next(max_items);
+            if app.worldbook_browser.is_tab_bar_focused() {
+                // Move focus from tab bar to list
+                app.worldbook_browser.focus_list();
+            } else if app.worldbook_browser.is_list_focused() {
+                // Navigate down in list
+                let max_items = match app.worldbook_browser.active_tab {
+                    WorldbookTab::Locations => app.game_state.worldbook.locations.len(),
+                    WorldbookTab::NPCs => app.game_state.worldbook.npcs.len(),
+                    WorldbookTab::Events => app.game_state.worldbook.events.len(),
+                    WorldbookTab::Search => 0,
+                };
+                app.worldbook_browser.select_next(max_items);
+            }
         }
 
         // Expand/collapse (for locations)
@@ -266,6 +299,9 @@ async fn handle_player_input(
     // Handle special commands
     match input.to_lowercase().as_str() {
         "quit" | "exit" => {
+            app.add_system_message("═══════════════════════════════════════".to_string());
+            app.add_system_message("  Exiting game... Returning to main menu.".to_string());
+            app.add_system_message("═══════════════════════════════════════".to_string());
             app.should_quit = true;
             return Ok(());
         }

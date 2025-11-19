@@ -6,6 +6,13 @@
 use crate::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
 use std::collections::HashMap;
 
+/// Focus state for worldbook navigation
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WorldbookFocus {
+    TabBar,
+    List,
+}
+
 /// Worldbook browser tab selection
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorldbookTab {
@@ -60,6 +67,9 @@ pub struct WorldbookBrowser {
     /// Currently active tab
     pub active_tab: WorldbookTab,
 
+    /// Current focus (tab bar or list)
+    pub focus: WorldbookFocus,
+
     /// Selected index in the current list
     pub selected_index: usize,
 
@@ -85,6 +95,7 @@ impl WorldbookBrowser {
     pub fn new() -> Self {
         Self {
             active_tab: WorldbookTab::Locations,
+            focus: WorldbookFocus::TabBar,
             selected_index: 0,
             scroll_offset: 0,
             search_query: String::new(),
@@ -108,6 +119,26 @@ impl WorldbookBrowser {
         self.selected_index = 0;
         self.scroll_offset = 0;
         self.detail_scroll = 0;
+    }
+
+    /// Move focus to tab bar
+    pub fn focus_tab_bar(&mut self) {
+        self.focus = WorldbookFocus::TabBar;
+    }
+
+    /// Move focus to list
+    pub fn focus_list(&mut self) {
+        self.focus = WorldbookFocus::List;
+    }
+
+    /// Check if tab bar is focused
+    pub fn is_tab_bar_focused(&self) -> bool {
+        self.focus == WorldbookFocus::TabBar
+    }
+
+    /// Check if list is focused
+    pub fn is_list_focused(&self) -> bool {
+        self.focus == WorldbookFocus::List
     }
 
     /// Move selection up

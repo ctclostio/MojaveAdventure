@@ -237,8 +237,16 @@ impl App {
             return vec![];
         }
 
-        let start_idx = total_messages.saturating_sub(height + self.scroll_offset);
-        let end_idx = total_messages.saturating_sub(self.scroll_offset);
+        // Calculate maximum useful scroll offset
+        // We can't scroll back further than (total_messages - height) because
+        // that would mean trying to show messages that don't exist
+        let max_scroll = total_messages.saturating_sub(height);
+
+        // Clamp scroll_offset to prevent showing incomplete screens
+        let effective_offset = self.scroll_offset.min(max_scroll);
+
+        let start_idx = total_messages.saturating_sub(height + effective_offset);
+        let end_idx = total_messages.saturating_sub(effective_offset);
 
         self.message_log.range(start_idx..end_idx).collect()
     }

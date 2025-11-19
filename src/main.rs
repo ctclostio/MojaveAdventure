@@ -89,6 +89,9 @@ async fn main() {
                 if let Err(e) = run_game_with_tui(game_state, &ai_dm, config.clone()).await {
                     UI::print_error(&format!("TUI error: {}", e));
                 }
+                // Clean transition back to main menu
+                println!(); // Add spacing
+                UI::wait_for_enter(); // Give user control
                 UI::clear_screen();
                 UI::print_header();
             }
@@ -101,6 +104,9 @@ async fn main() {
                     if let Err(e) = run_game_with_tui(game_state, &ai_dm, config.clone()).await {
                         UI::print_error(&format!("TUI error: {}", e));
                     }
+                    // Clean transition back to main menu
+                    println!(); // Add spacing
+                    UI::wait_for_enter(); // Give user control
                     UI::clear_screen();
                     UI::print_header();
                 }

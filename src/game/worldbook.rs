@@ -152,6 +152,33 @@ impl Worldbook {
         }
     }
 
+    /// Creates a new worldbook with default Fallout universe locations.
+    ///
+    /// Includes Vault 13 as the starting location with appropriate description.
+    pub fn with_defaults() -> Self {
+        let mut worldbook = Self::new();
+
+        // Add Vault 13 as the default starting location
+        let vault_13 = Location {
+            id: "vault_13".to_string(),
+            name: "Vault 13".to_string(),
+            name_lowercase: "vault 13".to_string(),
+            description: "One of the great underground Vaults built before the Great War. Vault 13 was designed to remain sealed for 200 years as a test of prolonged isolation. The massive gear-shaped door stands as a testament to pre-war engineering.".to_string(),
+            location_type: "vault".to_string(),
+            npcs_present: vec![],
+            atmosphere: Some("Safe but claustrophobic. The air recyclers hum steadily in the background.".to_string()),
+            first_visited: None,
+            last_visited: None,
+            visit_count: 0,
+            notes: vec![],
+            state: HashMap::new(),
+        };
+
+        worldbook.add_location(vault_13);
+
+        worldbook
+    }
+
     #[allow(dead_code)]
     pub fn load_from_file(path: &Path) -> anyhow::Result<Self> {
         if path.exists() {
@@ -323,6 +350,26 @@ mod tests {
     fn test_worldbook_creation() {
         let wb = Worldbook::new();
         assert!(wb.locations.is_empty());
+        assert!(wb.npcs.is_empty());
+        assert!(wb.events.is_empty());
+    }
+
+    #[test]
+    fn test_worldbook_with_defaults() {
+        let wb = Worldbook::with_defaults();
+
+        // Should have Vault 13 by default
+        assert_eq!(wb.locations.len(), 1);
+        assert!(wb.locations.contains_key("vault_13"));
+
+        // Verify Vault 13 details
+        let vault_13 = wb.get_location("vault_13").unwrap();
+        assert_eq!(vault_13.name, "Vault 13");
+        assert_eq!(vault_13.location_type, "vault");
+        assert!(vault_13.description.contains("underground Vault"));
+        assert!(vault_13.atmosphere.is_some());
+
+        // Should still have empty NPCs and events
         assert!(wb.npcs.is_empty());
         assert!(wb.events.is_empty());
     }

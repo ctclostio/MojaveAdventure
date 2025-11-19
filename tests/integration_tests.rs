@@ -89,3 +89,29 @@ fn test_combat_encounter_lifecycle() {
     assert!(!game_state.combat.active, "Combat should end");
     assert_eq!(game_state.combat.enemies.len(), 0);
 }
+
+#[test]
+fn test_new_game_has_vault_13_in_worldbook() {
+    // Create a new game state
+    let special = Special::new();
+    let character = Character::new("Vault Dweller".to_string(), special);
+    let game_state = GameState::new(character);
+
+    // Verify Vault 13 is in the worldbook by default
+    assert!(
+        game_state.worldbook.locations.contains_key("vault_13"),
+        "Vault 13 should exist in worldbook by default"
+    );
+
+    // Verify Vault 13 details
+    let vault_13 = game_state.worldbook.get_location("vault_13").unwrap();
+    assert_eq!(vault_13.name, "Vault 13");
+    assert_eq!(vault_13.location_type, "vault");
+    assert!(!vault_13.description.is_empty());
+
+    // Verify current location is set to vault_13
+    assert_eq!(
+        game_state.worldbook.current_location,
+        Some("vault_13".to_string())
+    );
+}

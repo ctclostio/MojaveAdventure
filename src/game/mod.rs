@@ -139,6 +139,9 @@ impl GameState {
     /// assert_eq!(game.location, "Vault 13 Entrance");
     /// ```
     pub fn new(character: Character) -> Self {
+        let mut worldbook = Worldbook::with_defaults();
+        worldbook.set_current_location(Some("vault_13".to_string()));
+
         GameState {
             character,
             combat: CombatState::new(),
@@ -146,7 +149,7 @@ impl GameState {
             story: StoryManager::new(),
             location: "Vault 13 Entrance".to_string(),
             quest_log: vec!["Find the Water Chip".to_string()],
-            worldbook: Worldbook::new(),
+            worldbook,
             day: 1,
         }
     }
