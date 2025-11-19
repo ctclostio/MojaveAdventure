@@ -130,6 +130,7 @@ pub fn validate_save_name(name: &str) -> Result<(), GameError> {
 /// assert!(validation::validate_special_stat("intelligence", 0).is_err());
 /// assert!(validation::validate_special_stat("luck", 11).is_err());
 /// ```
+#[allow(dead_code)]
 pub fn validate_special_stat(stat_name: &str, value: u8) -> Result<(), GameError> {
     if !(1..=10).contains(&value) {
         return Err(CharacterError::InvalidSpecialAllocation(format!(
@@ -148,6 +149,7 @@ pub fn validate_special_stat(stat_name: &str, value: u8) -> Result<(), GameError
 /// - Total points must equal the target (typically 28 for new characters)
 /// - Each stat must be between 1 and 10
 ///
+#[allow(dead_code)]
 pub fn validate_special_total(points: &[u8], target: u8) -> Result<(), GameError> {
     let total: u32 = points.iter().map(|&p| p as u32).sum();
 

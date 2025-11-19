@@ -930,12 +930,10 @@ fn wrap_text(text: &str, width: usize) -> Vec<String> {
     for word in text.split_whitespace() {
         let word_len = word.chars().count();
 
-        if current_width + word_len + 1 > width {
-            if !current_line.is_empty() {
-                lines.push(current_line);
-                current_line = String::new();
-                current_width = 0;
-            }
+        if current_width + word_len + 1 > width && !current_line.is_empty() {
+            lines.push(current_line);
+            current_line = String::new();
+            current_width = 0;
         }
 
         if !current_line.is_empty() {

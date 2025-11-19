@@ -67,40 +67,58 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
                     Span::styled("│", Style::default().fg(Color::Cyan)),
                 ]));
 
-                // Add dialogue marker
-                lines.push(Line::from(vec![
-                    Span::styled("│ ", Style::default().fg(Color::Cyan)),
-                    Span::styled("💬 ", Style::default()),
-                    Span::styled(
-                        format!("{}:", speaker),
-                        Style::default()
-                            .fg(Color::Green)
-                            .add_modifier(Modifier::ITALIC),
-                    ),
-                    Span::styled(
-                        " ".repeat(max_width.saturating_sub(speaker.len() + 7)),
-                        Style::default(),
-                    ),
-                    Span::styled("│", Style::default().fg(Color::Cyan)),
-                ]));
-
-                // Add dialogue text
-                let wrapped = wrap_text_advanced(&text, max_width.saturating_sub(8));
-                for wrapped_line in wrapped {
-                    lines.push(Line::from(vec![
-                        Span::styled("│    ", Style::default().fg(Color::Cyan)),
-                        Span::styled(
-                            format!("\"{}\"", wrapped_line),
-                            Style::default()
-                                .fg(Color::Cyan)
-                                .add_modifier(Modifier::ITALIC),
-                        ),
-                        Span::styled(
-                            " ".repeat(max_width.saturating_sub(wrapped_line.len() + 8)),
-                            Style::default(),
-                        ),
-                        Span::styled("│", Style::default().fg(Color::Cyan)),
-                    ]));
+                // Add dialogue text with speech bubble on first line
+                let wrapped = wrap_text_advanced(&text, max_width.saturating_sub(10));
+                for (i, wrapped_line) in wrapped.iter().enumerate() {
+                    if i == 0 {
+                        // First line: include speech bubble icon and speaker
+                        let speaker_prefix = format!("💬 {}: ", speaker);
+                        let prefix_len = speaker_prefix.chars().count() + 1; // +1 for opening quote
+                        lines.push(Line::from(vec![
+                            Span::styled("│ ", Style::default().fg(Color::Cyan)),
+                            Span::styled("💬 ", Style::default()),
+                            Span::styled(
+                                format!("{}: ", speaker),
+                                Style::default()
+                                    .fg(Color::Green)
+                                    .add_modifier(Modifier::ITALIC),
+                            ),
+                            Span::styled(
+                                format!("\"{}\"", wrapped_line),
+                                Style::default()
+                                    .fg(Color::Cyan)
+                                    .add_modifier(Modifier::ITALIC),
+                            ),
+                            Span::styled(
+                                " ".repeat(
+                                    max_width.saturating_sub(wrapped_line.len() + prefix_len + 3),
+                                ),
+                                Style::default(),
+                            ),
+                            Span::styled("│", Style::default().fg(Color::Cyan)),
+                        ]));
+                    } else {
+                        // Subsequent lines: indent to align with first line's text
+                        let indent_size = speaker.chars().count() + 5; // Align with text after "💬 Speaker: "
+                        let indent = " ".repeat(indent_size);
+                        lines.push(Line::from(vec![
+                            Span::styled("│ ", Style::default().fg(Color::Cyan)),
+                            Span::styled(indent.clone(), Style::default()),
+                            Span::styled(
+                                format!("\"{}\"", wrapped_line),
+                                Style::default()
+                                    .fg(Color::Cyan)
+                                    .add_modifier(Modifier::ITALIC),
+                            ),
+                            Span::styled(
+                                " ".repeat(
+                                    max_width.saturating_sub(wrapped_line.len() + indent_size + 4),
+                                ),
+                                Style::default(),
+                            ),
+                            Span::styled("│", Style::default().fg(Color::Cyan)),
+                        ]));
+                    }
                 }
             }
             NarrativeSection::Mechanic(text) => {
@@ -193,7 +211,8 @@ fn parse_narrative_content(content: &str) -> Vec<NarrativeSection> {
                     line[2..].trim().to_string()
                 } else {
                     // numbered list
-                    line.splitn(2, '.').nth(1).unwrap_or("").trim().to_string()
+                    line.split_once('.')
+                        .map_or(String::new(), |(_, after)| after.trim().to_string())
                 };
             current_bullets.push(bullet_text);
             i += 1;

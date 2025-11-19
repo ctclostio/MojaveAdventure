@@ -123,7 +123,7 @@ proptest! {
 
         // Skill should be capped properly to avoid u8 overflow (max 255)
         // Raiders have formula: 40 + (level * 8).min(80), which caps at 120
-        prop_assert!(enemy.skill <= 255, "Skill should not overflow u8");
+        // skill is u8, which can never exceed 255 by definition
         prop_assert!(enemy.skill <= 120, "Raider skill should cap at 120");
 
         // XP reward should scale with level

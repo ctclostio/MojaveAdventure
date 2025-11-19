@@ -269,10 +269,9 @@ fn render_ui(
 
     // Render each stat
     let start_row = 8;
-    for i in 0..STATS_COUNT {
+    for (i, &stat_value) in stats.iter().enumerate() {
         let stat_selected = SelectedStat::from_index(i);
         let is_selected = i == selected as usize;
-        let stat_value = stats[i];
 
         render_stat_line(
             stdout,
@@ -409,15 +408,7 @@ fn render_stat_bar(stdout: &mut io::Stdout, value: u8, highlighted: bool) -> io:
     }
 
     for _ in 0..empty {
-        queue!(
-            stdout,
-            SetForegroundColor(if highlighted {
-                Color::DarkGrey
-            } else {
-                Color::DarkGrey
-            }),
-            Print("░")
-        )?;
+        queue!(stdout, SetForegroundColor(Color::DarkGrey), Print("░"))?;
     }
 
     queue!(

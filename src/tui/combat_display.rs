@@ -536,3 +536,63 @@ fn render_dice_roll_overlay(
     let content = Paragraph::new(lines).alignment(Alignment::Left);
     frame.render_widget(content, inner);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::character::{Character, Special};
+    use crate::game::items::Item;
+
+    #[test]
+    fn test_create_hp_bar() {
+        let bar = create_hp_bar(100, 100, 10);
+        assert_eq!(bar.len(), 3);
+    }
+
+    #[test]
+    fn test_create_ap_bar() {
+        let bar = create_ap_bar(50, 50, 10);
+        assert_eq!(bar.len(), 3);
+    }
+
+    #[test]
+    fn test_get_weapon_display_name_unarmed() {
+        let mut character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+        character.equipped_weapon = None;
+        assert_eq!(get_weapon_display_name(&character), "Unarmed");
+    }
+
+    #[test]
+    fn test_get_weapon_display_name_equipped() {
+        let mut character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+        character.equipped_weapon = Some("10mm_pistol".to_string());
+        character.inventory.push(Item {
+            id: "10mm_pistol".to_string(),
+            name: "10mm Pistol".to_string(),
+            ..Default::default()
+        });
+        assert_eq!(get_weapon_display_name(&character), "10mm Pistol");
+    }
+}

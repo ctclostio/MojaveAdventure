@@ -154,7 +154,7 @@ impl ScanlineEffect {
     /// Alternates between normal and slightly dimmed to create scanline effect
     pub fn get_overlay(row: u16) -> Option<char> {
         // Every other row gets a subtle overlay
-        if row % 2 == 0 {
+        if row.is_multiple_of(2) {
             Some('▒') // Light shade for scanline effect
         } else {
             None
@@ -163,7 +163,7 @@ impl ScanlineEffect {
 
     /// Check if this row should have a scanline
     pub fn is_scanline_row(row: u16) -> bool {
-        row % 2 == 0
+        row.is_multiple_of(2)
     }
 
     /// Get scanline style (very subtle dark green)

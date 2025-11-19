@@ -21,17 +21,20 @@ pub fn create_test_character(name: &str) -> Character {
 }
 
 /// Create a test character with custom SPECIAL stats
+#[allow(dead_code)]
 pub fn create_custom_character(name: &str, special: Special) -> Character {
     Character::new(name.to_string(), special)
 }
 
 /// Create a test game state with a default character
+#[allow(dead_code)]
 pub fn create_test_game_state() -> GameState {
     let character = create_test_character("Test Hero");
     GameState::new(character)
 }
 
 /// Create a high-stat test character for reliable skill checks
+#[allow(dead_code)]
 pub fn create_high_stat_character(name: &str) -> Character {
     let special = Special {
         strength: 10,
@@ -46,6 +49,7 @@ pub fn create_high_stat_character(name: &str) -> Character {
 }
 
 /// Create a test healing item
+#[allow(dead_code)]
 pub fn create_healing_item(id: &str, heal_amount: i32) -> Item {
     Item {
         id: id.to_string(),
@@ -59,6 +63,7 @@ pub fn create_healing_item(id: &str, heal_amount: i32) -> Item {
 }
 
 /// Create a test weapon
+#[allow(dead_code)]
 pub fn create_test_weapon(id: &str, damage: &str) -> Item {
     Item::new_weapon(
         id,
@@ -73,11 +78,13 @@ pub fn create_test_weapon(id: &str, damage: &str) -> Item {
 }
 
 /// Create a test armor
+#[allow(dead_code)]
 pub fn create_test_armor(id: &str, dr: i32) -> Item {
     Item::new_armor(id, "Test Armor", "A test armor", dr, 200)
 }
 
 /// Create a test enemy with specific stats
+#[allow(dead_code)]
 pub fn create_test_enemy(name: &str, hp: i32, skill: u8) -> Enemy {
     Enemy {
         name: name.to_string(),
@@ -94,11 +101,13 @@ pub fn create_test_enemy(name: &str, hp: i32, skill: u8) -> Enemy {
 }
 
 /// Create a weak enemy for testing combat
+#[allow(dead_code)]
 pub fn create_weak_enemy() -> Enemy {
     create_test_enemy("Weak Radroach", 5, 5)
 }
 
 /// Create a strong enemy for testing combat
+#[allow(dead_code)]
 pub fn create_strong_enemy() -> Enemy {
     create_test_enemy("Deathclaw", 100, 15)
 }

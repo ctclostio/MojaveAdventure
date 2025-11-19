@@ -204,11 +204,12 @@ impl UI {
             if enemy.is_alive() {
                 let health_bar = Self::health_bar(enemy.current_hp, enemy.max_hp);
                 println!(
-                    "  [{}] {} - HP: {} {}",
+                    "  [{}] {} - HP: {} ({}/{})",
                     i + 1,
                     enemy.name.red(),
                     health_bar,
-                    format!("({}/{})", enemy.current_hp, enemy.max_hp)
+                    enemy.current_hp,
+                    enemy.max_hp
                 );
             } else {
                 println!(

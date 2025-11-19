@@ -10,11 +10,12 @@ pub enum DamageType {
     Poison,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum ItemType {
     Weapon(WeaponStats),
     Armor(ArmorStats),
     Consumable(ConsumableEffect),
+    #[default]
     Misc,
 }
 
@@ -68,6 +69,20 @@ pub struct Item {
     pub weight: f32,
     pub value: u32,
     pub quantity: u32,
+}
+
+impl Default for Item {
+    fn default() -> Self {
+        Item {
+            id: String::new(),
+            name: String::new(),
+            description: String::new(),
+            item_type: ItemType::Misc,
+            weight: 0.0,
+            value: 0,
+            quantity: 1,
+        }
+    }
 }
 
 impl Item {

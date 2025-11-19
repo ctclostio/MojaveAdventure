@@ -17,10 +17,10 @@ fn test_pipboy_text_styles() {
 
     // Test that text styles can be created without panicking
     let _style = PipBoyTheme::text();
-    assert!(true); // If we got here, style creation succeeded
+    // If we got here, style creation succeeded
 
     let _bright_style = PipBoyTheme::text().bold();
-    assert!(true);
+    // Style creation succeeded
 }
 
 #[test]
@@ -34,8 +34,8 @@ fn test_loading_spinner() {
     let frame2 = spinner.next_frame();
 
     // Frames should cycle through the spinner chars
-    assert!(frame1.len() > 0);
-    assert!(frame2.len() > 0);
+    assert!(!frame1.is_empty());
+    assert!(!frame2.is_empty());
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn test_loading_spinner_cycling() {
     }
 
     // Should have cycled through frames
-    assert!(frames[0] == frames[4] || frames.iter().all(|f| f.len() > 0));
+    assert!(frames[0] == frames[4] || frames.iter().all(|f| !f.is_empty()));
 }
 
 #[test]

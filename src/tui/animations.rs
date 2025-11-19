@@ -248,7 +248,7 @@ mod tests {
 
         // Should start near 100
         let animated = manager.get_animated_hp(50).unwrap();
-        assert!(animated >= 90 && animated <= 100);
+        assert!((90..=100).contains(&animated));
     }
 
     #[test]

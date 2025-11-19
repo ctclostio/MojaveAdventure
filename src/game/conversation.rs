@@ -99,6 +99,7 @@ impl ConversationManager {
     }
 
     /// Create a new ConversationManager with custom max turns
+    #[allow(dead_code)]
     pub fn with_capacity(max_turns: usize) -> Self {
         ConversationManager {
             turns: VecDeque::with_capacity(max_turns),
@@ -138,6 +139,7 @@ impl ConversationManager {
     }
 
     /// Get all turns as a slice
+    #[allow(dead_code)]
     pub fn get_all_turns(&self) -> &VecDeque<ConversationTurn> {
         &self.turns
     }
@@ -153,6 +155,7 @@ impl ConversationManager {
     }
 
     /// Clear all conversation history
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.turns.clear();
         self.current_turn = 0;
@@ -215,6 +218,7 @@ impl ConversationManager {
     }
 
     /// Build a simple prompt section (backward compatible with old system)
+    #[allow(dead_code)]
     pub fn build_simple_prompt_section(&self, include_last_n: usize) -> String {
         if self.turns.is_empty() {
             return String::new();
@@ -238,6 +242,7 @@ impl ConversationManager {
     }
 
     /// Get conversation summary for debugging
+    #[allow(dead_code)]
     pub fn get_summary(&self) -> String {
         format!(
             "Conversation: {} turns, current turn: {}",
@@ -247,6 +252,7 @@ impl ConversationManager {
     }
 
     /// Set the maximum number of turns to keep
+    #[allow(dead_code)]
     pub fn set_max_turns(&mut self, max: usize) {
         self.max_turns = max;
 
@@ -300,6 +306,7 @@ impl ConversationManager {
     }
 
     /// Export to legacy format for backward compatibility
+    #[allow(dead_code)]
     pub fn to_legacy_story_context(&self) -> VecDeque<String> {
         self.turns.iter().map(|turn| turn.format()).collect()
     }

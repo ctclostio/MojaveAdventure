@@ -448,18 +448,16 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
                                     damage, enemy_name, xp_reward
                                 ));
                             }
+                        } else if critical {
+                            app.add_combat_message(format!(
+                                "⚡ CRITICAL HIT! {} damage to {}!",
+                                damage, enemy_name
+                            ));
                         } else {
-                            if critical {
-                                app.add_combat_message(format!(
-                                    "⚡ CRITICAL HIT! {} damage to {}!",
-                                    damage, enemy_name
-                                ));
-                            } else {
-                                app.add_combat_message(format!(
-                                    "→ Hit! {} damage to {}!",
-                                    damage, enemy_name
-                                ));
-                            }
+                            app.add_combat_message(format!(
+                                "→ Hit! {} damage to {}!",
+                                damage, enemy_name
+                            ));
                         }
                     } else {
                         app.add_combat_message("✗ Missed!".to_string());

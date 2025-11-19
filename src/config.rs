@@ -103,8 +103,10 @@ impl Config {
         tracing::debug!("Configuration validation passed");
         Ok(())
     }
+}
 
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             llama: LlamaConfig {
                 server_url: "http://localhost:8080".to_string(),

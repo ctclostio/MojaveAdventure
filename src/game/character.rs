@@ -245,11 +245,13 @@ impl Character {
         self.experience += xp;
     }
 
+    #[allow(dead_code)]
     pub fn can_level_up(&self) -> bool {
         let new_level = 1 + (self.experience / 1000);
         new_level > self.level
     }
 
+    #[allow(dead_code)]
     pub fn level_up(&mut self) {
         let new_level = 1 + (self.experience / 1000);
         if new_level > self.level {

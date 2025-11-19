@@ -1,7 +1,5 @@
 /// Comprehensive tests for configuration loading and validation
 use fallout_dnd::config::{Config, GameConfig, LlamaConfig};
-use std::io::Write;
-use tempfile::NamedTempFile;
 
 #[test]
 fn test_default_config_creation() {
@@ -19,7 +17,7 @@ fn test_default_config_creation() {
     // Test game config defaults
     assert_eq!(config.game.starting_level, 1);
     assert!(config.game.starting_caps > 0);
-    assert_eq!(config.game.permadeath, false);
+    assert!(!config.game.permadeath);
     assert!(config.game.autosave_interval > 0);
 }
 
@@ -56,7 +54,7 @@ autosave_interval = 10
 
     assert_eq!(config.game.starting_level, 5);
     assert_eq!(config.game.starting_caps, 1000);
-    assert_eq!(config.game.permadeath, true);
+    assert!(config.game.permadeath);
     assert_eq!(config.game.autosave_interval, 10);
 }
 
@@ -177,10 +175,8 @@ fn test_game_config_starting_level_positive() {
 #[test]
 fn test_game_config_starting_caps_nonnegative() {
     let config = Config::default();
-    assert!(
-        config.game.starting_caps >= 0,
-        "Starting caps should be non-negative"
-    );
+    // Starting caps is u32, which is always non-negative by definition
+    assert!(config.game.starting_caps < u32::MAX);
 }
 
 #[test]

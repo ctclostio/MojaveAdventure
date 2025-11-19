@@ -64,7 +64,6 @@ use crate::error::GameError;
 use crate::game::GameState;
 use anyhow::Result;
 use futures_util::StreamExt;
-use reqwest;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -234,14 +233,13 @@ impl AIDungeonMaster {
                                             if let Some(content) =
                                                 json.get("content").and_then(|v| v.as_str())
                                             {
-                                                if !content.is_empty() {
-                                                    if tx
+                                                if !content.is_empty()
+                                                    && tx
                                                         .send(Ok(content.to_string()))
                                                         .await
                                                         .is_err()
-                                                    {
-                                                        return; // Receiver dropped
-                                                    }
+                                                {
+                                                    return; // Receiver dropped
                                                 }
                                             }
                                         }
@@ -285,7 +283,7 @@ impl AIDungeonMaster {
         let worldbook_context = game_state.worldbook.build_context();
         if !worldbook_context.is_empty() {
             prompt.push_str(&worldbook_context);
-            prompt.push_str("\n");
+            prompt.push('\n');
         }
 
         // Combat section
@@ -369,7 +367,7 @@ impl AIDungeonMaster {
                 section.push_str(&format!("  - {} (HP: {})\n", enemy.name, enemy.current_hp));
             }
         }
-        section.push_str("\n");
+        section.push('\n');
 
         section
     }

@@ -56,7 +56,7 @@ fn test_next_round() {
 #[test]
 fn test_all_enemies_dead() {
     let mut combat = CombatState::new();
-    let mut enemies = vec![Enemy::raider(1), Enemy::radroach(1)];
+    let enemies = vec![Enemy::raider(1), Enemy::radroach(1)];
 
     combat.start_combat(enemies);
 
@@ -189,7 +189,7 @@ fn test_roll_dice_basic() {
     // Test multiple times to ensure it's in range
     for _ in 0..100 {
         let result = roll_dice("1d6");
-        assert!(result >= 1 && result <= 6, "1d6 should be between 1 and 6");
+        assert!((1..=6).contains(&result), "1d6 should be between 1 and 6");
     }
 }
 
@@ -197,10 +197,7 @@ fn test_roll_dice_basic() {
 fn test_roll_dice_multiple_dice() {
     for _ in 0..100 {
         let result = roll_dice("3d6");
-        assert!(
-            result >= 3 && result <= 18,
-            "3d6 should be between 3 and 18"
-        );
+        assert!((3..=18).contains(&result), "3d6 should be between 3 and 18");
     }
 }
 
@@ -209,7 +206,7 @@ fn test_roll_dice_with_modifier() {
     for _ in 0..100 {
         let result = roll_dice("1d6+5");
         assert!(
-            result >= 6 && result <= 11,
+            (6..=11).contains(&result),
             "1d6+5 should be between 6 and 11"
         );
     }
@@ -224,7 +221,7 @@ fn test_roll_dice_with_negative_modifier() {
         // If negative modifiers aren't supported, it might parse as "1d6" with modifier 0
         // So we check for a reasonable range
         assert!(
-            result >= -1 && result <= 6,
+            (-1..=6).contains(&result),
             "1d6-2 should give a result in a reasonable range, got {}",
             result
         );
@@ -268,7 +265,7 @@ fn test_attack_roll_critical_hits() {
 #[test]
 fn test_calculate_damage_basic() {
     let damage = calculate_damage("2d6+0", 0, false);
-    assert!(damage >= 2 && damage <= 12, "2d6 damage should be 2-12");
+    assert!((2..=12).contains(&damage), "2d6 damage should be 2-12");
 }
 
 #[test]
@@ -276,10 +273,7 @@ fn test_calculate_damage_with_str_modifier() {
     // calculate_damage takes stat_bonus directly, not STR
     // With stat_bonus of 3, 1d6+3 should be 4-9
     let damage = calculate_damage("1d6", 3, false);
-    assert!(
-        damage >= 4 && damage <= 9,
-        "1d6 with +3 bonus should be 4-9"
-    );
+    assert!((4..=9).contains(&damage), "1d6 with +3 bonus should be 4-9");
 }
 
 #[test]
@@ -287,7 +281,7 @@ fn test_calculate_damage_critical() {
     // Test that critical hits do more damage
     // Since damage is random, we just verify criticals are consistently higher
     for _ in 0..50 {
-        let normal = calculate_damage("1d6", 0, false);
+        let _normal = calculate_damage("1d6", 0, false);
         let critical = calculate_damage("1d6", 0, true);
 
         // Critical should always be at least as much as a normal hit could be

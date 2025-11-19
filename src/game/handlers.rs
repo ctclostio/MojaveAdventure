@@ -39,7 +39,7 @@ pub async fn game_loop(mut game_state: GameState, ai_dm: &AIDungeonMaster, confi
     let extractor = ExtractionAI::new(config.llama.extraction_url.clone());
 
     // Display opening message
-    show_opening_message(&ai_dm, &mut game_state).await;
+    show_opening_message(ai_dm, &mut game_state).await;
 
     loop {
         // Display status
@@ -139,7 +139,7 @@ pub async fn game_loop(mut game_state: GameState, ai_dm: &AIDungeonMaster, confi
                 let action = parts[1..].join(" ");
 
                 // Ask AI DM to determine skill and DC
-                handle_skill_roll(&mut game_state, &ai_dm, &action).await;
+                handle_skill_roll(&mut game_state, ai_dm, &action).await;
             }
             "run" if game_state.combat.active => {
                 UI::print_info("You attempt to flee from combat!");
@@ -151,7 +151,7 @@ pub async fn game_loop(mut game_state: GameState, ai_dm: &AIDungeonMaster, confi
             }
             _ => {
                 // Send player action to AI DM
-                handle_ai_action(&input, &mut game_state, &ai_dm, &extractor).await;
+                handle_ai_action(&input, &mut game_state, ai_dm, &extractor).await;
             }
         }
     }
@@ -163,7 +163,7 @@ async fn show_opening_message(ai_dm: &AIDungeonMaster, game_state: &mut GameStat
     UI::print_info("The AI Dungeon Master is preparing your adventure...");
     println!();
 
-    let opening = ai_dm.generate_response(&game_state, "I step out into the wasteland for the first time.").await
+    let opening = ai_dm.generate_response(game_state, "I step out into the wasteland for the first time.").await
         .unwrap_or_else(|e| {
             UI::print_error(&format!("AI DM Error: {}", e));
             "You emerge from the vault into the harsh wasteland. The sun beats down mercilessly. What do you do?".to_string()
@@ -242,7 +242,7 @@ async fn handle_ai_action(
     game_state.story.add(format!("Player: {}", input)); // Legacy support
     UI::print_info("The DM is thinking...");
 
-    match ai_dm.generate_response(&game_state, &input).await {
+    match ai_dm.generate_response(game_state, input).await {
         Ok(response) => {
             let cleaned_response = strip_stop_here_marker(&response);
 
@@ -383,7 +383,7 @@ async fn handle_ai_action(
                         game_state.story.add(format!("DM: {}", outcome));
 
                         // Extract entities from outcome
-                        extract_and_save_entities(&extractor, &outcome, game_state).await;
+                        extract_and_save_entities(extractor, &outcome, game_state).await;
 
                         // Check if outcome initiated combat
                         check_and_start_combat(&outcome, game_state);
@@ -410,7 +410,7 @@ async fn handle_ai_action(
                 game_state.story.add(format!("DM: {}", cleaned_response)); // Legacy support
 
                 // Extract entities from AI response in background
-                extract_and_save_entities(&extractor, &cleaned_response, game_state).await;
+                extract_and_save_entities(extractor, &cleaned_response, game_state).await;
 
                 // Check if DM initiated combat (simplified detection)
                 check_and_start_combat(&cleaned_response, game_state);
@@ -429,10 +429,9 @@ fn check_and_start_combat(response: &str, game_state: &mut GameState) {
         && (response.contains("attack")
             || response.contains("combat")
             || response.contains("fight"))
+        && UI::prompt("Start combat? (y/n):").to_lowercase() == "y"
     {
-        if UI::prompt("Start combat? (y/n):").to_lowercase() == "y" {
-            start_combat_encounter(game_state);
-        }
+        start_combat_encounter(game_state);
     }
 }
 
@@ -1032,8 +1031,6 @@ fn display_worldbook_summary(game_state: &GameState) {
     println!("NPCs: {}", game_state.worldbook.npcs.len());
     println!("Events: {}", game_state.worldbook.events.len());
 }
-
-/// Save worldbook to file
 
 /// Handle equipping weapons or armor from inventory
 fn handle_equip(game_state: &mut GameState) {
