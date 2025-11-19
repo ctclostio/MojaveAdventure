@@ -348,3 +348,137 @@ impl App {
         self.should_flicker = RetroEffects::should_flicker(0.015);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::{character::Special, GameState};
+
+    fn create_test_app() -> App {
+        let special = Special {
+            strength: 5,
+            perception: 5,
+            endurance: 5,
+            charisma: 5,
+            intelligence: 5,
+            agility: 5,
+            luck: 5,
+        };
+        let character =
+            crate::game::character::Character::new("Test Character".to_string(), special);
+        let game_state = GameState::new(character);
+        App::new(game_state)
+    }
+
+    #[test]
+    fn test_add_message() {
+        let mut app = create_test_app();
+        app.add_message("Test message".to_string(), MessageType::System);
+        assert_eq!(app.message_log.len(), 3); // 2 welcome + 1 new
+        let last_message = app.message_log.back().unwrap();
+        assert_eq!(last_message.content, "Test message");
+        assert_eq!(last_message.message_type, MessageType::System);
+    }
+
+    #[test]
+    fn test_message_log_max_size() {
+        let mut app = create_test_app();
+        for i in 0..105 {
+            app.add_message(format!("Message {}", i), MessageType::Info);
+        }
+        assert_eq!(app.message_log.len(), 100);
+        assert_eq!(app.message_log.front().unwrap().content, "Message 5");
+        assert_eq!(app.message_log.back().unwrap().content, "Message 104");
+    }
+
+    #[test]
+    fn test_input_handling() {
+        let mut app = create_test_app();
+        app.enter_char('a');
+        app.enter_char('b');
+        app.enter_char('c');
+        assert_eq!(app.input, "abc");
+        assert_eq!(app.cursor_position, 3);
+
+        app.move_cursor_left();
+        assert_eq!(app.cursor_position, 2);
+
+        app.delete_char();
+        assert_eq!(app.input, "ac");
+        assert_eq!(app.cursor_position, 1);
+
+        let input = app.take_input();
+        assert_eq!(input, "ac");
+        assert_eq!(app.input, "");
+        assert_eq!(app.cursor_position, 0);
+    }
+
+    #[test]
+    fn test_scrolling() {
+        let mut app = create_test_app();
+        for i in 0..20 {
+            app.add_message(format!("Message {}", i), MessageType::DM);
+        }
+
+        app.scroll_up();
+        assert_eq!(app.scroll_offset, 1);
+
+        app.scroll_down();
+        assert_eq!(app.scroll_offset, 0);
+
+        // Cannot scroll below 0
+        app.scroll_down();
+        assert_eq!(app.scroll_offset, 0);
+
+        // Cannot scroll past the last message
+        for _ in 0..30 {
+            app.scroll_up();
+        }
+        assert_eq!(app.scroll_offset, 21);
+    }
+
+    #[test]
+    fn test_view_mode() {
+        let mut app = create_test_app();
+        assert_eq!(app.view_mode, ViewMode::Normal);
+
+        app.set_view_mode(ViewMode::Inventory);
+        assert_eq!(app.view_mode, ViewMode::Inventory);
+
+        app.game_state.combat.active = true;
+        app.update_view_mode_for_combat();
+        assert_eq!(app.view_mode, ViewMode::Combat);
+
+        app.game_state.combat.active = false;
+        app.update_view_mode_for_combat();
+        assert_eq!(app.view_mode, ViewMode::Normal);
+    }
+
+    #[test]
+    fn test_get_visible_messages() {
+        let mut app = create_test_app();
+        app.message_log.clear(); // Clear welcome messages
+        for i in 0..50 {
+            app.add_message(format!("Message {}", i), MessageType::System);
+        }
+
+        // Test with full height
+        let visible = app.get_visible_messages(20);
+        assert_eq!(visible.len(), 20);
+        assert_eq!(visible[0].content, "Message 30");
+
+        // Test with scrolling
+        app.scroll_offset = 10;
+        let visible_scrolled = app.get_visible_messages(20);
+        assert_eq!(visible_scrolled.len(), 20);
+        assert_eq!(visible_scrolled[0].content, "Message 20");
+    }
+
+    #[test]
+    fn test_app_creation() {
+        let app = create_test_app();
+        assert!(!app.should_quit);
+        assert_eq!(app.view_mode, ViewMode::Normal);
+        assert_eq!(app.message_log.len(), 2); // Welcome messages
+    }
+}
