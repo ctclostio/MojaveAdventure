@@ -140,7 +140,7 @@ impl GameState {
     /// ```
     pub fn new(character: Character) -> Self {
         let mut worldbook = Worldbook::with_defaults();
-        worldbook.set_current_location(Some("vault_13".to_string()));
+        worldbook.set_current_location(Some("vault_13".into()));
 
         GameState {
             character,

@@ -48,6 +48,7 @@ pub mod ai;
 pub mod config;
 pub mod error;
 pub mod game;
+pub mod templates;
 pub mod tui;
 pub mod ui;
 pub mod validation;

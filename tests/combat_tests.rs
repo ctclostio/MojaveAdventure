@@ -4,6 +4,181 @@ mod helpers;
 use fallout_dnd::game::combat::{attack_roll, calculate_damage, roll_dice, CombatState, Enemy};
 use helpers::*;
 
+// ========== Snapshot Tests ==========
+
+#[test]
+fn snapshot_combat_state_single_raider() {
+    let mut combat = CombatState::new();
+    combat.start_combat(vec![Enemy::raider(3)]);
+
+    insta::assert_json_snapshot!(combat, @r###"
+    {
+      "active": true,
+      "round": 1,
+      "enemies": [
+        {
+          "name": "Raider (Level 3)",
+          "level": 3,
+          "max_hp": 50,
+          "current_hp": 50,
+          "armor_class": 13,
+          "damage": "1d6+3",
+          "ap": 6,
+          "xp_reward": 300,
+          "skill": 64,
+          "strength": 8
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_combat_state_multiple_enemies() {
+    let mut combat = CombatState::new();
+    combat.start_combat(vec![
+        Enemy::raider(1),
+        Enemy::radroach(1),
+        Enemy::super_mutant(2),
+    ]);
+
+    insta::assert_json_snapshot!(combat, @r###"
+    {
+      "active": true,
+      "round": 1,
+      "enemies": [
+        {
+          "name": "Raider (Level 1)",
+          "level": 1,
+          "max_hp": 30,
+          "current_hp": 30,
+          "armor_class": 11,
+          "damage": "1d6+1",
+          "ap": 5,
+          "xp_reward": 100,
+          "skill": 48,
+          "strength": 6
+        },
+        {
+          "name": "Radroach",
+          "level": 1,
+          "max_hp": 13,
+          "current_hp": 13,
+          "armor_class": 8,
+          "damage": "1d4",
+          "ap": 5,
+          "xp_reward": 100,
+          "skill": 20,
+          "strength": 2
+        },
+        {
+          "name": "Super Mutant",
+          "level": 4,
+          "max_hp": 100,
+          "current_hp": 100,
+          "armor_class": 19,
+          "damage": "2d8+4",
+          "ap": 7,
+          "xp_reward": 400,
+          "skill": 70,
+          "strength": 12
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_combat_state_mid_battle() {
+    let mut combat = CombatState::new();
+    combat.start_combat(vec![Enemy::raider(5), Enemy::raider(5)]);
+
+    // Simulate mid-battle: damage one enemy, kill another, advance rounds
+    combat.enemies[0].take_damage(25);
+    combat.enemies[1].current_hp = 0;
+    combat.next_round();
+    combat.next_round();
+
+    insta::assert_json_snapshot!(combat, @r###"
+    {
+      "active": true,
+      "round": 3,
+      "enemies": [
+        {
+          "name": "Raider (Level 5)",
+          "level": 5,
+          "max_hp": 70,
+          "current_hp": 45,
+          "armor_class": 15,
+          "damage": "1d6+5",
+          "ap": 7,
+          "xp_reward": 500,
+          "skill": 80,
+          "strength": 10
+        },
+        {
+          "name": "Raider (Level 5)",
+          "level": 5,
+          "max_hp": 70,
+          "current_hp": 0,
+          "armor_class": 15,
+          "damage": "1d6+5",
+          "ap": 7,
+          "xp_reward": 500,
+          "skill": 80,
+          "strength": 10
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_enemy_types_at_different_levels() {
+    let enemies = vec![Enemy::radroach(1), Enemy::raider(3), Enemy::super_mutant(5)];
+
+    insta::assert_json_snapshot!(enemies, @r###"
+    [
+      {
+        "name": "Radroach",
+        "level": 1,
+        "max_hp": 13,
+        "current_hp": 13,
+        "armor_class": 8,
+        "damage": "1d4",
+        "ap": 5,
+        "xp_reward": 100,
+        "skill": 20,
+        "strength": 2
+      },
+      {
+        "name": "Raider (Level 3)",
+        "level": 3,
+        "max_hp": 50,
+        "current_hp": 50,
+        "armor_class": 13,
+        "damage": "1d6+3",
+        "ap": 6,
+        "xp_reward": 300,
+        "skill": 64,
+        "strength": 8
+      },
+      {
+        "name": "Super Mutant",
+        "level": 7,
+        "max_hp": 145,
+        "current_hp": 145,
+        "armor_class": 22,
+        "damage": "3d8+10",
+        "ap": 8,
+        "xp_reward": 700,
+        "skill": 85,
+        "strength": 15
+      }
+    ]
+    "###);
+}
+
 #[test]
 fn test_combat_state_initialization() {
     let combat = CombatState::new();

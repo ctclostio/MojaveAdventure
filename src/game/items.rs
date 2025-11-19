@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String as SmartString;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DamageType {
@@ -30,11 +31,11 @@ pub enum WeaponType {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WeaponStats {
-    pub damage: String, // e.g., "1d10+2"
+    pub damage: SmartString, // e.g., "1d10+2"
     pub damage_type: DamageType,
     pub weapon_type: WeaponType,
     pub ap_cost: i32,
-    pub ammo_type: Option<String>,
+    pub ammo_type: Option<SmartString>,
     pub range: u32, // in meters
     pub critical_multiplier: f32,
 }
@@ -51,20 +52,20 @@ pub enum ConsumableEffect {
     Healing(i32),
     RadAway(i32),
     StatBuff {
-        stat: String,
+        stat: SmartString,
         amount: i32,
         duration: u32,
     },
     Addiction {
-        effect: String,
+        effect: SmartString,
     },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Item {
-    pub id: String,
-    pub name: String,
-    pub description: String,
+    pub id: SmartString,
+    pub name: SmartString,
+    pub description: SmartString,
     pub item_type: ItemType,
     pub weight: f32,
     pub value: u32,
@@ -74,9 +75,9 @@ pub struct Item {
 impl Default for Item {
     fn default() -> Self {
         Item {
-            id: String::new(),
-            name: String::new(),
-            description: String::new(),
+            id: SmartString::new(),
+            name: SmartString::new(),
+            description: SmartString::new(),
             item_type: ItemType::Misc,
             weight: 0.0,
             value: 0,
@@ -97,11 +98,11 @@ impl Item {
         value: u32,
     ) -> Self {
         Item {
-            id: id.to_string(),
-            name: name.to_string(),
-            description: description.to_string(),
+            id: SmartString::from(id),
+            name: SmartString::from(name),
+            description: SmartString::from(description),
             item_type: ItemType::Weapon(WeaponStats {
-                damage: damage.to_string(),
+                damage: SmartString::from(damage),
                 damage_type,
                 weapon_type,
                 ap_cost,
@@ -117,9 +118,9 @@ impl Item {
 
     pub fn new_armor(id: &str, name: &str, description: &str, dr: i32, value: u32) -> Self {
         Item {
-            id: id.to_string(),
-            name: name.to_string(),
-            description: description.to_string(),
+            id: SmartString::from(id),
+            name: SmartString::from(name),
+            description: SmartString::from(description),
             item_type: ItemType::Armor(ArmorStats {
                 damage_resistance: dr,
                 radiation_resistance: 0,
@@ -139,9 +140,9 @@ impl Item {
         value: u32,
     ) -> Self {
         Item {
-            id: id.to_string(),
-            name: name.to_string(),
-            description: description.to_string(),
+            id: SmartString::from(id),
+            name: SmartString::from(name),
+            description: SmartString::from(description),
             item_type: ItemType::Consumable(effect),
             weight: 0.5,
             value,
@@ -298,7 +299,7 @@ mod tests {
             "Mentats",
             "Increases intelligence",
             ConsumableEffect::StatBuff {
-                stat: "intelligence".to_string(),
+                stat: "intelligence".to_string().into(),
                 amount: 2,
                 duration: 300,
             },

@@ -2,6 +2,7 @@ mod ai;
 mod config;
 mod error;
 mod game;
+mod templates;
 mod tui;
 mod ui;
 mod validation;
@@ -12,6 +13,10 @@ use config::Config;
 use game::handlers::{create_new_character, game_loop, load_game};
 use game::tui_game_loop::run_game_with_tui;
 use ui::UI;
+
+// Use mimalloc as the global allocator for improved performance
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[tokio::main]
 async fn main() {

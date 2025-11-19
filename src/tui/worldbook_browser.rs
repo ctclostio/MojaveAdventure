@@ -179,7 +179,7 @@ impl WorldbookBrowser {
     pub fn get_sorted_locations<'a>(
         &self,
         worldbook: &'a Worldbook,
-    ) -> Vec<(&'a String, &'a Location)> {
+    ) -> Vec<(&'a smartstring::alias::String, &'a Location)> {
         let mut locations: Vec<_> = worldbook.locations.iter().collect();
 
         // Sort by last visited (most recent first), then by name
@@ -194,7 +194,10 @@ impl WorldbookBrowser {
     }
 
     /// Get sorted NPCs for display
-    pub fn get_sorted_npcs<'a>(&self, worldbook: &'a Worldbook) -> Vec<(&'a String, &'a NPC)> {
+    pub fn get_sorted_npcs<'a>(
+        &self,
+        worldbook: &'a Worldbook,
+    ) -> Vec<(&'a smartstring::alias::String, &'a NPC)> {
         let mut npcs: Vec<_> = worldbook.npcs.iter().collect();
 
         // Sort by name

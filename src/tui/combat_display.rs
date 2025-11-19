@@ -418,7 +418,7 @@ fn get_weapon_display_name(character: &Character) -> String {
         // Try to find weapon in inventory for display name
         for item in &character.inventory {
             if &item.id == weapon_id {
-                return item.name.clone();
+                return item.name.to_string();
             }
         }
         // Fallback to formatted ID
@@ -587,10 +587,10 @@ mod tests {
                 luck: 5,
             },
         );
-        character.equipped_weapon = Some("10mm_pistol".to_string());
+        character.equipped_weapon = Some("10mm_pistol".into());
         character.inventory.push(Item {
-            id: "10mm_pistol".to_string(),
-            name: "10mm Pistol".to_string(),
+            id: "10mm_pistol".into(),
+            name: "10mm Pistol".into(),
             ..Default::default()
         });
         assert_eq!(get_weapon_display_name(&character), "10mm Pistol");

@@ -16,6 +16,7 @@ pub struct LlamaConfig {
     pub top_p: f32,
     pub top_k: i32,
     pub max_tokens: i32,
+    pub context_window: i32,
     pub repeat_penalty: f32,
     pub system_prompt: String,
 }
@@ -85,6 +86,11 @@ impl Config {
             return Err(ConfigError::InvalidMaxTokens(self.llama.max_tokens).into());
         }
 
+        // Validate context_window
+        if !(512..=131072).contains(&self.llama.context_window) {
+            return Err(ConfigError::InvalidContextWindow(self.llama.context_window).into());
+        }
+
         // Validate repeat_penalty
         if !(1.0..=2.0).contains(&self.llama.repeat_penalty) {
             return Err(ConfigError::InvalidRepeatPenalty(self.llama.repeat_penalty).into());
@@ -114,7 +120,8 @@ impl Default for Config {
                 temperature: 0.8,
                 top_p: 0.9,
                 top_k: 40,
-                max_tokens: 2048, // Increased for complex narratives
+                max_tokens: 2048,     // Increased for complex narratives
+                context_window: 8192, // Standard context window for most llama.cpp models
                 repeat_penalty: 1.1,
                 system_prompt: "You are a Fallout universe DM.".to_string(),
             },
