@@ -6,6 +6,7 @@ use crate::game::rolls::{
 use crate::game::GameState;
 use crate::tui::{self, App, Event, EventHandler};
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
+use rand::Rng;
 use std::io;
 
 /// Run the game loop with the TUI interface
@@ -483,9 +484,7 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
 
     // Run command
     if lower == "run" || lower == "flee" {
-        use rand::Rng;
-        let mut rng = rand::rng();
-        if rng.random_bool(0.6) {
+        if rand::thread_rng().gen_bool(0.6) {
             // 60% chance to escape
             app.add_combat_message("You successfully fled from combat!".to_string());
             app.game_state.combat.active = false;
