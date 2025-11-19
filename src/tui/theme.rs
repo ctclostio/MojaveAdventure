@@ -337,8 +337,8 @@ impl RetroEffects {
     /// Get a flicker effect (randomly returns true/false for subtle text flicker)
     pub fn should_flicker(intensity: f32) -> bool {
         use rand::Rng;
-        let mut rng = rand::thread_rng();
-        rng.gen::<f32>() < intensity
+        let mut rng = rand::rng();
+        rng.random::<f32>() < intensity
     }
 
     /// Get terminal flicker style (slightly dimmed)

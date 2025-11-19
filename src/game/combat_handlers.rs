@@ -97,10 +97,10 @@ pub fn handle_enemy_turns(game_state: &mut GameState) {
 /// Start a random combat encounter based on player level
 pub fn start_combat_encounter(game_state: &mut GameState) {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let level = game_state.character.level;
-    let encounter_type = rng.gen_range(0..3);
+    let encounter_type = rng.random_range(0..3);
 
     let enemies = match encounter_type {
         0 => {

@@ -141,7 +141,7 @@ impl Enemy {
 
 /// Dice rolling system
 pub fn roll_dice(dice_str: &str) -> i32 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Parse dice notation like "2d6+3" or "1d20"
     // Handle both numeric modifiers and text (like "1d8+STR" -> "1d8+0" for basic parsing)
@@ -164,7 +164,7 @@ pub fn roll_dice(dice_str: &str) -> i32 {
 
     let mut total = modifier;
     for _ in 0..num_dice {
-        total += rng.gen_range(1..=die_size);
+        total += rng.random_range(1..=die_size);
     }
 
     total
@@ -183,8 +183,8 @@ pub fn resolve_stat_modifiers(damage_str: &str, strength: u8) -> String {
 
 /// Make an attack roll
 pub fn attack_roll(attacker_skill: u8, target_ac: i32) -> (bool, bool) {
-    let mut rng = rand::thread_rng();
-    let roll = rng.gen_range(1..=20);
+    let mut rng = rand::rng();
+    let roll = rng.random_range(1..=20);
 
     let critical = roll == 20;
     let total = roll + attacker_skill as i32;
