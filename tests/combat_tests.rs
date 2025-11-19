@@ -1,9 +1,7 @@
 /// Comprehensive tests for combat system
 mod helpers;
 
-use fallout_dnd::game::{
-    combat::{CombatState, Enemy, attack_roll, calculate_damage, roll_dice},
-};
+use fallout_dnd::game::combat::{attack_roll, calculate_damage, roll_dice, CombatState, Enemy};
 use helpers::*;
 
 #[test]
@@ -18,10 +16,7 @@ fn test_combat_state_initialization() {
 #[test]
 fn test_start_combat() {
     let mut combat = CombatState::new();
-    let enemies = vec![
-        Enemy::raider(1),
-        Enemy::radroach(1),
-    ];
+    let enemies = vec![Enemy::raider(1), Enemy::radroach(1)];
 
     combat.start_combat(enemies);
 
@@ -61,14 +56,14 @@ fn test_next_round() {
 #[test]
 fn test_all_enemies_dead() {
     let mut combat = CombatState::new();
-    let mut enemies = vec![
-        Enemy::raider(1),
-        Enemy::radroach(1),
-    ];
+    let mut enemies = vec![Enemy::raider(1), Enemy::radroach(1)];
 
     combat.start_combat(enemies);
 
-    assert!(!combat.all_enemies_dead(), "Initially enemies should be alive");
+    assert!(
+        !combat.all_enemies_dead(),
+        "Initially enemies should be alive"
+    );
 
     // Kill all enemies
     for enemy in &mut combat.enemies {
@@ -81,10 +76,7 @@ fn test_all_enemies_dead() {
 #[test]
 fn test_partial_enemies_dead() {
     let mut combat = CombatState::new();
-    combat.start_combat(vec![
-        Enemy::raider(1),
-        Enemy::radroach(1),
-    ]);
+    combat.start_combat(vec![Enemy::raider(1), Enemy::radroach(1)]);
 
     // Kill only first enemy
     combat.enemies[0].current_hp = 0;
@@ -96,7 +88,7 @@ fn test_partial_enemies_dead() {
 fn test_total_xp_reward() {
     let mut combat = CombatState::new();
     combat.start_combat(vec![
-        Enemy::raider(1),    // Different XP values
+        Enemy::raider(1), // Different XP values
         Enemy::radroach(1),
     ]);
 
@@ -116,7 +108,10 @@ fn test_total_xp_reward() {
 fn test_enemy_creation_raider() {
     let raider = Enemy::raider(1);
 
-    assert!(raider.name.contains("Raider"), "Name should contain 'Raider'");
+    assert!(
+        raider.name.contains("Raider"),
+        "Name should contain 'Raider'"
+    );
     assert!(raider.max_hp > 0);
     assert!(raider.current_hp > 0);
     assert_eq!(raider.current_hp, raider.max_hp);
@@ -130,7 +125,10 @@ fn test_enemy_creation_raider() {
 fn test_enemy_creation_radroach() {
     let radroach = Enemy::radroach(1);
 
-    assert!(radroach.name.contains("Radroach"), "Name should contain 'Radroach'");
+    assert!(
+        radroach.name.contains("Radroach"),
+        "Name should contain 'Radroach'"
+    );
     assert!(radroach.is_alive());
 }
 
@@ -138,8 +136,14 @@ fn test_enemy_creation_radroach() {
 fn test_enemy_creation_super_mutant() {
     let super_mutant = Enemy::super_mutant(1);
 
-    assert!(super_mutant.name.contains("Super Mutant"), "Name should contain 'Super Mutant'");
-    assert!(super_mutant.max_hp > Enemy::radroach(1).max_hp, "Super Mutant should have more HP");
+    assert!(
+        super_mutant.name.contains("Super Mutant"),
+        "Name should contain 'Super Mutant'"
+    );
+    assert!(
+        super_mutant.max_hp > Enemy::radroach(1).max_hp,
+        "Super Mutant should have more HP"
+    );
 }
 
 #[test]
@@ -193,7 +197,10 @@ fn test_roll_dice_basic() {
 fn test_roll_dice_multiple_dice() {
     for _ in 0..100 {
         let result = roll_dice("3d6");
-        assert!(result >= 3 && result <= 18, "3d6 should be between 3 and 18");
+        assert!(
+            result >= 3 && result <= 18,
+            "3d6 should be between 3 and 18"
+        );
     }
 }
 
@@ -201,7 +208,10 @@ fn test_roll_dice_multiple_dice() {
 fn test_roll_dice_with_modifier() {
     for _ in 0..100 {
         let result = roll_dice("1d6+5");
-        assert!(result >= 6 && result <= 11, "1d6+5 should be between 6 and 11");
+        assert!(
+            result >= 6 && result <= 11,
+            "1d6+5 should be between 6 and 11"
+        );
     }
 }
 
@@ -213,7 +223,11 @@ fn test_roll_dice_with_negative_modifier() {
         let result = roll_dice("1d6-2");
         // If negative modifiers aren't supported, it might parse as "1d6" with modifier 0
         // So we check for a reasonable range
-        assert!(result >= -1 && result <= 6, "1d6-2 should give a result in a reasonable range, got {}", result);
+        assert!(
+            result >= -1 && result <= 6,
+            "1d6-2 should give a result in a reasonable range, got {}",
+            result
+        );
     }
 }
 
@@ -262,7 +276,10 @@ fn test_calculate_damage_with_str_modifier() {
     // calculate_damage takes stat_bonus directly, not STR
     // With stat_bonus of 3, 1d6+3 should be 4-9
     let damage = calculate_damage("1d6", 3, false);
-    assert!(damage >= 4 && damage <= 9, "1d6 with +3 bonus should be 4-9");
+    assert!(
+        damage >= 4 && damage <= 9,
+        "1d6 with +3 bonus should be 4-9"
+    );
 }
 
 #[test]
@@ -274,8 +291,14 @@ fn test_calculate_damage_critical() {
         let critical = calculate_damage("1d6", 0, true);
 
         // Critical should always be at least as much as a normal hit could be
-        assert!(critical >= 2, "Critical damage should be at least 2 (1d6 doubled minimum)");
-        assert!(critical <= 12, "Critical damage should be at most 12 (1d6 doubled maximum)");
+        assert!(
+            critical >= 2,
+            "Critical damage should be at least 2 (1d6 doubled minimum)"
+        );
+        assert!(
+            critical <= 12,
+            "Critical damage should be at most 12 (1d6 doubled maximum)"
+        );
     }
 }
 
@@ -330,11 +353,7 @@ fn test_combat_victory_flow() {
 #[test]
 fn test_combat_with_multiple_enemies() {
     let mut combat = CombatState::new();
-    combat.start_combat(vec![
-        Enemy::raider(1),
-        Enemy::radroach(1),
-        Enemy::raider(2),
-    ]);
+    combat.start_combat(vec![Enemy::raider(1), Enemy::radroach(1), Enemy::raider(2)]);
 
     assert_eq!(combat.enemies.len(), 3);
 
@@ -401,7 +420,9 @@ fn test_combat_xp_calculation_accuracy() {
 fn test_player_death_in_combat() {
     let mut game_state = create_test_game_state();
 
-    game_state.combat.start_combat(vec![Enemy::super_mutant(10)]);
+    game_state
+        .combat
+        .start_combat(vec![Enemy::super_mutant(10)]);
 
     // Player takes massive damage
     game_state.character.take_damage(10000);

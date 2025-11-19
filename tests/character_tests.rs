@@ -21,8 +21,14 @@ fn test_add_experience_no_level_up() {
 
     assert_eq!(character.experience, 500);
     assert!(!character.can_level_up());
-    assert_eq!(character.level, initial_level, "Should not level up with 500 XP");
-    assert_eq!(character.max_hp, initial_max_hp, "HP should not change without level up");
+    assert_eq!(
+        character.level, initial_level,
+        "Should not level up with 500 XP"
+    );
+    assert_eq!(
+        character.max_hp, initial_max_hp,
+        "HP should not change without level up"
+    );
 }
 
 #[test]
@@ -43,8 +49,7 @@ fn test_add_experience_single_level_up() {
         "HP should increase by 5 + endurance"
     );
     assert_eq!(
-        character.current_hp,
-        character.max_hp,
+        character.current_hp, character.max_hp,
         "Current HP should be fully restored on level up"
     );
 }
@@ -136,8 +141,7 @@ fn test_level_up_restores_hp() {
         "HP should be restored on level up"
     );
     assert_eq!(
-        character.current_hp,
-        character.max_hp,
+        character.current_hp, character.max_hp,
         "HP should be fully restored"
     );
 }
@@ -248,11 +252,19 @@ fn test_special_stats_initialization() {
     let special = Special::new();
 
     // SPECIAL stats should sum to a reasonable total
-    let total = special.strength + special.perception + special.endurance +
-                special.charisma + special.intelligence + special.agility + special.luck;
+    let total = special.strength
+        + special.perception
+        + special.endurance
+        + special.charisma
+        + special.intelligence
+        + special.agility
+        + special.luck;
 
     assert!(total > 0, "SPECIAL stats should be initialized");
-    assert!(total <= 70, "SPECIAL total should not exceed maximum (10*7)");
+    assert!(
+        total <= 70,
+        "SPECIAL total should not exceed maximum (10*7)"
+    );
 }
 
 #[test]
@@ -300,7 +312,10 @@ fn test_character_inventory_starts_with_items() {
     let character = create_test_character("Test");
 
     assert!(!character.inventory.is_empty(), "Should start with items");
-    assert!(character.equipped_weapon.is_some(), "Should have a weapon equipped");
+    assert!(
+        character.equipped_weapon.is_some(),
+        "Should have a weapon equipped"
+    );
 }
 
 #[test]

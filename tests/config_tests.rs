@@ -1,5 +1,5 @@
 /// Comprehensive tests for configuration loading and validation
-use fallout_dnd::config::{Config, LlamaConfig, GameConfig};
+use fallout_dnd::config::{Config, GameConfig, LlamaConfig};
 use std::io::Write;
 use tempfile::NamedTempFile;
 
@@ -80,7 +80,10 @@ server_url = "http://localhost:8080"
 "#;
 
     let result: Result<Config, _> = toml::from_str(incomplete_toml);
-    assert!(result.is_err(), "Should fail when required fields are missing");
+    assert!(
+        result.is_err(),
+        "Should fail when required fields are missing"
+    );
 }
 
 #[test]
@@ -114,7 +117,10 @@ fn test_config_load_from_file_not_found() {
     // This will try to load from a non-existent config.toml
     // In actual code, this would use Config::load() which reads from "config.toml"
     let result = std::fs::read_to_string("nonexistent_config_file.toml");
-    assert!(result.is_err(), "Should fail when config file doesn't exist");
+    assert!(
+        result.is_err(),
+        "Should fail when config file doesn't exist"
+    );
 }
 
 #[test]
@@ -130,7 +136,10 @@ fn test_config_serialization_roundtrip() {
     // Verify key fields match
     assert_eq!(deserialized.llama.server_url, original.llama.server_url);
     assert_eq!(deserialized.llama.temperature, original.llama.temperature);
-    assert_eq!(deserialized.game.starting_level, original.game.starting_level);
+    assert_eq!(
+        deserialized.game.starting_level,
+        original.game.starting_level
+    );
     assert_eq!(deserialized.game.permadeath, original.game.permadeath);
 }
 
@@ -138,8 +147,14 @@ fn test_config_serialization_roundtrip() {
 fn test_llama_config_temperature_range() {
     let config = Config::default();
     // Temperature should be in a reasonable range
-    assert!(config.llama.temperature >= 0.0, "Temperature should be non-negative");
-    assert!(config.llama.temperature <= 2.0, "Temperature should be reasonable");
+    assert!(
+        config.llama.temperature >= 0.0,
+        "Temperature should be non-negative"
+    );
+    assert!(
+        config.llama.temperature <= 2.0,
+        "Temperature should be reasonable"
+    );
 }
 
 #[test]
@@ -153,19 +168,28 @@ fn test_llama_config_top_p_range() {
 #[test]
 fn test_game_config_starting_level_positive() {
     let config = Config::default();
-    assert!(config.game.starting_level > 0, "Starting level should be positive");
+    assert!(
+        config.game.starting_level > 0,
+        "Starting level should be positive"
+    );
 }
 
 #[test]
 fn test_game_config_starting_caps_nonnegative() {
     let config = Config::default();
-    assert!(config.game.starting_caps >= 0, "Starting caps should be non-negative");
+    assert!(
+        config.game.starting_caps >= 0,
+        "Starting caps should be non-negative"
+    );
 }
 
 #[test]
 fn test_game_config_autosave_interval_positive() {
     let config = Config::default();
-    assert!(config.game.autosave_interval > 0, "Autosave interval should be positive");
+    assert!(
+        config.game.autosave_interval > 0,
+        "Autosave interval should be positive"
+    );
 }
 
 #[test]

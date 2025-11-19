@@ -109,7 +109,7 @@ impl Enemy {
     }
 
     pub fn radroach(level: u32) -> Self {
-        let mut enemy = Enemy::new(&format!("Radroach"), level);
+        let mut enemy = Enemy::new("Radroach", level);
         enemy.max_hp = 10 + (level as i32 * 3);
         enemy.current_hp = enemy.max_hp;
         enemy.damage = "1d4".to_string();
@@ -120,7 +120,7 @@ impl Enemy {
     }
 
     pub fn super_mutant(level: u32) -> Self {
-        let mut enemy = Enemy::new(&format!("Super Mutant"), level + 2);
+        let mut enemy = Enemy::new("Super Mutant", level + 2);
         enemy.max_hp = 40 + (level as i32 * 15);
         enemy.current_hp = enemy.max_hp;
         enemy.damage = format!("{}d8+{}", 1 + level / 2, level * 2);
@@ -205,6 +205,12 @@ pub fn calculate_damage(base_damage: &str, stat_bonus: i32, is_critical: bool) -
     }
 }
 
+impl Default for CombatState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CombatState {
     pub fn new() -> Self {
         CombatState {
@@ -252,14 +258,14 @@ mod tests {
         // Test basic dice rolling - result should be between min and max
         let result = roll_dice("1d6");
         assert!(
-            result >= 1 && result <= 6,
+            (1..=6).contains(&result),
             "1d6 should be between 1 and 6, got {}",
             result
         );
 
         let result = roll_dice("2d6");
         assert!(
-            result >= 2 && result <= 12,
+            (2..=12).contains(&result),
             "2d6 should be between 2 and 12, got {}",
             result
         );
@@ -269,14 +275,14 @@ mod tests {
     fn test_roll_dice_with_modifier() {
         let result = roll_dice("1d6+3");
         assert!(
-            result >= 4 && result <= 9,
+            (4..=9).contains(&result),
             "1d6+3 should be between 4 and 9, got {}",
             result
         );
 
         let result = roll_dice("2d6+5");
         assert!(
-            result >= 7 && result <= 17,
+            (7..=17).contains(&result),
             "2d6+5 should be between 7 and 17, got {}",
             result
         );
@@ -307,17 +313,17 @@ mod tests {
     #[test]
     fn test_calculate_damage() {
         let damage = calculate_damage("1d6+0", 0, false);
-        assert!(damage >= 1 && damage <= 6);
+        assert!((1..=6).contains(&damage));
 
         let damage = calculate_damage("1d6+0", 0, true);
-        assert!(damage >= 2 && damage <= 12, "Critical should double damage");
+        assert!((2..=12).contains(&damage), "Critical should double damage");
     }
 
     #[test]
     fn test_dice_roll() {
         for _ in 0..100 {
             let roll = roll_dice("1d20");
-            assert!(roll >= 1 && roll <= 20);
+            assert!((1..=20).contains(&roll));
         }
     }
 

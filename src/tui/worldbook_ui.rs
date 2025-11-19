@@ -94,7 +94,9 @@ fn render_worldbook_tabs(f: &mut Frame, browser: &WorldbookBrowser, area: Rect) 
     if is_tab_focused {
         tab_spans.push(Span::styled(
             "  ◄ Use ←→ arrows to navigate tabs",
-            Style::default().fg(Color::Yellow).add_modifier(Modifier::DIM),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::DIM),
         ));
     }
 

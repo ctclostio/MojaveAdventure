@@ -1,8 +1,9 @@
 /// Test helpers for AI integration testing
 /// These provide mocks and utilities for testing AI-dependent code without
 /// requiring a running llama.cpp server
-
-use fallout_dnd::ai::extractor::{ExtractedEntities, ExtractedLocation, ExtractedNPC, ExtractedEvent};
+use fallout_dnd::ai::extractor::{
+    ExtractedEntities, ExtractedEvent, ExtractedLocation, ExtractedNPC,
+};
 use fallout_dnd::game::worldbook::Location;
 
 /// Mock AI response for entity extraction

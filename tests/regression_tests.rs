@@ -43,7 +43,8 @@ fn test_regression_incremental_vs_jump_leveling() {
     };
 
     // Character that levels incrementally
-    let mut char_incremental = fallout_dnd::game::character::Character::new("Inc".to_string(), special.clone());
+    let mut char_incremental =
+        fallout_dnd::game::character::Character::new("Inc".to_string(), special.clone());
     char_incremental.add_experience(1000); // Level 2
     char_incremental.add_experience(1000); // Level 3
     char_incremental.add_experience(1000); // Level 4
@@ -54,8 +55,10 @@ fn test_regression_incremental_vs_jump_leveling() {
 
     // Both should have same level and HP
     assert_eq!(char_incremental.level, char_jump.level);
-    assert_eq!(char_incremental.max_hp, char_jump.max_hp,
-        "Incremental and jump leveling should result in same HP");
+    assert_eq!(
+        char_incremental.max_hp, char_jump.max_hp,
+        "Incremental and jump leveling should result in same HP"
+    );
 }
 
 /// Regression test: HP should never go negative
@@ -95,7 +98,10 @@ fn test_regression_healing_cap() {
     // Use stimpak (heals 30 HP from starting items)
     let _ = character.use_consumable("stimpak");
 
-    assert_eq!(character.current_hp, max_hp, "Healing should not exceed max HP");
+    assert_eq!(
+        character.current_hp, max_hp,
+        "Healing should not exceed max HP"
+    );
 }
 
 /// Regression test: Using non-existent item should not crash
@@ -156,8 +162,14 @@ fn test_regression_story_manager_fifo() {
     let entries: Vec<&String> = all.iter().collect();
 
     assert_eq!(entries.len(), 3);
-    assert!(!entries.iter().any(|e| *e == "First"), "Oldest entry should be evicted");
-    assert!(entries.iter().any(|e| *e == "Fourth"), "Newest entry should be present");
+    assert!(
+        !entries.iter().any(|e| *e == "First"),
+        "Oldest entry should be evicted"
+    );
+    assert!(
+        entries.iter().any(|e| *e == "Fourth"),
+        "Newest entry should be present"
+    );
 }
 
 /// Regression test: XP rewards calculation

@@ -5,7 +5,10 @@ use fallout_dnd::tui::theme::PipBoyTheme;
 fn test_pipboy_theme_colors() {
     // Test that theme colors are defined
     // We can't test visual output, but we can test the color values exist
-    assert_eq!(PipBoyTheme::PHOSPHOR_BRIGHT, ratatui::style::Color::Rgb(0, 255, 0));
+    assert_eq!(
+        PipBoyTheme::PHOSPHOR_BRIGHT,
+        ratatui::style::Color::Rgb(0, 255, 0)
+    );
 }
 
 #[test]

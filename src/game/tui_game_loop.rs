@@ -1,7 +1,9 @@
 use crate::ai::AIDungeonMaster;
 use crate::config::Config;
+use crate::game::rolls::{
+    parse_natural_roll_request, perform_roll, truncate_response_at_skill_check,
+};
 use crate::game::GameState;
-use crate::game::rolls::{parse_natural_roll_request, perform_roll, truncate_response_at_skill_check};
 use crate::tui::{self, App, Event, EventHandler};
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use std::io;
@@ -95,7 +97,8 @@ async fn run_app<B: ratatui::backend::Backend>(
                     // Check if stream has finished
                     if let Some(dm_response) = app.check_stream_finished() {
                         // Check if DM requested a skill check
-                        if let Err(e) = handle_skill_check_if_needed(app, &dm_response, ai_dm).await {
+                        if let Err(e) = handle_skill_check_if_needed(app, &dm_response, ai_dm).await
+                        {
                             app.add_error_message(format!("Skill check error: {}", e));
                         }
                         app.waiting_for_ai = false;
@@ -349,9 +352,11 @@ async fn handle_player_input(
             // Start streaming - tokens will be processed in the tick event
             app.start_streaming(rx);
             // Add player input to both conversation systems
-            app.game_state.conversation.add_player_turn(input.to_string());
+            app.game_state
+                .conversation
+                .add_player_turn(input.to_string());
             app.game_state.story.add(format!("Player: {}", input)); // Legacy support
-            // Note: waiting_for_ai will be set to false when streaming completes
+                                                                    // Note: waiting_for_ai will be set to false when streaming completes
         }
         Err(e) => {
             app.waiting_for_ai = false;
@@ -581,13 +586,22 @@ fn show_help(app: &mut App) {
 
 fn show_debug_context(app: &mut App) {
     app.add_system_message("═══ CONVERSATION CONTEXT DEBUG ═══".to_string());
-    app.add_info_message(format!("Total turns: {}", app.game_state.conversation.len()));
-    app.add_info_message(format!("Max turns: {}", app.game_state.conversation.max_turns()));
+    app.add_info_message(format!(
+        "Total turns: {}",
+        app.game_state.conversation.len()
+    ));
+    app.add_info_message(format!(
+        "Max turns: {}",
+        app.game_state.conversation.max_turns()
+    ));
     app.add_system_message("".to_string());
     app.add_system_message("Recent conversation history (last 10 turns):".to_string());
 
     // Collect turns into owned strings to avoid borrow checker issues
-    let recent_turns: Vec<String> = app.game_state.conversation.get_recent_turns(10)
+    let recent_turns: Vec<String> = app
+        .game_state
+        .conversation
+        .get_recent_turns(10)
         .iter()
         .map(|turn| turn.format())
         .collect();
@@ -638,7 +652,9 @@ async fn handle_skill_check_if_needed(
         if let Some(truncated_response) = truncate_response_at_skill_check(dm_response) {
             // Replace the last DM turn in conversation with the truncated version
             // This prevents bad patterns from entering conversation history
-            app.game_state.conversation.replace_last_dm_turn(truncated_response);
+            app.game_state
+                .conversation
+                .replace_last_dm_turn(truncated_response);
         }
 
         // Perform the roll automatically
@@ -702,7 +718,10 @@ async fn handle_skill_check_if_needed(
         );
 
         // Get AI response stream for the outcome
-        match ai_dm.generate_response_stream(&app.game_state, &outcome_prompt).await {
+        match ai_dm
+            .generate_response_stream(&app.game_state, &outcome_prompt)
+            .await
+        {
             Ok(rx) => {
                 app.start_streaming(rx);
             }
