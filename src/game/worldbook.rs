@@ -137,6 +137,7 @@ pub struct Location {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct NPC {
     pub id: String,
     pub name: String,

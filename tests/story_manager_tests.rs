@@ -271,7 +271,8 @@ fn test_capacity_zero() {
     // 1. Not store anything (len = 0)
     // 2. Store at least 1 item despite capacity 0
     // This test just ensures it doesn't panic
-    assert!(story.len() >= 0);
+    // Length is usize, which is always >= 0 by definition
+    assert!(story.len() < usize::MAX);
 }
 
 #[test]

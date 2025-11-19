@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(gh repo view:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(tee:*)",
+      "Bash(gh pr:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(git restore:*)",
+      "Bash(gh run view:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo check:*)",
+      "Bash(rustc:*)",
+      "Bash(git show:*)",
+      "Bash(git reset:*)",
+      "Bash(chmod:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(grep:*)",
+      "Bash(powershell -Command \"(Get-Content ''c:\\Users\\Clayton\\Programming\\FalloutDnD\\src\\tui\\combat_display.rs'').Count\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

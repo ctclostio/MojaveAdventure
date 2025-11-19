@@ -64,7 +64,6 @@ use crate::error::GameError;
 use crate::game::GameState;
 use anyhow::Result;
 use futures_util::StreamExt;
-use reqwest;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use tokio::sync::mpsc;

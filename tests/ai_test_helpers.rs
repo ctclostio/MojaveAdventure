@@ -13,6 +13,12 @@ pub struct MockExtractionAI {
     pub events: Vec<ExtractedEvent>,
 }
 
+impl Default for MockExtractionAI {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockExtractionAI {
     pub fn new() -> Self {
         MockExtractionAI {

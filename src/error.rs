@@ -39,16 +39,20 @@ pub enum GameError {
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum CombatError {
     #[error("Not enough Action Points to perform that action.")]
+    #[allow(dead_code)]
     InsufficientAP,
     #[error("Target with ID {0} not found in the current combat.")]
+    #[allow(dead_code)]
     TargetNotFound(String),
     #[error("Cannot perform action: combat is not active.")]
+    #[allow(dead_code)]
     CombatNotActive,
 }
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum CharacterError {
     #[error("Invalid SPECIAL stat allocation: {0}.")]
+    #[allow(dead_code)]
     InvalidSpecialAllocation(String),
     #[error("Character name '{0}' is invalid.")]
     InvalidName(String),

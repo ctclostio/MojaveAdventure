@@ -1,0 +1,101 @@
+   Compiling fallout-dnd v0.1.0 (C:\Users\Clayton\Programming\FalloutDnD)
+warning: variants `InsufficientAP`, `TargetNotFound`, and `CombatNotActive` are never constructed
+  --> src\error.rs:42:5
+   |
+40 | pub enum CombatError {
+   |          ----------- variants in this enum
+41 |     #[error("Not enough Action Points to perform that action.")]
+42 |     InsufficientAP,
+   |     ^^^^^^^^^^^^^^
+43 |     #[error("Target with ID {0} not found in the current combat.")]
+44 |     TargetNotFound(String),
+   |     ^^^^^^^^^^^^^^
+45 |     #[error("Cannot perform action: combat is not active.")]
+46 |     CombatNotActive,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `CombatError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variant `InvalidSpecialAllocation` is never constructed
+  --> src\error.rs:52:5
+   |
+50 | pub enum CharacterError {
+   |          -------------- variant in this enum
+51 |     #[error("Invalid SPECIAL stat allocation: {0}.")]
+52 |     InvalidSpecialAllocation(String),
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `CharacterError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `can_level_up` and `level_up` are never used
+   --> src\game\character.rs:248:12
+    |
+194 | impl Character {
+    | -------------- methods in this implementation
+...
+248 |     pub fn can_level_up(&self) -> bool {
+    |            ^^^^^^^^^^^^
+...
+253 |     pub fn level_up(&mut self) {
+    |            ^^^^^^^^
+
+warning: associated items `with_capacity`, `get_all_turns`, `clear`, `build_simple_prompt_section`, `get_summary`, and `set_max_turns` are never used
+   --> src\game\conversation.rs:102:12
+    |
+ 91 | impl ConversationManager {
+    | ------------------------ associated items in this implementation
+...
+102 |     pub fn with_capacity(max_turns: usize) -> Self {
+    |            ^^^^^^^^^^^^^
+...
+141 |     pub fn get_all_turns(&self) -> &VecDeque<ConversationTurn> {
+    |            ^^^^^^^^^^^^^
+...
+156 |     pub fn clear(&mut self) {
+    |            ^^^^^
+...
+214 |     pub fn build_simple_prompt_section(&self, include_last_n: usize) -> String {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+237 |     pub fn get_summary(&self) -> String {
+    |            ^^^^^^^^^^^
+...
+246 |     pub fn set_max_turns(&mut self, max: usize) {
+    |            ^^^^^^^^^^^^^
+
+warning: method `to_legacy_story_context` is never used
+   --> src\game\conversation.rs:299:12
+    |
+263 | impl ConversationManager {
+    | ------------------------ method in this implementation
+...
+299 |     pub fn to_legacy_story_context(&self) -> VecDeque<String> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `scroll_to_bottom` and `scroll_to_top` are never used
+   --> src\tui\app.rs:245:12
+    |
+ 95 | impl App {
+    | -------- methods in this implementation
+...
+245 |     pub fn scroll_to_bottom(&mut self) {
+    |            ^^^^^^^^^^^^^^^^
+...
+250 |     pub fn scroll_to_top(&mut self, max_scroll: usize) {
+    |            ^^^^^^^^^^^^^
+
+warning: function `validate_special_stat` is never used
+   --> src\validation.rs:131:8
+    |
+131 | pub fn validate_special_stat(stat_name: &str, value: u8) -> Result<(), GameError> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `validate_special_total` is never used
+   --> src\validation.rs:149:8
+    |
+149 | pub fn validate_special_total(points: &[u8], target: u8) -> Result<(), GameError> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `fallout-dnd` (bin "fallout-dnd") generated 8 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.99s
