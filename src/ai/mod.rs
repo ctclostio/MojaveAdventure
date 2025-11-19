@@ -35,19 +35,20 @@
 //!
 //! ```no_run
 //! use fallout_dnd::ai::AIDungeonMaster;
-//! use fallout_dnd::config::LlamaConfig;
-//! use fallout_dnd::game::{GameState, character::Character};
+//! use fallout_dnd::config::Config;
+//! use fallout_dnd::game::{GameState, character::{Character, Special}};
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
-//!     let config = LlamaConfig::default();
-//!     let dm = AIDungeonMaster::new(config);
+//!     let config = Config::default();
+//!     let dm = AIDungeonMaster::new(config.llama);
 //!
 //!     // Test connection
 //!     dm.test_connection().await?;
 //!
 //!     // Generate a response
-//!     let character = Character::new("Wanderer".to_string());
+//!     let special = Special::new();
+//!     let character = Character::new("Wanderer".to_string(), special);
 //!     let game = GameState::new(character);
 //!     let response = dm.generate_response(&game, "I explore the ruins").await?;
 //!     println!("DM: {}", response);

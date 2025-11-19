@@ -40,15 +40,11 @@
 //! use fallout_dnd::game::character::{Character, Special};
 //!
 //! // Create a new character
-//! let mut character = Character::new("Vault Dweller".to_string());
-//!
-//! // Set SPECIAL stats
-//! character.special.strength = 6;
-//! character.special.intelligence = 8;
-//! character.special.luck = 7;
-//!
-//! // Recalculate derived stats
-//! character.update_derived_stats();
+//! let mut special = Special::new();
+//! special.strength = 6;
+//! special.intelligence = 8;
+//! special.luck = 7;
+//! let mut character = Character::new("Vault Dweller".to_string(), special);
 //!
 //! println!("HP: {}/{}", character.current_hp, character.max_hp);
 //! println!("Science skill: {}", character.skills.science);
@@ -247,16 +243,21 @@ impl Character {
 
     pub fn add_experience(&mut self, xp: u32) {
         self.experience += xp;
-        // Simple leveling: every 1000 XP = 1 level
+    }
+
+    pub fn can_level_up(&self) -> bool {
+        let new_level = 1 + (self.experience / 1000);
+        new_level > self.level
+    }
+
+    pub fn level_up(&mut self) {
         let new_level = 1 + (self.experience / 1000);
         if new_level > self.level {
-            // Apply level up bonuses for each level gained
             let levels_gained = new_level - self.level;
             for _ in 0..levels_gained {
                 self.max_hp += 5 + self.special.endurance as i32;
             }
             self.level = new_level;
-            // Restore HP to full on level up
             self.current_hp = self.max_hp;
         }
     }
@@ -464,9 +465,12 @@ mod tests {
         assert_eq!(character.level, 1);
 
         character.add_experience(500);
+        assert!(!character.can_level_up());
         assert_eq!(character.level, 1); // Still level 1
 
         character.add_experience(500);
+        assert!(character.can_level_up());
+        character.level_up();
         assert_eq!(character.level, 2); // Now level 2
         assert!(character.max_hp > 0);
     }

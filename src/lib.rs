@@ -22,21 +22,22 @@
 //! ## Quick Start
 //!
 //! ```no_run
-//! use fallout_dnd::game::{GameState, character::Character};
+//! use fallout_dnd::game::{GameState, character::{Character, Special}};
 //! use fallout_dnd::ai::AIDungeonMaster;
-//! use fallout_dnd::config::LlamaConfig;
+//! use fallout_dnd::config::Config;
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
 //!     // Create a character
-//!     let character = Character::new("Vault Dweller".to_string());
+//!     let special = Special::new();
+//!     let character = Character::new("Vault Dweller".to_string(), special);
 //!
 //!     // Initialize game state
 //!     let mut game = GameState::new(character);
 //!
 //!     // Set up AI dungeon master
-//!     let config = LlamaConfig::default();
-//!     let dm = AIDungeonMaster::new(config);
+//!     let config = Config::default();
+//!     let dm = AIDungeonMaster::new(config.llama);
 //!
 //!     // Play the game...
 //!     Ok(())
