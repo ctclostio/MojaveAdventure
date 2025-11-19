@@ -211,7 +211,8 @@ fn parse_narrative_content(content: &str) -> Vec<NarrativeSection> {
                     line[2..].trim().to_string()
                 } else {
                     // numbered list
-                    line.splitn(2, '.').nth(1).unwrap_or("").trim().to_string()
+                    line.split_once('.')
+                        .map_or(String::new(), |(_, after)| after.trim().to_string())
                 };
             current_bullets.push(bullet_text);
             i += 1;
