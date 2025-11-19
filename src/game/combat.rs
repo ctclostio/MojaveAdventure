@@ -314,12 +314,26 @@ mod tests {
     }
 
     #[test]
+    fn test_dice_roll() {
+        for _ in 0..100 {
+            let roll = roll_dice("1d20");
+            assert!(roll >= 1 && roll <= 20);
+        }
+    }
+
+    #[test]
     fn test_attack_roll() {
-        let (hit, critical) = attack_roll(10, 5);
-        // With skill 10 vs AC 5, most rolls should hit
-        // Just check that it returns valid booleans
-        assert!(hit == true || hit == false);
-        assert!(critical == true || critical == false);
+        // Test high skill against low AC (should always hit)
+        let (hit, _) = attack_roll(100, 5);
+        assert!(hit);
+
+        // Test low skill against high AC (should usually miss)
+        // We can't guarantee a miss because of critical hits, so we check that
+        // if it's a hit, it must be a critical.
+        let (hit, critical) = attack_roll(5, 100);
+        if hit {
+            assert!(critical);
+        }
     }
 
     #[test]
