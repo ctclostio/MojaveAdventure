@@ -216,7 +216,27 @@ Just update `config.toml` with the appropriate URL.
 
 ## Contributing
 
-Feel free to fork and modify! Some ideas:
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+**Quick Start for Contributors:**
+
+1. Install git hooks (prevents formatting issues):
+   ```bash
+   # Unix/macOS
+   ./scripts/install-hooks.sh
+
+   # Windows (PowerShell)
+   .\scripts\install-hooks.ps1
+   ```
+
+2. Before committing, ensure:
+   ```bash
+   cargo fmt --all      # Format code
+   cargo clippy         # Check for issues
+   cargo test           # Run tests
+   ```
+
+**Project Ideas:**
 - Add more Fallout-specific items and creatures
 - Implement settlement building
 - Add companion system
