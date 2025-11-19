@@ -157,6 +157,7 @@ pub fn load_game() -> Option<GameState> {
 mod tests {
     use super::*;
     use crate::game::character::{Character, Special};
+    use serial_test::serial;
     use std::fs;
 
     fn create_test_game_state() -> GameState {
@@ -178,6 +179,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_save_and_load_roundtrip() {
         cleanup_test_saves();
 
@@ -201,6 +203,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_save_creates_directory() {
         cleanup_test_saves();
 
@@ -246,6 +249,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_list_save_files_empty() {
         cleanup_test_saves();
 
@@ -255,6 +259,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_list_save_files_multiple() {
         cleanup_test_saves();
 
@@ -275,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_save_file_is_valid_json() {
         cleanup_test_saves();
 
@@ -294,6 +300,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_save_preserves_game_progress() {
         cleanup_test_saves();
 
@@ -317,6 +324,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_save_filename_validation() {
         let game_state = create_test_game_state();
 

@@ -60,7 +60,7 @@ This document outlines all improvements made to the codebase for enhanced code q
 - **Verified all tests pass**: 91 tests passing with updated dependencies
 - **Status**: ✅ All dependencies updated, zero Clippy warnings maintained
 
-### 9. Test Coverage Expansion (In Progress - 55% Complete)
+### 9. Test Coverage Expansion (In Progress - 65% Complete)
 - **Added comprehensive tests for persistence module** (10 new tests):
   - Save/load roundtrip verification
   - Directory creation automation
@@ -69,6 +69,7 @@ This document outlines all improvements made to the codebase for enhanced code q
   - JSON format verification
   - Game progress preservation
   - Filename validation (security)
+  - **Fixed test isolation issues**: Added `serial_test` dependency and `#[serial]` attributes
 - **Added comprehensive tests for items module** (16 new tests):
   - Weapon creation and stats validation
   - Armor creation and AC calculation
@@ -88,9 +89,20 @@ This document outlines all improvements made to the codebase for enhanced code q
   - All error variant creation
   - Debug formatting verification
   - Error chaining and source propagation
-- **Test count increased**: 81 → **131** tests (+62%)
-- **Modules with tests**: 15/34 (44% of codebase)
-- **Status**: 🔄 In progress - 3 critical modules now fully tested
+- **Added comprehensive tests for narrative module** (40 new tests):
+  - Text wrapping with word preservation
+  - Line padding for consistent formatting
+  - Dialogue extraction from quoted text
+  - Speaker/text pattern extraction
+  - Mechanic text detection (rolls, checks, DC)
+  - Narrative content parsing (text, bullets, dialogue, mechanics)
+  - Bullet list parsing (•, -, *, numbered lists)
+  - Unicode character handling
+  - DM narrative formatting with borders
+  - Mixed content parsing
+- **Test count increased**: 81 → **174** tests (+115%)
+- **Modules with tests**: 16/34 (47% of codebase)
+- **Status**: 🔄 In progress - 4 critical modules now fully tested, all tests passing
 
 ## 📋 Remaining Improvements (Planned)
 
@@ -102,10 +114,13 @@ This document outlines all improvements made to the codebase for enhanced code q
 ### 2. Continue Test Coverage Expansion
 - ~~Add tests for `src/game/items.rs` (inventory system)~~ ✅ **COMPLETED**
 - ~~Add tests for `src/error.rs` (error types)~~ ✅ **COMPLETED**
-- Add tests for `src/game/stat_allocator.rs` (character creation)
-- Add tests for AI integration modules
-- Add tests for `src/game/handlers.rs` (game loop handlers)
-- Add tests for `src/tui/narrative.rs` (narrative display)
+- ~~Add tests for `src/tui/narrative.rs` (narrative display)~~ ✅ **COMPLETED**
+- ~~Fix persistence test isolation issues~~ ✅ **COMPLETED**
+- Add tests for `src/game/stat_allocator.rs` (character creation - complex with UI)
+- Add tests for AI integration modules (extractor, prompt building)
+- Add tests for `src/game/handlers.rs` (game loop handlers - complex with async)
+- Add tests for `src/tui/theme.rs` (theme and styling)
+- Add tests for `src/game/rolls.rs` (additional edge cases)
 - Target: Reach 70%+ coverage for core game logic
 - Use `cargo-llvm-cov` for coverage reporting
 
@@ -140,11 +155,12 @@ This document outlines all improvements made to the codebase for enhanced code q
 |-------------------------|--------|---------|--------|
 | Compiler Warnings       | 33+    | 0       | 0      |
 | Clippy Warnings         | 44     | **0**   | 0      |
-| Test Count              | 81     | **131** | 150+   |
-| Module Test Coverage    | 35%    | **44%** | 70%+   |
+| Test Count              | 81     | **174** | 200+   |
+| Module Test Coverage    | 35%    | **47%** | 70%+   |
 | Build Time              | ~11s   | ~10s    | <10s   |
 | Dependencies Outdated   | 6      | **0**   | 0      |
 | CI Jobs                 | 1      | 5       | 5      |
+| Test Failures           | 3      | **0**   | 0      |
 
 ## Next Steps
 
