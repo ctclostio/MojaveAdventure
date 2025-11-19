@@ -73,6 +73,9 @@ pub fn render(f: &mut Frame, app: &App) {
         ViewMode::Worldbook => {
             crate::tui::worldbook_ui::render_worldbook(f, app, content_chunks[0]);
         }
+        ViewMode::GameOver => {
+            render_game_over(f, app, content_chunks[0]);
+        }
     }
 
     // Render input bar
@@ -961,6 +964,87 @@ fn truncate_string(s: &str, max_len: usize) -> String {
         s.to_string()
     } else {
         format!("{}...", &s[..max_len.saturating_sub(3)])
+    }
+}
+
+/// Render game over screen
+fn render_game_over(f: &mut Frame, app: &App, area: Rect) {
+    if let Some(ref death_info) = app.death_info {
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Red))
+            .border_type(BorderType::Double);
+
+        let inner = block.inner(area);
+        f.render_widget(block, area);
+
+        let lines = vec![
+            Line::from(""),
+            Line::from(""),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "═══════════════════════════════════════════════════",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            )]),
+            Line::from(vec![Span::styled(
+                "                    GAME OVER",
+                Style::default()
+                    .fg(Color::LightRed)
+                    .add_modifier(Modifier::BOLD),
+            )]),
+            Line::from(vec![Span::styled(
+                "═══════════════════════════════════════════════════",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            )]),
+            Line::from(""),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                format!("☠ {} ☠", death_info.cause),
+                Style::default().fg(Color::Red),
+            )]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "─────────────────────────────────────────────────",
+                Style::default().fg(Color::DarkGray),
+            )]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Location: ", Style::default().fg(Color::Yellow)),
+                Span::styled(&death_info.location, Style::default().fg(Color::White)),
+            ]),
+            Line::from(vec![
+                Span::styled("Day:      ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    format!("{}", death_info.day),
+                    Style::default().fg(Color::White),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("Level:    ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    format!("{}", death_info.level),
+                    Style::default().fg(Color::White),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "─────────────────────────────────────────────────",
+                Style::default().fg(Color::DarkGray),
+            )]),
+            Line::from(""),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "Press 'R' to restart or 'Q' to quit",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )]),
+        ];
+
+        let paragraph = Paragraph::new(lines)
+            .alignment(Alignment::Center)
+            .block(Block::default());
+        f.render_widget(paragraph, inner);
     }
 }
 

@@ -4,6 +4,15 @@ use crate::tui::theme::LoadingSpinner;
 use crate::tui::worldbook_browser::WorldbookBrowser;
 use std::collections::VecDeque;
 
+/// Information about player death for game over screen
+#[derive(Debug, Clone)]
+pub struct DeathInfo {
+    pub location: String,
+    pub day: u32,
+    pub level: u32,
+    pub cause: String,
+}
+
 /// Main application state for the TUI
 pub struct App {
     /// Whether the app should quit
@@ -53,6 +62,9 @@ pub struct App {
 
     /// Flicker state for retro CRT effect (toggles randomly)
     pub should_flicker: bool,
+
+    /// Death information for game over screen
+    pub death_info: Option<DeathInfo>,
 }
 
 #[derive(Debug, Clone)]
@@ -80,6 +92,7 @@ pub enum ViewMode {
     Stats,     // Viewing character stats
     Worldbook, // Viewing worldbook
     Combat,    // In combat
+    GameOver,  // Player died - game over screen
 }
 
 impl App {
@@ -101,6 +114,7 @@ impl App {
             is_streaming: false,
             stream_receiver: None,
             should_flicker: false,
+            death_info: None,
         };
 
         // Add welcome message
@@ -346,6 +360,51 @@ impl App {
         use crate::tui::theme::RetroEffects;
         // Very low intensity (1-2% chance per tick) for subtle effect
         self.should_flicker = RetroEffects::should_flicker(0.015);
+    }
+
+    /// Trigger game over when player dies
+    pub fn trigger_game_over(&mut self, cause: String) {
+        self.death_info = Some(DeathInfo {
+            location: self.game_state.location.clone(),
+            day: self.game_state.day as i32,
+            level: self.game_state.character.level as u8,
+            cause,
+        });
+        self.view_mode = ViewMode::GameOver;
+        self.waiting_for_ai = false;
+        self.cancel_streaming();
+    }
+
+    /// Reset the game to start a new playthrough
+    pub fn restart_game(&mut self) {
+        // Create a new character with the same name and SPECIAL stats
+        let character_name = self.game_state.character.name.clone();
+        let special = self.game_state.character.special.clone();
+        let character = crate::game::character::Character::new(character_name, special);
+
+        // Create new game state
+        self.game_state = GameState::new(character);
+
+        // Reset UI state
+        self.message_log.clear();
+        self.view_mode = ViewMode::Normal;
+        self.death_info = None;
+        self.input.clear();
+        self.cursor_position = 0;
+        self.scroll_offset = 0;
+        self.waiting_for_ai = false;
+        self.cancel_streaming();
+
+        // Add welcome message
+        self.add_message(
+            "Welcome to Fallout D&D! You are standing at the entrance to Vault 13.".to_string(),
+            MessageType::DM,
+        );
+        self.add_message(
+            "Type your actions and press Enter to proceed. Use 'help' for available commands."
+                .to_string(),
+            MessageType::System,
+        );
     }
 }
 
