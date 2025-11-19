@@ -57,15 +57,21 @@
 //! }
 //! ```
 
+pub mod cache;
 pub mod extractor;
 
 use crate::config::LlamaConfig;
 use crate::error::GameError;
 use crate::game::GameState;
+use crate::templates::{
+    self, CharacterContext, CombatContext, EnemyContext, SkillsContext, SpecialStats,
+};
 use anyhow::Result;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
 use std::time::Duration;
+use tiktoken_rs::CoreBPE;
 use tokio::sync::mpsc;
 
 #[derive(Debug, Serialize)]
@@ -259,62 +265,165 @@ impl AIDungeonMaster {
         Ok(rx)
     }
 
-    /// Estimate token count (rough approximation: 1 token ≈ 4 characters)
+    /// Accurate token counting using tiktoken-rs
+    ///
+    /// Uses the cl100k_base tokenizer (used by GPT-4 and similar models).
+    /// The tokenizer is cached globally to avoid re-initialization overhead.
     fn estimate_tokens(text: &str) -> usize {
-        text.len() / 4
+        static TOKENIZER: OnceLock<CoreBPE> = OnceLock::new();
+
+        let bpe = TOKENIZER.get_or_init(|| {
+            tiktoken_rs::cl100k_base()
+                .expect("Failed to initialize tokenizer - this should never fail")
+        });
+
+        bpe.encode_with_special_tokens(text).len()
     }
 
     /// Build the prompt with game context
     fn build_prompt(&self, game_state: &GameState, player_action: &str) -> String {
         let mut prompt = String::with_capacity(4096);
 
-        // System prompt
-        prompt.push_str(&self.config.system_prompt);
-        prompt.push_str("\n\n");
+        // System prompt from template
+        match templates::render_system_prompt() {
+            Ok(system_prompt) => {
+                prompt.push_str(&system_prompt);
+                prompt.push_str("\n\n");
+            }
+            Err(e) => {
+                // Fallback to config system prompt if template fails
+                tracing::error!("Failed to render system prompt template: {}", e);
+                prompt.push_str(&self.config.system_prompt);
+                prompt.push_str("\n\n");
+            }
+        }
 
-        // Build all context sections
-        prompt.push_str(&Self::build_character_section(&game_state.character));
-        prompt.push_str(&Self::build_inventory_section(
-            &game_state.character.inventory,
-        ));
+        // Build context from templates
+        let character_ctx = Self::build_character_context(&game_state.character);
+        let inventory_items: Vec<String> = game_state
+            .character
+            .inventory
+            .iter()
+            .map(|item| item.name.to_string())
+            .collect();
+
+        let combat_ctx = if game_state.combat.active {
+            Some(Self::build_combat_context(&game_state.combat))
+        } else {
+            None
+        };
+
+        // Get conversation history
+        let conversation_history = if !game_state.conversation.is_empty() {
+            Self::get_conversation_messages(&game_state.conversation)
+        } else if !game_state.story.is_empty() {
+            // Fallback for old save files
+            game_state.story.get_all().iter().cloned().collect()
+        } else {
+            Vec::new()
+        };
+
+        // Render context template
+        match templates::render_context(
+            Some(&character_ctx),
+            Some(&inventory_items),
+            combat_ctx.as_ref(),
+            Some(&conversation_history),
+        ) {
+            Ok(context) => prompt.push_str(&context),
+            Err(e) => {
+                tracing::error!("Failed to render context template: {}", e);
+                // Fallback to old methods if template fails
+                prompt.push_str(&Self::build_character_section(&game_state.character));
+                prompt.push_str(&Self::build_inventory_section(
+                    &game_state.character.inventory,
+                ));
+            }
+        }
+
+        // Location and worldbook
         prompt.push_str(&format!("Location: {}\n\n", game_state.location));
-
-        // Worldbook context (locations, NPCs, events)
         let worldbook_context = game_state.worldbook.build_context();
         if !worldbook_context.is_empty() {
             prompt.push_str(&worldbook_context);
             prompt.push('\n');
         }
 
-        // Combat section
-        if game_state.combat.active {
-            prompt.push_str(&Self::build_combat_section(&game_state.combat));
-        }
-
-        // Conversation history section (use new structured system if available, else fall back to legacy)
-        if !game_state.conversation.is_empty() {
-            prompt.push_str(&Self::build_conversation_section(&game_state.conversation));
-        } else if !game_state.story.is_empty() {
-            // Fallback for old save files
-            prompt.push_str(&Self::build_story_section(game_state.story.get_all()));
-        }
-
         // Current player action
         prompt.push_str(&format!(">>> PLAYER: {}\n\n>>> DM (YOU):", player_action));
 
-        // Warn if context is getting large (typical context window is 4096-8192 tokens)
+        // Warn if prompt is using >75% of context window (leaving room for response)
         let estimated_tokens = Self::estimate_tokens(&prompt);
-        if estimated_tokens > 3000 {
+        let warning_threshold = (self.config.context_window as f32 * 0.75) as usize;
+        if estimated_tokens > warning_threshold {
             tracing::warn!(
-                "Large prompt detected: ~{} tokens. Consider reducing worldbook or conversation history.",
-                estimated_tokens
+                "Large prompt detected: {} tokens ({}% of {} token context window). Consider reducing worldbook or conversation history.",
+                estimated_tokens,
+                (estimated_tokens as f32 / self.config.context_window as f32 * 100.0) as usize,
+                self.config.context_window
             );
         }
 
         prompt
     }
 
-    /// Build character stats section
+    /// Build character context for templates
+    fn build_character_context(character: &crate::game::character::Character) -> CharacterContext {
+        CharacterContext {
+            name: character.name.as_str().to_string(),
+            level: character.level as u8,
+            current_hp: character.current_hp,
+            max_hp: character.max_hp,
+            current_ap: character.current_ap as u8,
+            max_ap: character.max_ap as u8,
+            caps: character.caps,
+            special: SpecialStats {
+                strength: character.special.strength,
+                perception: character.special.perception,
+                endurance: character.special.endurance,
+                charisma: character.special.charisma,
+                intelligence: character.special.intelligence,
+                agility: character.special.agility,
+                luck: character.special.luck,
+            },
+            skills: SkillsContext {
+                small_guns: character.skills.small_guns,
+                speech: character.skills.speech,
+                lockpick: character.skills.lockpick,
+                science: character.skills.science,
+                sneak: character.skills.sneak,
+            },
+        }
+    }
+
+    /// Build combat context for templates
+    fn build_combat_context(combat: &crate::game::combat::CombatState) -> CombatContext {
+        CombatContext {
+            round: combat.round,
+            enemies: combat
+                .enemies
+                .iter()
+                .map(|enemy| EnemyContext {
+                    name: enemy.name.as_str().to_string(),
+                    current_hp: enemy.current_hp,
+                    is_alive: enemy.is_alive(),
+                })
+                .collect(),
+        }
+    }
+
+    /// Get conversation messages for templates
+    fn get_conversation_messages(
+        conversation: &crate::game::conversation::ConversationManager,
+    ) -> Vec<String> {
+        conversation
+            .get_recent_turns(10)
+            .iter()
+            .map(|turn| format!("{:?}: {}", turn.speaker, turn.message))
+            .collect()
+    }
+
+    /// Build character stats section (legacy fallback)
     fn build_character_section(character: &crate::game::character::Character) -> String {
         // SPECIAL stats - IMPORTANT: These are the actual character stats, do not make up different ones!
         format!(
@@ -344,7 +453,7 @@ impl AIDungeonMaster {
         )
     }
 
-    /// Build inventory section
+    /// Build inventory section (legacy fallback)
     fn build_inventory_section(inventory: &[crate::game::items::Item]) -> String {
         if inventory.is_empty() {
             return String::new();
@@ -355,7 +464,7 @@ impl AIDungeonMaster {
         format!("Inventory: {}\n", items.join(", "))
     }
 
-    /// Build combat status section
+    /// Build combat status section (legacy fallback)
     fn build_combat_section(combat: &crate::game::combat::CombatState) -> String {
         // Pre-allocate: ~100 bytes header + ~50 bytes per enemy
         let mut section = String::with_capacity(100 + combat.enemies.len() * 50);

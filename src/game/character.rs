@@ -52,6 +52,7 @@
 
 use super::items::Item;
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String as SmartString;
 
 /// SPECIAL stats - core Fallout character attributes
 ///
@@ -174,7 +175,7 @@ impl Skills {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Character {
-    pub name: String,
+    pub name: SmartString,
     pub level: u32,
     pub experience: u32,
     pub special: Special,
@@ -185,20 +186,21 @@ pub struct Character {
     pub current_ap: i32,
     pub caps: u32,
     pub inventory: Vec<Item>,
-    pub equipped_weapon: Option<String>,
-    pub equipped_armor: Option<String>,
-    pub traits: Vec<String>,
-    pub perks: Vec<String>,
+    pub equipped_weapon: Option<SmartString>,
+    pub equipped_armor: Option<SmartString>,
+    pub traits: Vec<SmartString>,
+    pub perks: Vec<SmartString>,
 }
 
 impl Character {
-    pub fn new(name: String, special: Special) -> Self {
+    pub fn new(name: impl Into<SmartString>, special: Special) -> Self {
+        let name = name.into();
         let skills = Skills::from_special(&special);
         let max_hp = 15 + special.strength as i32 + (special.endurance as i32 * 2);
         let max_ap = 5 + (special.agility as i32 / 2);
 
         Character {
-            name,
+            name: SmartString::from(name),
             level: 1,
             experience: 0,
             special,
@@ -209,7 +211,7 @@ impl Character {
             current_ap: max_ap,
             caps: 500,
             inventory: super::items::get_starting_items(),
-            equipped_weapon: Some("10mm_pistol".to_string()),
+            equipped_weapon: Some(SmartString::from("10mm_pistol")),
             equipped_armor: None,
             traits: Vec::new(),
             perks: Vec::new(),
@@ -264,10 +266,14 @@ impl Character {
         }
     }
 
-    pub fn get_equipped_damage(&self) -> String {
+    pub fn get_equipped_damage(&self) -> SmartString {
         if let Some(weapon_id) = &self.equipped_weapon {
             // Find the weapon in inventory
-            if let Some(item) = self.inventory.iter().find(|i| &i.id == weapon_id) {
+            if let Some(item) = self
+                .inventory
+                .iter()
+                .find(|i| i.id.as_str() == weapon_id.as_str())
+            {
                 // Extract damage if it's a weapon
                 if let super::items::ItemType::Weapon(ref stats) = item.item_type {
                     return stats.damage.clone();
@@ -275,13 +281,17 @@ impl Character {
             }
         }
         // Default unarmed damage
-        "1d4".to_string()
+        SmartString::from("1d4")
     }
 
     /// Get the appropriate combat skill for the currently equipped weapon
     pub fn get_weapon_skill(&self) -> u8 {
         if let Some(weapon_id) = &self.equipped_weapon {
-            if let Some(item) = self.inventory.iter().find(|i| &i.id == weapon_id) {
+            if let Some(item) = self
+                .inventory
+                .iter()
+                .find(|i| i.id.as_str() == weapon_id.as_str())
+            {
                 if let super::items::ItemType::Weapon(ref stats) = item.item_type {
                     return match stats.weapon_type {
                         super::items::WeaponType::SmallGun => self.skills.small_guns,

@@ -1,8 +1,289 @@
 /// Comprehensive tests for worldbook system
+use fallout_dnd::ai::extractor::{
+    ExtractedEntities, ExtractedEvent, ExtractedLocation, ExtractedNPC, ExtractionAI,
+};
 use fallout_dnd::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
 use std::collections::HashMap;
 use std::path::Path;
 use tempfile::TempDir;
+
+// ========== Snapshot Tests for AI Extraction ==========
+
+#[test]
+fn snapshot_extraction_simple_megaton() {
+    let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+    let json = r#"{
+        "locations": [{
+            "name": "Megaton",
+            "description": "Settlement built around unexploded atomic bomb",
+            "location_type": "settlement"
+        }],
+        "npcs": [{
+            "name": "Sheriff Lucas Simms",
+            "role": "guard",
+            "personality": ["stern", "wary"],
+            "location": "Megaton"
+        }],
+        "events": [{
+            "event_type": "npc_met",
+            "description": "Met Sheriff Lucas Simms",
+            "location": "Megaton",
+            "entities": ["Sheriff Lucas Simms"]
+        }]
+    }"#;
+
+    let entities = extractor.parse_extraction(json).unwrap();
+    insta::assert_json_snapshot!(entities, @r###"
+    {
+      "locations": [
+        {
+          "name": "Megaton",
+          "description": "Settlement built around unexploded atomic bomb",
+          "location_type": "settlement"
+        }
+      ],
+      "npcs": [
+        {
+          "name": "Sheriff Lucas Simms",
+          "role": "guard",
+          "personality": [
+            "stern",
+            "wary"
+          ],
+          "location": "Megaton"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "npc_met",
+          "description": "Met Sheriff Lucas Simms",
+          "location": "Megaton",
+          "entities": [
+            "Sheriff Lucas Simms"
+          ]
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_extraction_combat_encounter() {
+    let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+    let json = r#"{
+        "locations": [],
+        "npcs": [],
+        "events": [{
+            "event_type": "combat",
+            "description": "Attacked by raiders in the wasteland",
+            "location": null,
+            "entities": ["raider"]
+        }]
+    }"#;
+
+    let entities = extractor.parse_extraction(json).unwrap();
+    insta::assert_json_snapshot!(entities, @r###"
+    {
+      "locations": [],
+      "npcs": [],
+      "events": [
+        {
+          "event_type": "combat",
+          "description": "Attacked by raiders in the wasteland",
+          "location": null,
+          "entities": [
+            "raider"
+          ]
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_extraction_complex_scenario() {
+    let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+    let json = r#"{
+        "locations": [
+            {
+                "name": "Vault 101",
+                "description": "Underground vault where you grew up",
+                "location_type": "vault"
+            },
+            {
+                "name": "Springvale",
+                "description": "Abandoned town near Vault 101",
+                "location_type": "ruin"
+            }
+        ],
+        "npcs": [
+            {
+                "name": "Amata",
+                "role": "settler",
+                "personality": ["loyal", "brave"],
+                "location": "Vault 101"
+            },
+            {
+                "name": "Moriarty",
+                "role": "merchant",
+                "personality": ["greedy", "cunning"],
+                "location": "Megaton"
+            }
+        ],
+        "events": [
+            {
+                "event_type": "discovery",
+                "description": "Discovered Springvale ruins",
+                "location": "Springvale",
+                "entities": []
+            },
+            {
+                "event_type": "dialogue",
+                "description": "Negotiated with Moriarty for information",
+                "location": "Megaton",
+                "entities": ["Moriarty"]
+            }
+        ]
+    }"#;
+
+    let entities = extractor.parse_extraction(json).unwrap();
+    insta::assert_json_snapshot!(entities, @r###"
+    {
+      "locations": [
+        {
+          "name": "Vault 101",
+          "description": "Underground vault where you grew up",
+          "location_type": "vault"
+        },
+        {
+          "name": "Springvale",
+          "description": "Abandoned town near Vault 101",
+          "location_type": "ruin"
+        }
+      ],
+      "npcs": [
+        {
+          "name": "Amata",
+          "role": "settler",
+          "personality": [
+            "loyal",
+            "brave"
+          ],
+          "location": "Vault 101"
+        },
+        {
+          "name": "Moriarty",
+          "role": "merchant",
+          "personality": [
+            "greedy",
+            "cunning"
+          ],
+          "location": "Megaton"
+        }
+      ],
+      "events": [
+        {
+          "event_type": "discovery",
+          "description": "Discovered Springvale ruins",
+          "location": "Springvale",
+          "entities": []
+        },
+        {
+          "event_type": "dialogue",
+          "description": "Negotiated with Moriarty for information",
+          "location": "Megaton",
+          "entities": [
+            "Moriarty"
+          ]
+        }
+      ]
+    }
+    "###);
+}
+
+#[test]
+fn snapshot_extraction_to_worldbook_conversion() {
+    let extracted = ExtractedEntities {
+        locations: vec![ExtractedLocation {
+            name: "Rivet City".to_string(),
+            description: "Aircraft carrier settlement".to_string(),
+            location_type: "settlement".to_string(),
+        }],
+        npcs: vec![ExtractedNPC {
+            name: "Doctor Li".to_string(),
+            role: "scientist".to_string(),
+            personality: vec!["intelligent".to_string(), "dedicated".to_string()],
+            location: Some("Rivet City".to_string()),
+        }],
+        events: vec![ExtractedEvent {
+            event_type: "npc_met".to_string(),
+            description: "Met Doctor Li at Rivet City".to_string(),
+            location: Some("Rivet City".to_string()),
+            entities: vec!["Doctor Li".to_string()],
+        }],
+    };
+
+    let (locations, npcs, events) = extracted.to_worldbook_entries();
+
+    // Snapshot the converted worldbook entries
+    insta::assert_json_snapshot!((locations, npcs, events), @r###"
+    [
+      [
+        {
+          "id": "rivet_city",
+          "name": "Rivet City",
+          "name_lowercase": "rivet city",
+          "description": "Aircraft carrier settlement",
+          "location_type": "settlement",
+          "npcs_present": [],
+          "atmosphere": null,
+          "first_visited": null,
+          "last_visited": null,
+          "visit_count": 0,
+          "notes": [],
+          "state": {}
+        }
+      ],
+      [
+        {
+          "id": "doctor_li",
+          "name": "Doctor Li",
+          "name_lowercase": "doctor li",
+          "role": "scientist",
+          "personality": [
+            "intelligent",
+            "dedicated"
+          ],
+          "current_location": "rivet_city",
+          "disposition": 0,
+          "knowledge": [],
+          "notes": "",
+          "alive": true
+        }
+      ],
+      [
+        {
+          "timestamp": "<redacted timestamp>",
+          "location": "rivet_city",
+          "event_type": "npc_met",
+          "description": "Met Doctor Li at Rivet City",
+          "entities": [
+            "doctor_li"
+          ]
+        }
+      ]
+    ]
+    "###, {
+        ".[]..timestamp" => insta::dynamic_redaction(|value, _path| {
+            // Redact timestamps since they'll change every test run
+            assert!(value.as_str().is_some());
+            "<redacted timestamp>"
+        }),
+    });
+}
 
 // Helper function to create a test location
 fn create_test_location(id: &str, name: &str, desc: &str, loc_type: &str) -> Location {

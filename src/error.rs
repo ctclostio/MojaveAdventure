@@ -1,78 +1,178 @@
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum GameError {
     #[error("Save file error: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::save_file_error),
+        help("Check that the save directory exists and has write permissions")
+    )]
     SaveFileError(#[from] std::io::Error),
 
     #[error("AI connection failed: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::ai_connection),
+        help("Make sure llama.cpp server is running at the configured URL.\nYou can start it with: llama-server -m <model-path> -c 4096")
+    )]
     AIConnectionError(String),
 
     #[error("Invalid input: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::invalid_input),
+        help("Check the command syntax and try again")
+    )]
     InvalidInput(String),
 
     #[error("Serialization error: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::serialization),
+        help("The save file may be corrupted. Consider loading an earlier save.")
+    )]
     SerializationError(#[from] serde_json::Error),
 
     #[error("Deserialization error: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::deserialization),
+        help("The configuration file may be invalid. Check config.toml for syntax errors.")
+    )]
     DeserializationError(#[from] toml::de::Error),
 
     #[error("Path traversal detected: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::security::path_traversal),
+        severity(Error),
+        help("File paths must stay within the game directory for security")
+    )]
     PathTraversalError(String),
 
     #[error("Combat error: {0}")]
+    #[diagnostic(transparent)]
     Combat(#[from] CombatError),
 
     #[error("Character creation error: {0}")]
+    #[diagnostic(transparent)]
     Character(#[from] CharacterError),
 
     #[error("Configuration error: {0}")]
+    #[diagnostic(transparent)]
     Config(#[from] ConfigError),
 
     #[error("Network error: {0}")]
+    #[diagnostic(
+        code(fallout_dnd::network),
+        help("Check your internet connection or AI server configuration")
+    )]
     NetworkError(#[from] reqwest::Error),
 
     #[error("{0}")]
+    #[diagnostic(code(fallout_dnd::other))]
     Other(String),
 }
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, PartialEq, Eq, Diagnostic)]
 pub enum CombatError {
     #[error("Not enough Action Points to perform that action.")]
+    #[diagnostic(
+        code(fallout_dnd::combat::insufficient_ap),
+        help("Wait for next round to regenerate AP, or use an action that costs less AP")
+    )]
     #[allow(dead_code)]
     InsufficientAP,
+
     #[error("Target with ID {0} not found in the current combat.")]
+    #[diagnostic(
+        code(fallout_dnd::combat::target_not_found),
+        help("Check the list of active enemies with the 'enemies' command")
+    )]
     #[allow(dead_code)]
     TargetNotFound(String),
+
     #[error("Cannot perform action: combat is not active.")]
+    #[diagnostic(
+        code(fallout_dnd::combat::not_active),
+        help("You need to be in combat to perform this action")
+    )]
     #[allow(dead_code)]
     CombatNotActive,
 }
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, PartialEq, Eq, Diagnostic)]
 pub enum CharacterError {
     #[error("Invalid SPECIAL stat allocation: {0}.")]
+    #[diagnostic(
+        code(fallout_dnd::character::invalid_special),
+        help("SPECIAL stats must total 40 points maximum, with each stat between 1-10")
+    )]
     #[allow(dead_code)]
     InvalidSpecialAllocation(String),
+
     #[error("Character name '{0}' is invalid.")]
+    #[diagnostic(
+        code(fallout_dnd::character::invalid_name),
+        help("Character name must be 1-50 characters long and contain only letters, numbers, spaces, and basic punctuation")
+    )]
     InvalidName(String),
 }
 
-#[derive(Error, Debug, Clone, PartialEq)]
+#[derive(Error, Debug, Clone, PartialEq, Diagnostic)]
 pub enum ConfigError {
     #[error("Invalid temperature: {0}. Must be between 0.0 and 2.0.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_temperature),
+        help("Temperature controls randomness. Try values like 0.7 (focused) or 1.2 (creative)")
+    )]
     InvalidTemperature(f32),
+
     #[error("Invalid top_p: {0}. Must be between 0.0 and 1.0.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_top_p),
+        help("Top_p controls diversity. Typical values are 0.9-0.95")
+    )]
     InvalidTopP(f32),
+
     #[error("Invalid top_k: {0}. Must be at least 1.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_top_k),
+        help("Top_k limits token selection. Typical values are 40-100")
+    )]
     InvalidTopK(i32),
+
     #[error("Invalid max_tokens: {0}. Must be between 1 and 32000.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_max_tokens),
+        help("Max_tokens limits response length. For narrative, try 512-2048")
+    )]
     InvalidMaxTokens(i32),
+
+    #[error("Invalid context_window: {0}. Must be between 512 and 128000.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_context_window),
+        help(
+            "Context_window must match your model's capabilities. Common values: 4096, 8192, 32768"
+        )
+    )]
+    InvalidContextWindow(i32),
+
     #[error("Invalid repeat_penalty: {0}. Must be between 1.0 and 2.0.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_repeat_penalty),
+        help("Repeat_penalty reduces repetition. Try 1.1-1.3")
+    )]
     InvalidRepeatPenalty(f32),
+
     #[error("Invalid starting_level: {0}. Must be between 1 and 50.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_starting_level),
+        help("Starting level determines initial character power. Level 1 is recommended for new characters")
+    )]
     InvalidStartingLevel(u32),
+
     #[error("Invalid starting_caps: {0}. Must be less than 1,000,000.")]
+    #[diagnostic(
+        code(fallout_dnd::config::invalid_starting_caps),
+        help("Starting caps is the initial currency. Typical values: 100-1000")
+    )]
     InvalidStartingCaps(u32),
 }
 

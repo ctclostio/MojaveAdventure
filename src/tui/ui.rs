@@ -129,7 +129,7 @@ fn render_character_header(f: &mut Frame, app: &App, area: Rect) {
         Line::from(vec![
             Span::styled("┌─ ", border_style),
             Span::styled(
-                character.name.clone(),
+                character.name.as_str(),
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
@@ -355,7 +355,7 @@ fn render_quick_status(f: &mut Frame, app: &App, area: Rect) {
                 let hp_percent = (enemy.current_hp as f64 / enemy.max_hp as f64 * 100.0) as u32;
                 lines.push(Line::from(vec![
                     Span::styled(format!("[{}] ", i + 1), Style::default().fg(Color::Yellow)),
-                    Span::styled(&enemy.name, Style::default().fg(Color::Red)),
+                    Span::styled(enemy.name.as_str(), Style::default().fg(Color::Red)),
                     Span::styled(
                         format!(" {}%", hp_percent),
                         Style::default().fg(Color::DarkGray),
@@ -373,7 +373,7 @@ fn render_quick_status(f: &mut Frame, app: &App, area: Rect) {
             {
                 lines.push(Line::from(vec![
                     Span::styled("🔫 ", Style::default().fg(Color::Yellow)),
-                    Span::styled(&weapon.name, Style::default().fg(Color::White)),
+                    Span::styled(weapon.name.as_str(), Style::default().fg(Color::White)),
                 ]));
 
                 // Show damage if it's a weapon

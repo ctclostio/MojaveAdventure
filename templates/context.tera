@@ -1,0 +1,25 @@
+{% if character %}CHARACTER: {{ character.name }} (Level {{ character.level }})
+HP: {{ character.current_hp }}/{{ character.max_hp }} | AP: {{ character.current_ap }}/{{ character.max_ap }} | Caps: {{ character.caps }}
+SPECIAL: S:{{ character.special.strength }} P:{{ character.special.perception }} E:{{ character.special.endurance }} C:{{ character.special.charisma }} I:{{ character.special.intelligence }} A:{{ character.special.agility }} L:{{ character.special.luck }}
+Skills: Small Guns:{{ character.skills.small_guns }} Speech:{{ character.skills.speech }} Lockpick:{{ character.skills.lockpick }} Science:{{ character.skills.science }} Sneak:{{ character.skills.sneak }}
+{% endif %}
+
+{% if inventory and inventory | length > 0 %}Inventory: {{ inventory | join(sep=", ") }}
+{% endif %}
+
+{% if combat %}IN COMBAT - Round {{ combat.round }}
+Enemies:
+{% for enemy in combat.enemies %}{% if enemy.is_alive %}  - {{ enemy.name }} (HP: {{ enemy.current_hp }})
+{% endif %}{% endfor %}
+
+{% endif %}
+
+{% if conversation_history and conversation_history | length > 0 %}=== CONVERSATION HISTORY ===
+(You are the DM. The player is the other speaker.)
+
+{% for message in conversation_history %}{{ message }}
+{% endfor %}
+
+=== END HISTORY ===
+
+{% endif %}

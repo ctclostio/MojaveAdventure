@@ -224,7 +224,7 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
 
     let mut lines = vec![
         Line::from(Span::styled(
-            location.name.clone(),
+            location.name.as_str(),
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
@@ -247,7 +247,7 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
     if let Some(atmosphere) = &location.atmosphere {
         lines.push(Line::from(vec![
             Span::styled("Atmosphere: ", Style::default().fg(Color::DarkGray)),
-            Span::styled(atmosphere, Style::default().fg(Color::White)),
+            Span::styled(atmosphere.as_str(), Style::default().fg(Color::White)),
         ]));
         lines.push(Line::from(""));
     }
@@ -282,7 +282,7 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
                 let (disp_text, _emoji) = get_disposition_string(npc.disposition);
                 lines.push(Line::from(vec![
                     Span::styled(" • ", Style::default().fg(Color::Yellow)),
-                    Span::styled(&npc.name, Style::default().fg(Color::White)),
+                    Span::styled(npc.name.as_str(), Style::default().fg(Color::White)),
                     Span::styled(
                         format!(" ({}, {})", npc.role, disp_text),
                         Style::default().fg(Color::DarkGray),
@@ -415,7 +415,7 @@ fn render_npc_detail(f: &mut Frame, app: &App, area: Rect) {
     let mut lines = vec![
         Line::from(vec![
             Span::styled(
-                npc.name.clone(),
+                npc.name.as_str(),
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
@@ -447,7 +447,7 @@ fn render_npc_detail(f: &mut Frame, app: &App, area: Rect) {
         if let Some(location) = worldbook.locations.get(loc_id) {
             lines.push(Line::from(vec![
                 Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
-                Span::styled(&location.name, Style::default().fg(Color::White)),
+                Span::styled(location.name.as_str(), Style::default().fg(Color::White)),
             ]));
             lines.push(Line::from(""));
         }
@@ -610,7 +610,7 @@ fn render_event_detail(f: &mut Frame, app: &App, area: Rect) {
         if let Some(location) = worldbook.locations.get(loc_id) {
             lines.push(Line::from(vec![
                 Span::styled("Location: ", Style::default().fg(Color::DarkGray)),
-                Span::styled(&location.name, Style::default().fg(Color::White)),
+                Span::styled(location.name.as_str(), Style::default().fg(Color::White)),
             ]));
             lines.push(Line::from(""));
         }

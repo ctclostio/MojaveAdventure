@@ -1,7 +1,9 @@
 use crate::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
+use crate::templates;
 use anyhow::{anyhow, Result};
 use reqwest;
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String as SmartString;
 use std::time::Duration;
 
 /// Function calling schema for entity extraction
@@ -124,8 +126,20 @@ impl ExtractionAI {
         self.parse_extraction(&extraction_response.content)
     }
 
-    /// Build extraction prompt with examples
+    /// Build extraction prompt with examples using template
     fn build_extraction_prompt(&self, narrative: &str) -> String {
+        match templates::render_extractor_prompt(narrative) {
+            Ok(prompt) => prompt,
+            Err(e) => {
+                tracing::error!("Failed to render extractor template: {}", e);
+                // Fallback to hardcoded prompt if template fails
+                self.build_extraction_prompt_fallback(narrative)
+            }
+        }
+    }
+
+    /// Legacy fallback for extraction prompt
+    fn build_extraction_prompt_fallback(&self, narrative: &str) -> String {
         format!(
             r#"You are an expert entity extractor for a Fallout RPG game. Extract all NPCs, locations, and events from the narrative text.
 
@@ -239,10 +253,10 @@ impl ExtractedEntities {
             let id = Worldbook::generate_id(&loc.name);
             locations.push(Location {
                 id: id.clone(),
-                name: loc.name.clone(),
-                name_lowercase: loc.name.to_lowercase(),
-                description: loc.description.clone(),
-                location_type: loc.location_type.clone(),
+                name: loc.name.clone().into(),
+                name_lowercase: loc.name.to_lowercase().into(),
+                description: loc.description.clone().into(),
+                location_type: loc.location_type.clone().into(),
                 npcs_present: Vec::new(),
                 atmosphere: None,
                 first_visited: None,
@@ -258,14 +272,14 @@ impl ExtractedEntities {
             let id = Worldbook::generate_id(&npc.name);
             npcs.push(NPC {
                 id: id.clone(),
-                name: npc.name.clone(),
-                name_lowercase: npc.name.to_lowercase(),
-                role: npc.role.clone(),
-                personality: npc.personality.clone(),
+                name: npc.name.clone().into(),
+                name_lowercase: npc.name.to_lowercase().into(),
+                role: npc.role.clone().into(),
+                personality: npc.personality.iter().map(|s| s.clone().into()).collect(),
                 current_location: npc.location.as_ref().map(|l| Worldbook::generate_id(l)),
                 disposition: 0,
                 knowledge: Vec::new(),
-                notes: String::new(),
+                notes: SmartString::new(),
                 alive: true,
             });
         }
@@ -273,10 +287,10 @@ impl ExtractedEntities {
         // Convert events
         for event in &self.events {
             events.push(WorldEvent {
-                timestamp: chrono::Utc::now().to_rfc3339(),
+                timestamp: chrono::Utc::now().to_rfc3339().into(),
                 location: event.location.as_ref().map(|l| Worldbook::generate_id(l)),
-                event_type: event.event_type.clone(),
-                description: event.description.clone(),
+                event_type: event.event_type.clone().into(),
+                description: event.description.clone().into(),
                 entities: event
                     .entities
                     .iter()

@@ -381,7 +381,7 @@ impl App {
     #[allow(dead_code)]
     pub fn restart_game(&mut self) {
         // Create a new character with the same name and SPECIAL stats
-        let character_name = self.game_state.character.name.clone();
+        let character_name = self.game_state.character.name.to_string();
         let special = self.game_state.character.special.clone();
         let character = crate::game::character::Character::new(character_name, special);
 

@@ -103,6 +103,7 @@
 //! ```
 
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String as SmartString;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -113,52 +114,52 @@ use std::path::Path;
 /// all discovered locations, met NPCs, and significant events.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Worldbook {
-    pub locations: HashMap<String, Location>,
-    pub npcs: HashMap<String, NPC>,
+    pub locations: HashMap<SmartString, Location>,
+    pub npcs: HashMap<SmartString, NPC>,
     pub events: Vec<WorldEvent>,
-    pub current_location: Option<String>,
+    pub current_location: Option<SmartString>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Location {
-    pub id: String,
-    pub name: String,
+    pub id: SmartString,
+    pub name: SmartString,
     #[serde(skip)] // Don't serialize - computed from name
-    pub name_lowercase: String,
-    pub description: String,
-    pub location_type: String, // "settlement", "ruin", "vault", "wasteland"
-    pub npcs_present: Vec<String>, // NPC IDs
-    pub atmosphere: Option<String>,
-    pub first_visited: Option<String>,
-    pub last_visited: Option<String>,
+    pub name_lowercase: SmartString,
+    pub description: SmartString,
+    pub location_type: SmartString, // "settlement", "ruin", "vault", "wasteland"
+    pub npcs_present: Vec<SmartString>, // NPC IDs
+    pub atmosphere: Option<SmartString>,
+    pub first_visited: Option<SmartString>,
+    pub last_visited: Option<SmartString>,
     pub visit_count: u32,
-    pub notes: Vec<String>,
-    pub state: HashMap<String, String>, // Custom key-value state
+    pub notes: Vec<SmartString>,
+    pub state: HashMap<SmartString, SmartString>, // Custom key-value state
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::upper_case_acronyms)]
 pub struct NPC {
-    pub id: String,
-    pub name: String,
+    pub id: SmartString,
+    pub name: SmartString,
     #[serde(skip)] // Don't serialize - computed from name
-    pub name_lowercase: String,
-    pub role: String,             // "merchant", "guard", "quest_giver", "settler"
-    pub personality: Vec<String>, // ["gruff", "honest", "paranoid"]
-    pub current_location: Option<String>,
-    pub disposition: i32,       // -100 to +100
-    pub knowledge: Vec<String>, // Things they know about
-    pub notes: String,
+    pub name_lowercase: SmartString,
+    pub role: SmartString, // "merchant", "guard", "quest_giver", "settler"
+    pub personality: Vec<SmartString>, // ["gruff", "honest", "paranoid"]
+    pub current_location: Option<SmartString>,
+    pub disposition: i32,            // -100 to +100
+    pub knowledge: Vec<SmartString>, // Things they know about
+    pub notes: SmartString,
     pub alive: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldEvent {
-    pub timestamp: String,
-    pub location: Option<String>,
-    pub event_type: String, // "npc_met", "combat", "discovery", "dialogue"
-    pub description: String,
-    pub entities: Vec<String>, // NPC/location IDs involved
+    pub timestamp: SmartString,
+    pub location: Option<SmartString>,
+    pub event_type: SmartString, // "npc_met", "combat", "discovery", "dialogue"
+    pub description: SmartString,
+    pub entities: Vec<SmartString>, // NPC/location IDs involved
 }
 
 impl Worldbook {
@@ -179,13 +180,13 @@ impl Worldbook {
 
         // Add Vault 13 as the default starting location
         let vault_13 = Location {
-            id: "vault_13".to_string(),
-            name: "Vault 13".to_string(),
-            name_lowercase: "vault 13".to_string(),
-            description: "One of the great underground Vaults built before the Great War. Vault 13 was designed to remain sealed for 200 years as a test of prolonged isolation. The massive gear-shaped door stands as a testament to pre-war engineering.".to_string(),
-            location_type: "vault".to_string(),
+            id: SmartString::from("vault_13"),
+            name: SmartString::from("Vault 13"),
+            name_lowercase: SmartString::from("vault 13"),
+            description: SmartString::from("One of the great underground Vaults built before the Great War. Vault 13 was designed to remain sealed for 200 years as a test of prolonged isolation. The massive gear-shaped door stands as a testament to pre-war engineering."),
+            location_type: SmartString::from("vault"),
             npcs_present: vec![],
-            atmosphere: Some("Safe but claustrophobic. The air recyclers hum steadily in the background.".to_string()),
+            atmosphere: Some(SmartString::from("Safe but claustrophobic. The air recyclers hum steadily in the background.")),
             first_visited: None,
             last_visited: None,
             visit_count: 0,
@@ -215,10 +216,10 @@ impl Worldbook {
     #[allow(dead_code)]
     fn populate_caches(&mut self) {
         for location in self.locations.values_mut() {
-            location.name_lowercase = location.name.to_lowercase();
+            location.name_lowercase = location.name.to_lowercase().into();
         }
         for npc in self.npcs.values_mut() {
-            npc.name_lowercase = npc.name.to_lowercase();
+            npc.name_lowercase = npc.name.to_lowercase().into();
         }
     }
 
@@ -231,14 +232,14 @@ impl Worldbook {
     // Add a new location or update existing
     pub fn add_location(&mut self, mut location: Location) {
         // Ensure cache is populated
-        location.name_lowercase = location.name.to_lowercase();
+        location.name_lowercase = location.name.to_lowercase().into();
         self.locations.insert(location.id.clone(), location);
     }
 
     // Add a new NPC or update existing
     pub fn add_npc(&mut self, mut npc: NPC) {
         // Ensure cache is populated
-        npc.name_lowercase = npc.name.to_lowercase();
+        npc.name_lowercase = npc.name.to_lowercase().into();
         self.npcs.insert(npc.id.clone(), npc);
     }
 
@@ -276,7 +277,7 @@ impl Worldbook {
     }
 
     // Update current location
-    pub fn set_current_location(&mut self, location_id: Option<String>) {
+    pub fn set_current_location(&mut self, location_id: Option<SmartString>) {
         self.current_location = location_id;
     }
 
@@ -286,9 +287,9 @@ impl Worldbook {
             let now = chrono::Utc::now().to_rfc3339();
 
             if location.first_visited.is_none() {
-                location.first_visited = Some(now.clone());
+                location.first_visited = Some(SmartString::from(now.clone()));
             }
-            location.last_visited = Some(now);
+            location.last_visited = Some(SmartString::from(now));
             location.visit_count += 1;
         }
     }
@@ -346,12 +347,14 @@ impl Worldbook {
     }
 
     // Generate unique ID from name
-    pub fn generate_id(name: &str) -> String {
-        name.to_lowercase()
-            .replace(" ", "_")
-            .chars()
-            .filter(|c| c.is_alphanumeric() || *c == '_')
-            .collect()
+    pub fn generate_id(name: &str) -> SmartString {
+        SmartString::from(
+            name.to_lowercase()
+                .replace(" ", "_")
+                .chars()
+                .filter(|c| c.is_alphanumeric() || *c == '_')
+                .collect::<String>(),
+        )
     }
 }
 
@@ -397,13 +400,13 @@ mod tests {
     fn test_add_location() {
         let mut wb = Worldbook::new();
         let loc = Location {
-            id: "megaton".to_string(),
-            name: "Megaton".to_string(),
-            name_lowercase: String::new(), // Will be populated by add_location
-            description: "Settlement built around bomb".to_string(),
-            location_type: "settlement".to_string(),
+            id: SmartString::from("megaton"),
+            name: SmartString::from("Megaton"),
+            name_lowercase: SmartString::new(), // Will be populated by add_location
+            description: SmartString::from("Settlement built around bomb"),
+            location_type: SmartString::from("settlement"),
             npcs_present: vec![],
-            atmosphere: Some("tense".to_string()),
+            atmosphere: Some(SmartString::from("tense")),
             first_visited: None,
             last_visited: None,
             visit_count: 0,
@@ -421,15 +424,15 @@ mod tests {
     fn test_add_npc() {
         let mut wb = Worldbook::new();
         let npc = NPC {
-            id: "marcus".to_string(),
-            name: "Marcus".to_string(),
-            name_lowercase: String::new(), // Will be populated by add_npc
-            role: "trader".to_string(),
-            personality: vec!["gruff".to_string()],
-            current_location: Some("megaton".to_string()),
+            id: SmartString::from("marcus"),
+            name: SmartString::from("Marcus"),
+            name_lowercase: SmartString::new(), // Will be populated by add_npc
+            role: SmartString::from("trader"),
+            personality: vec![SmartString::from("gruff")],
+            current_location: Some(SmartString::from("megaton")),
             disposition: 0,
             knowledge: vec![],
-            notes: String::new(),
+            notes: SmartString::new(),
             alive: true,
         };
 
@@ -451,28 +454,28 @@ mod tests {
         let mut wb = Worldbook::new();
 
         let npc1 = NPC {
-            id: "marcus".to_string(),
-            name: "Marcus".to_string(),
-            name_lowercase: String::new(), // Will be populated by add_npc
-            role: "trader".to_string(),
+            id: SmartString::from("marcus"),
+            name: SmartString::from("Marcus"),
+            name_lowercase: SmartString::new(), // Will be populated by add_npc
+            role: SmartString::from("trader"),
             personality: vec![],
-            current_location: Some("megaton".to_string()),
+            current_location: Some(SmartString::from("megaton")),
             disposition: 0,
             knowledge: vec![],
-            notes: String::new(),
+            notes: SmartString::new(),
             alive: true,
         };
 
         let npc2 = NPC {
-            id: "sheriff".to_string(),
-            name: "Sheriff Simms".to_string(),
-            name_lowercase: String::new(), // Will be populated by add_npc
-            role: "lawman".to_string(),
+            id: SmartString::from("sheriff"),
+            name: SmartString::from("Sheriff Simms"),
+            name_lowercase: SmartString::new(), // Will be populated by add_npc
+            role: SmartString::from("lawman"),
             personality: vec![],
-            current_location: Some("megaton".to_string()),
+            current_location: Some(SmartString::from("megaton")),
             disposition: 10,
             knowledge: vec![],
-            notes: String::new(),
+            notes: SmartString::new(),
             alive: true,
         };
 
