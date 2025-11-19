@@ -10,18 +10,13 @@ pub enum DamageType {
     Poison,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum ItemType {
     Weapon(WeaponStats),
     Armor(ArmorStats),
     Consumable(ConsumableEffect),
+    #[default]
     Misc,
-}
-
-impl Default for ItemType {
-    fn default() -> Self {
-        ItemType::Misc
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

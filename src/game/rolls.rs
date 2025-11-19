@@ -205,7 +205,7 @@ pub fn parse_natural_roll_request(text: &str) -> Option<(String, i32)> {
                 let after_dc = &text[paren_dc + pattern.len()..];
                 if let Some(dc_str) = after_dc.split_whitespace().next() {
                     // Remove trailing ) or ]
-                    let dc_clean = dc_str.trim_end_matches(|c| c == ')' || c == ']');
+                    let dc_clean = dc_str.trim_end_matches([')', ']']);
                     if let Ok(dc) = dc_clean.parse::<i32>() {
                         return Some((skill_name, dc));
                     }
@@ -269,7 +269,7 @@ pub fn truncate_response_at_skill_check(text: &str) -> Option<String> {
                 // Look for sentence ending within next 15 characters
                 let search_range = &text[end_of_dc..].chars().take(15).collect::<String>();
 
-                if let Some(offset) = search_range.find(|c| c == '.' || c == '!' || c == '?') {
+                if let Some(offset) = search_range.find(['.', '!', '?']) {
                     // Found sentence ending nearby, include it
                     let final_pos = end_of_dc + offset + 1;
                     return Some(text[..final_pos].trim().to_string());
