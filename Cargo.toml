@@ -64,3 +64,19 @@ tempfile = "3.8"
 proptest = "1.4"
 serial_test = "3.2"
 insta = { version = "1.40", features = ["json", "yaml"] }
+divan = "0.1"
+
+[[bench]]
+name = "combat_benchmarks"
+harness = false
+
+[[bench]]
+name = "worldbook_benchmarks"
+harness = false
+
+[[bench]]
+name = "ai_benchmarks"
+harness = false
+
+[profile.release]
+debug = true  # Enable debug symbols for flamegraph
