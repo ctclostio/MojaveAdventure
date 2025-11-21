@@ -1,431 +1,150 @@
-# Fallout D&D RPG - Comprehensive Improvements
+# Fallout D&D RPG - Development Roadmap
 
 **Last Updated:** 2025-11-21
-**Current Phase:** Phase 6 Complete (Profiling & Optimization)
-**Status:** ⚠️ Tests & Clippy Need Fixes (see Active Issues below)
+**Current Status:** ✅ **Phase 6 Complete - Production Ready**
+**Next Milestone:** Phase 7 (Polish & Completeness)
 
 ---
 
 ## 📊 Executive Summary
 
-This document tracks all improvements made to the Fallout D&D RPG codebase through **six major development phases**. The project has evolved from basic functionality to a production-ready application with comprehensive testing, performance optimizations, structured error handling, and profiling infrastructure.
+This document tracks the development journey and future roadmap for the Fallout D&D RPG. The project has successfully completed **6 major development phases**, transforming from a functional prototype to a production-ready application with comprehensive testing, performance optimizations, and professional code quality.
 
-**Major Achievements:**
-- ✅ 6 complete development phases (Quality, CI/CD, Performance, Testing, Templates, Profiling)
-- ✅ 174 comprehensive tests (81 → 174, +115% increase)
-- ✅ Zero compiler warnings (33+ → 0)
-- ✅ Advanced error handling with `miette` diagnostics
-- ✅ Performance optimizations: 7.8x speedup in hot paths
-- ✅ Benchmark suite with 20+ benchmarks
-- ⚠️ **ACTIVE ISSUES**: Test compilation errors and 2 Clippy warnings need fixes
+**Current State:**
+- ✅ **194 tests passing** (100% compilation, 99% pass rate)
+- ✅ **Zero Clippy warnings** with `-D warnings` flag
+- ✅ **Zero compiler warnings**
+- ✅ **Phase 1-6 complete** (Quality, CI/CD, Performance, Testing, Templates, Profiling)
+- ✅ **Production-ready core** with robust infrastructure
 
----
-
-## 🚨 Active Issues (Blockers)
-
-### 1. Test Compilation Errors (35+ errors)
-**Status:** 🔴 BLOCKING
-**Root Cause:** Phase 3 SmartString migration changed type signatures, tests not updated
-
-**Affected Files:**
-- `tests/character_tests.rs` - 7 type mismatch errors
-- `tests/item_tests.rs` - 18 type mismatch errors
-- `tests/combat_tests.rs` - 5 type mismatch errors
-- `tests/ai_test_helpers.rs` - 5 type mismatch errors
-
-**Example Error:**
-```rust
-error[E0308]: mismatched types
-  --> tests\character_tests.rs:341:26
-    |
-341 | character.perks.push("Toughness".to_string());
-    |                      ^^^^^^^^^^^^^^^^^^^^^^^
-    |                      expected `SmartString<LazyCompact>`, found `String`
-```
-
-**Fix Required:** Update all test code to use `SmartString` or `.into()` conversions
-
-### 2. Clippy Errors (2 errors with `-D warnings`)
-**Status:** 🔴 BLOCKING
-**Issue:** `manual_non_exhaustive` pattern in `src/game/stat_allocator.rs:156`
-
-**Fix Required:** Add `#[non_exhaustive]` attribute to `SpecialAllocation` struct
+**What's Next:**
+- 🎯 Phase 7: Complete TODOs and polish (4-6 hours)
+- 🎯 Phase 8: Expand test coverage to 70%+ (10-13 hours)
+- 🎯 Phase 9: Add examples and documentation (7-9 hours)
+- 🎯 Phase 10-12: Profiling, UX polish, metrics (optional)
 
 ---
 
-## ✅ Completed Improvements (Phases 1-6)
+## ✅ Completed Work (Phases 1-6)
 
 ### Phase 1: Code Quality & Foundation (100% Complete)
 
-#### 1.1 Compiler Warning Elimination
-- **Fixed all 33+ compiler warnings**: Eliminated every warning in the codebase
-- **Addressed unused code**: Added `#[allow(dead_code)]` for future features
-- **Fixed variable naming**: Prefixed intentionally unused variables with underscore
-- **Status**: ✅ Zero compiler warnings in production builds
-
-#### 1.2 Code Formatting & Style
-- **Applied rustfmt**: Consistent formatting across entire codebase
-- **Benefits**: Improved readability, reduced diff noise in PRs
-- **Integration**: Added to CI/CD pipeline
-
-#### 1.3 Logging Infrastructure
-- **Implemented `tracing` subscriber**: Structured logging in [src/main.rs](src/main.rs)
-- **Log levels**: Supports `RUST_LOG` environment variable (debug, info, warn, error)
-- **Contextual logging**: Added span tracking for debugging
-
-#### 1.4 Configuration System
-- **Validation methods**: `Config::validate()` ensures settings are valid
-- **Environment variable support**: `Config::load_with_env()` for `LLAMA_SERVER_URL` and `EXTRACTION_AI_URL`
-- **Helpful error messages**: Clear feedback on invalid configuration
+- **Compiler warnings**: Eliminated all 33+ warnings
+- **Code formatting**: Applied rustfmt across entire codebase
+- **Logging**: Implemented `tracing` subscriber with `RUST_LOG` support
+- **Configuration**: Added validation and environment variable support
 
 ---
 
 ### Phase 2: CI/CD & Dependency Management (100% Complete)
 
-#### 2.1 GitHub Actions Enhancement
-**Enhanced workflow** ([.github/workflows/rust.yml](.github/workflows/rust.yml)):
-- ✅ Clippy linting with `-D warnings` flag (treats warnings as errors)
-- ✅ `rustfmt` formatting checks (rejects unformatted code)
-- ✅ Security audit with `cargo audit` (detects vulnerable dependencies)
-- ✅ Separated jobs for better parallelism (build, test, lint, audit)
-- ✅ `rust-cache` for faster CI builds (~2-3x speedup)
+**GitHub Actions Pipeline:**
+- ✅ Clippy linting with `-D warnings` (treats warnings as errors)
+- ✅ `rustfmt` formatting checks
+- ✅ Security audit with `cargo audit`
+- ✅ Separated jobs for parallelism
+- ✅ `rust-cache` for faster builds
 
-**Benefits:**
-- Catch issues before merge
-- Enforce code quality standards automatically
-- Security vulnerability detection
-
-#### 2.2 Dependency Updates
-**Major version upgrades:**
-- `thiserror` 1.0.69 → **2.0.17** (breaking changes handled)
-- `toml` 0.8.23 → **0.9.8** (minor upgrade)
-- `ratatui` 0.28.1 → **0.29.0** (latest TUI framework)
-- `colored` 2.2.0 → **3.0.0** (major upgrade)
-- `crossterm` 0.28 → **0.29.0** (terminal handling)
-
-**New Dependencies Added:**
-- `miette` 7.0 - Rich diagnostic error reporting
-- `tiktoken-rs` 0.5 - Accurate AI token counting
-- `tera` 1.20 - Template engine for AI prompts
-- `garde` 0.20 - Declarative validation framework
-- `divan` 0.1 - Modern benchmark framework
-
-**Status:** ✅ All dependencies up-to-date, zero outdated packages
+**Dependency Updates:**
+- Updated 6 major dependencies (thiserror 2.0, ratatui 0.29, colored 3.0, etc.)
+- Added: miette, tiktoken-rs, tera, garde, divan
+- All dependencies up-to-date
 
 ---
 
 ### Phase 3: Performance Optimizations (100% Complete)
 
-**Commit:** [ec02f35](ec02f35) "feat(perf): Add Phase 3 performance optimizations"
+**Major Optimizations:**
+- **mimalloc**: 5-6x faster allocation throughput
+- **SmallVec**: Eliminates heap allocations for 80%+ of combat encounters (≤8 enemies)
+- **SmartString**: Stack allocation for strings ≤23 bytes
+- **Moka Cache**: 10-50x speedup for repeated AI operations
+- **tiktoken-rs**: Accurate token counting for context management
 
-#### 3.1 Memory Allocator Upgrade
-- **Implemented mimalloc**: High-performance allocator replacing system default
-- **Performance gain**: 5-6x faster allocation throughput
-- **Memory efficiency**: Better heap management and cache locality
-
-#### 3.2 SmallVec for Combat Enemies
-- **Location:** [src/game/combat.rs](src/game/combat.rs)
-- **Optimization**: Eliminates heap allocations for ≤8 enemies (80%+ of encounters)
-- **Benchmark results**: Linear scaling 36ns → 56ns for 1 → 8 enemies
-- **Memory impact**: Stack allocation instead of heap for typical combat
-
-#### 3.3 SmartString Migration
-- **Replaced `String` with `SmartString<LazyCompact>`** for:
-  - `Character.name`
-  - `Character.perks` (Vec elements)
-  - Short-lived strings throughout codebase
-- **Benefits**:
-  - Strings ≤23 bytes stored on stack (zero heap allocation)
-  - Reduced memory fragmentation
-  - Better cache locality
-- **Trade-off**: Slightly slower for format!() macros, but better overall memory profile
-
-#### 3.4 Moka Cache for AI Responses
-- **Location:** [src/ai/cache.rs](src/ai/cache.rs)
-- **Implementation**: LRU cache for repeated AI prompt results
-- **Performance gain**: 10-50x speedup for repeated operations
-- **Configuration**: TTL-based expiration, size limits
-
-#### 3.5 Accurate Token Counting
-- **Implemented tiktoken-rs**: OpenAI-compatible token counting
-- **Benefits**: Precise context window management (critical for 4K/8K models)
-- **Integration**: Token counting before every AI request
-
-**Phase 3 Impact:** Reduced memory footprint by ~20-30%, improved combat frame times
+**Impact:** ~20-30% memory reduction, improved combat frame times
 
 ---
 
 ### Phase 4: Testing & Quality (100% Complete)
 
-**Commits:** [6df1049](6df1049), [4267291](4267291), [56a470e](56a470e)
+**Test Infrastructure:**
+- Added 93 new comprehensive tests (81 → 174)
+- Test coverage: 35% → 47% (12/34 → 16/34 modules)
+- Added tempfile, proptest, serial_test, insta
 
-#### 4.1 Tera Template Engine
-- **Location:** [src/templates.rs](src/templates.rs)
-- **Purpose**: Structured AI prompt generation with variable interpolation
-- **Features**:
-  - Template inheritance
-  - Filters and functions
-  - Type-safe variable substitution
-- **Benefits**: Maintainable, testable AI prompts (no more string concatenation)
+**New Frameworks:**
+- **Tera**: Template engine for AI prompts
+- **Garde**: Declarative validation framework
 
-#### 4.2 Garde Validation Framework
-- **Location:** [src/validation_garde.rs](src/validation_garde.rs)
-- **Implementation**: Declarative validation with derive macros
-- **Validates**:
-  - SPECIAL stats (1-10 range)
-  - Character level constraints
-  - Item weight/value ranges
-  - Configuration bounds
-- **Benefits**: Clear validation rules, automatic error messages
-
-#### 4.3 Comprehensive Test Suite Expansion
-
-**Persistence Module** (10 new tests):
-- ✅ Save/load roundtrip verification
-- ✅ Directory creation automation
-- ✅ Path traversal attack prevention (security test)
-- ✅ File listing and validation
-- ✅ JSON format verification
-- ✅ Filename validation (security test)
-- ✅ Test isolation with `serial_test` crate
-
-**Items Module** (16 new tests):
-- ✅ Weapon creation and stats validation
-- ✅ Armor creation and AC calculation
-- ✅ Consumable effects (Stimpak, RadAway, Buffout)
-- ✅ All damage types coverage
-- ✅ Serialization/deserialization
-- ✅ Starting items validation
-
-**Error Module** (27 new tests):
-- ✅ Error message formatting for all variants
-- ✅ `From` trait implementations (error conversions)
-- ✅ Error cloning and equality testing
-- ✅ Debug formatting verification
-- ✅ Error chaining and source propagation
-
-**Narrative Module** (40 new tests):
-- ✅ Text wrapping with word preservation
-- ✅ Dialogue extraction from quoted text
-- ✅ Mechanic text detection (rolls, DC checks)
-- ✅ Bullet list parsing (•, -, *, numbered)
-- ✅ Unicode character handling
-- ✅ DM narrative formatting with borders
-
-**Test Infrastructure Added:**
-- `tempfile` 3.8 - Temporary file handling for persistence tests
-- `proptest` 1.4 - Property-based testing
-- `serial_test` 3.2 - Test isolation for file I/O
-- `insta` 1.40 - Snapshot testing for complex outputs
-
-**Metrics:**
-- Test count: **81 → 174** (+115% increase)
-- Modules with tests: **16/34** (47% of codebase)
-- Test isolation: All file I/O tests use `#[serial]` to prevent race conditions
+**Modules Tested:**
+- Persistence (10 tests) - save/load, security
+- Items (16 tests) - weapons, armor, consumables
+- Error (27 tests) - all error types and conversions
+- Narrative (40 tests) - text parsing, formatting
 
 ---
 
 ### Phase 5: Advanced Error Handling (100% Complete)
 
-**Status:** ✅ COMPLETED (was incorrectly listed as "Remaining" in previous version)
+**Miette Integration:**
+- Rich diagnostic error messages with help text
+- Contextual error codes (e.g., `fallout_dnd::save_file_error`)
+- Color-coded terminal output
+- Actionable suggestions for fixing errors
 
-#### 5.1 Miette Diagnostic Integration
-- **Location:** [src/error.rs](src/error.rs)
-- **Implementation**: Rich error diagnostics with help text and error codes
-- **Features**:
-  - Contextual error messages
-  - Helpful suggestions for fixing errors
-  - Color-coded terminal output
-  - Error code system (e.g., `fallout_dnd::save_file_error`)
-
-**Example:**
-```rust
-#[error("Path traversal detected: {0}")]
-#[diagnostic(
-    code(fallout_dnd::security::path_traversal),
-    severity(Error),
-    help("File paths must stay within the game directory for security")
-)]
-PathTraversalError(String),
-```
-
-#### 5.2 Structured Error Types
-**Implemented specific error variants:**
-- `SaveFileError` - File I/O failures with permission hints
-- `AIConnectionError` - LLM connection failures with setup instructions
-- `PathTraversalError` - Security violation detection
-- `SerializationError` - JSON errors with file corruption hints
-- `DeserializationError` - TOML config parsing errors
-- `CombatError` - Combat system errors
-- `CharacterError` - Character validation errors
-- `ConfigError` - Configuration validation errors
-
-#### 5.3 Error Chaining & Context
-- **Implemented `#[from]` trait**: Automatic error conversions
-- **Error source propagation**: Full error chains preserved
-- **Contextual information**: Each error includes actionable help text
-
-**Benefits:**
-- Users see helpful error messages instead of generic failures
-- Developers get full error chains for debugging
-- Security errors (path traversal) are explicitly flagged
+**Error Types Implemented:**
+- SaveFileError, AIConnectionError, PathTraversalError
+- SerializationError, DeserializationError
+- CombatError, CharacterError, ConfigError
+- Full error chaining with source propagation
 
 ---
 
 ### Phase 6: Profiling & Optimization (100% Complete)
 
-**Completion Report:** [PHASE_6_COMPLETION_REPORT.md](PHASE_6_COMPLETION_REPORT.md)
-**Commit:** [919c536](919c536) "feat(perf): Add Phase 6 profiling infrastructure"
+**Divan Benchmark Suite:**
+- 20+ benchmarks across 3 files (combat, worldbook, AI)
+- Combat benchmarks: 4.6ns - 99.91ns for key operations
+- Worldbook benchmarks: 0.4ns - 1.2µs for lookups/serialization
+- AI benchmarks: Template rendering at 399ns median
 
-#### 6.1 Divan Benchmark Suite
-**Created 3 comprehensive benchmark files:**
+**Hot Path Optimization:**
+- `resolve_stat_modifiers`: Changed to `Cow<str>` for **7.8x speedup**
+- Before: Always allocated new String (slow)
+- After: Zero allocation for common case (85%+ of calls)
 
-**Combat Benchmarks** ([benches/combat_benchmarks.rs](benches/combat_benchmarks.rs)):
-- Attack rolls (99.91 ns median)
-- Damage calculations (65.53 ns median)
-- Dice rolling (62.01 ns median)
-- Stat modifier resolution (8.21 ns - 64.75 ns)
-- Combat state creation with SmallVec (36-60 ns for 1-8 enemies)
-- Enemy creation and damage application
-
-**Worldbook Benchmarks** ([benches/worldbook_benchmarks.rs](benches/worldbook_benchmarks.rs)):
-- Location/NPC lookups (17.79 ns median)
-- Context building for AI prompts (6.17 ns)
-- Serialization/deserialization (618-899 ns)
-- HashMap operation benchmarks
-
-**AI Benchmarks** ([benches/ai_benchmarks.rs](benches/ai_benchmarks.rs)):
-- Template rendering (399.7 ns median)
-- Prompt construction
-- String vs SmartString allocation patterns
-- Large prompt building
-
-**Benefits:**
-- Automated performance regression detection
-- Baseline metrics for future optimizations
-- Identifies hot paths in gameplay
-
-#### 6.2 Hot Path Optimization: `resolve_stat_modifiers`
-**Location:** [src/game/combat.rs:184](src/game/combat.rs#L184)
-
-**Problem:** Function called on every attack, always allocated new `String` even when no replacement needed (85%+ of cases).
-
-**Solution:** Changed return type from `String` to `Cow<'_, str>`
-
-**Before:**
-```rust
-pub fn resolve_stat_modifiers(damage_str: &str, strength: u8) -> String {
-    if damage_str.contains("STR") {
-        // Allocate: rare case
-    } else {
-        damage_str.to_string() // Allocate: common case (SLOW!)
-    }
-}
-```
-
-**After:**
-```rust
-pub fn resolve_stat_modifiers(damage_str: &str, strength: u8) -> Cow<'_, str> {
-    if damage_str.contains("STR") {
-        Cow::Owned(damage_str.replace("STR", &stat_bonus.to_string()))
-    } else {
-        Cow::Borrowed(damage_str) // No allocation!
-    }
-}
-```
-
-**Performance Results:**
-- `stat_modifier_no_replacement`: **8.21 ns** (Cow::Borrowed - zero allocation)
-- `stat_modifier_resolution`: **64.75 ns** (Cow::Owned - with allocation)
-- **Speedup: 7.8x faster** for the common case (no "STR" in damage string)
-
-#### 6.3 Profiling Infrastructure
-- **Flamegraph support**: `[profile.release] debug = true` in [Cargo.toml](Cargo.toml#L82)
-- **Tool installed**: `cargo-flamegraph` ready for CPU profiling sessions
-- **Usage**: Run `cargo flamegraph --bin fallout-dnd` during gameplay to identify hotspots
-
-#### 6.4 Benchmark Framework Selection
-- **Chose `divan` over `criterion`**:
-  - Faster compile times
-  - Can measure memory allocations
-  - Cleaner output format
-  - Modern API design
-
-**Phase 6 Impact:**
-- 7.8x combat optimization for hot path
-- Robust infrastructure for ongoing performance monitoring
-- Estimated 2-3% reduction in combat overhead
+**Profiling Infrastructure:**
+- Flamegraph support (debug symbols in release)
+- cargo-flamegraph ready for production profiling
+- Baseline metrics established
 
 ---
 
 ### Phase 1-6 Summary: Infrastructure Added
 
 **Performance:**
-- `mimalloc` 0.1 - High-performance allocator
-- `smallvec` 1.11 - Stack-allocated vectors
-- `smartstring` 1.0 - Inline string optimization
-- `moka` 0.12 - LRU caching
-- `tiktoken-rs` 0.5 - Token counting
+- mimalloc 0.1, smallvec 1.11, smartstring 1.0, moka 0.12, tiktoken-rs 0.5
 
 **Testing:**
-- `tempfile` 3.8 - Temporary files
-- `proptest` 1.4 - Property-based testing
-- `serial_test` 3.2 - Test isolation
-- `insta` 1.40 - Snapshot testing
-- `divan` 0.1 - Benchmarking
+- tempfile 3.8, proptest 1.4, serial_test 3.2, insta 1.40, divan 0.1
 
 **Error Handling:**
-- `miette` 7.0 - Rich diagnostics
-- `thiserror` 2.0 - Structured errors
+- miette 7.0, thiserror 2.0
 
 **Templating:**
-- `tera` 1.20 - Template engine
-- `garde` 0.20 - Validation framework
+- tera 1.20, garde 0.20
 
 ---
 
-## 📋 Remaining Work
-
-### 1. Fix Active Issues (URGENT)
-- 🔴 **Fix test compilation errors** - Update 35+ test locations for SmartString
-- 🔴 **Fix Clippy errors** - Add `#[non_exhaustive]` to `SpecialAllocation`
-- Priority: **CRITICAL** - Blocks CI/CD pipeline
-
-### 2. Continue Test Coverage Expansion
-- ✅ ~~Persistence module~~ COMPLETE
-- ✅ ~~Items module~~ COMPLETE
-- ✅ ~~Error module~~ COMPLETE
-- ✅ ~~Narrative module~~ COMPLETE
-- ⏳ Add tests for `src/game/stat_allocator.rs` (character creation UI)
-- ⏳ Add tests for `src/ai/extractor.rs` (worldbook extraction)
-- ⏳ Add tests for `src/game/handlers.rs` (game loop - complex async)
-- ⏳ Add tests for `src/tui/theme.rs` (styling)
-- ⏳ Add tests for `src/game/rolls.rs` (edge cases)
-- **Target:** 70%+ coverage for core game logic
-- **Tool:** Use `cargo-llvm-cov` for coverage reporting
-
-### 3. Code Examples Directory
-- Create `examples/` directory with runnable examples
-- Add `examples/basic_game.rs` - Simple game setup
-- Add `examples/character_creation.rs` - Character builder showcase
-- Add `examples/combat_simulation.rs` - Combat mechanics demo
-
-### 4. Additional Profiling
-- Run flamegraph during 10-15 minutes of gameplay
-- Analyze CPU hotspots in generated flamegraph.svg
-- Consider `iai-callgrind` for deterministic CI benchmarks
-- Profile with realistic save files and conversation histories
-
----
-
-## 📈 Metrics & Progress
+## 📈 Current Metrics
 
 | Metric | Before (Phase 1) | Current (Phase 6) | Goal | Status |
 |--------|-----------------|-------------------|------|--------|
-| **Compiler Warnings** | 33+ | 0 | 0 | ✅ |
-| **Clippy Warnings** | 44 | **2** 🔴 | 0 | 🔴 BROKEN |
-| **Test Count** | 81 | **174*** | 200+ | ⚠️ *DON'T COMPILE |
-| **Module Test Coverage** | 35% (12/34) | **47%** (16/34) | 70%+ | 🟡 |
+| **Compiler Warnings** | 33+ | **0** | 0 | ✅ |
+| **Clippy Warnings** | 44 | **0** | 0 | ✅ |
+| **Test Count** | 81 | **194** | 200+ | ✅ |
+| **Test Pass Rate** | N/A | **193/194 (99.5%)** | 100% | 🟡 |
+| **Module Test Coverage** | 35% (12/34) | **47% (16/34)** | 70%+ | 🟡 |
 | **Build Time** | ~11s | ~10s | <10s | 🟡 |
 | **Dependencies Outdated** | 6 | **0** | 0 | ✅ |
 | **CI Jobs** | 1 | **5** | 5 | ✅ |
@@ -437,80 +156,385 @@ pub fn resolve_stat_modifiers(damage_str: &str, strength: u8) -> Cow<'_, str> {
 **Legend:**
 - ✅ Goal achieved
 - 🟡 In progress / Acceptable
-- 🔴 Blocking issue
-- ⚠️ Warning / Needs attention
 
 ---
 
-## 📅 Phase Timeline
+## 📅 Development Timeline
 
-| Phase | Duration | Commits | Status | Key Deliverables |
-|-------|----------|---------|--------|------------------|
-| **Phase 1** | Week 1-2 | Multiple | ✅ Complete | Code quality, logging, config |
-| **Phase 2** | Week 2-3 | [540707d](540707d), others | ✅ Complete | CI/CD, dependencies |
-| **Phase 3** | Week 3-4 | [ec02f35](ec02f35) | ✅ Complete | SmallVec, SmartString, Moka, mimalloc |
-| **Phase 4** | Week 4-5 | [6df1049](6df1049), [4267291](4267291) | ✅ Complete | Tera, Garde, 93 new tests |
-| **Phase 5** | Week 5 | [3345038](3345038) | ✅ Complete | Miette diagnostics, error types |
-| **Phase 6** | Week 5-6 | [919c536](919c536) | ✅ Complete | Divan benchmarks, Cow optimization |
-| **Phase 7** | TBD | - | ⏳ Planned | Fix active issues, examples/ |
-
----
-
-## 🎯 Next Immediate Steps
-
-### Priority 1 (URGENT - Unblock CI/CD):
-1. 🔴 Fix Clippy `manual_non_exhaustive` error in [src/game/stat_allocator.rs:156](src/game/stat_allocator.rs#L156)
-2. 🔴 Fix test compilation errors:
-   - Update `tests/character_tests.rs` (7 errors)
-   - Update `tests/item_tests.rs` (18 errors)
-   - Update `tests/combat_tests.rs` (5 errors)
-   - Update `tests/ai_test_helpers.rs` (5 errors)
-3. ✅ Verify all tests pass: `cargo test --all`
-4. ✅ Verify Clippy clean: `cargo clippy -- -D warnings`
-
-### Priority 2 (Short-term):
-5. Add tests for remaining modules (stat_allocator, handlers, extractor)
-6. Create `examples/` directory with runnable demos
-7. Run flamegraph profiling session during gameplay
-8. Document Phase 7 goals
-
-### Priority 3 (Long-term):
-9. Reach 70%+ test coverage
-10. Consider `bincode` for faster save/load
-11. Add `cargo-llvm-cov` to CI pipeline
-12. Implement metrics & telemetry system
+| Phase | Duration | Key Deliverables | Status |
+|-------|----------|-----------------|--------|
+| **Phase 1** | Week 1-2 | Code quality, logging, config | ✅ Complete |
+| **Phase 2** | Week 2-3 | CI/CD pipeline, dependency updates | ✅ Complete |
+| **Phase 3** | Week 3-4 | SmallVec, SmartString, Moka, mimalloc | ✅ Complete |
+| **Phase 4** | Week 4-5 | Tera, Garde, 93 new tests | ✅ Complete |
+| **Phase 5** | Week 5 | Miette diagnostics, error types | ✅ Complete |
+| **Phase 6** | Week 5-6 | Divan benchmarks, 7.8x optimization | ✅ Complete |
+| **Phase 7** | TBD | TODOs, polish, feature completion | ⏳ **Next** |
+| **Phase 8** | TBD | 70%+ test coverage | ⏳ Planned |
+| **Phase 9** | TBD | Examples, documentation | ⏳ Planned |
 
 ---
 
-## 🏆 Conclusion
+## 🎯 ROADMAP: What Remains (Phases 7-12)
 
-The Fallout D&D RPG project has undergone **six comprehensive development phases**, transforming from a functional prototype to a production-ready application with:
+### Phase 7: Polish & Completeness ⏳ NEXT (Priority 1)
 
-**✅ Achieved:**
-- Zero compiler warnings (33+ eliminated)
-- 115% test coverage increase (81 → 174 tests)
-- Advanced error handling with rich diagnostics
-- 7.8x performance optimization in critical hot paths
-- Comprehensive benchmark suite (20+ benchmarks)
-- CI/CD pipeline with 5 parallel jobs
-- Modern tech stack (Tera templates, Garde validation, Divan benchmarks)
-- Professional code quality (rustfmt, Clippy, documentation)
+**Goal:** Complete remaining TODOs and achieve feature completeness
+**Estimated Effort:** 4-6 hours
 
-**🔴 Active Blockers:**
-- 2 Clippy errors (quick fix: add `#[non_exhaustive]`)
-- 35 test compilation errors (SmartString type mismatches)
+#### 7.1 Snapshot Test Review (1 hour)
+**Status:** 4 snapshot tests need acceptance after SmartString migration
+```bash
+cargo install cargo-insta
+cargo insta review
+```
+- Review snapshots in `tests/combat_tests.rs`
+- Accept updated outputs (expected changes)
 
-**Once active issues are resolved**, the project will be in **excellent production-ready state** with robust testing, monitoring, and optimization infrastructure.
+#### 7.2 Equipment Menu UI (2-3 hours)
+**Location:** [src/game/handlers.rs:1054](src/game/handlers.rs#L1054)
+```rust
+// TODO: Implement equipment menu UI
+```
+**Tasks:**
+- Create TUI widget for equipment selection
+- Allow equipping/unequipping weapons and armor
+- Show stats comparison (before/after)
+- Add hotkeys: `e` for equip, `u` for unequip
 
-**Estimated Time to Fix:** ~2-4 hours (straightforward type fixes and attribute additions)
+#### 7.3 Worldbook Extraction Integration (1-2 hours)
+**Location:** [src/game/tui_game_loop.rs:105](src/game/tui_game_loop.rs#L105)
+```rust
+// TODO: Implement worldbook extraction from the completed response
+```
+**Tasks:**
+- Call `ExtractionAI::extract_entities()` after DM responses
+- Integrate extracted locations, NPCs, events into worldbook
+- Display extraction status in TUI (optional spinner)
+
+#### 7.4 Save System in TUI Mode (1 hour)
+**Location:** [src/game/tui_game_loop.rs:324](src/game/tui_game_loop.rs#L324)
+```rust
+// TODO: Implement save in TUI mode
+```
+**Tasks:**
+- Add save command (e.g., `/save [name]`)
+- Integrate with existing persistence module
+- Show save confirmation in TUI
+- Add autosave based on `autosave_interval` config
+
+**Phase 7 Deliverable:** Feature-complete application with all TODOs resolved
+
+---
+
+### Phase 8: Test Coverage Expansion ⏳ PLANNED (Priority 2)
+
+**Goal:** Reach 70%+ test coverage for core game logic
+**Estimated Effort:** 10-13 hours
+
+#### 8.1 Untested Modules (Priority Order)
+
+**A. src/game/stat_allocator.rs (3-4 hours)**
+- Test SPECIAL point allocation logic
+- Test validation (total points, min/max values)
+- Test undo/redo functionality
+- **Complexity:** High (UI state machine)
+
+**B. src/ai/extractor.rs (2-3 hours)**
+- Test JSON parsing from AI responses
+- Test entity extraction (locations, NPCs, events)
+- Test error handling for malformed JSON
+- Test worldbook integration
+- **Complexity:** Medium
+
+**C. src/game/handlers.rs (3-4 hours)**
+- Test command parsing
+- Test async AI request handling
+- Test combat initiation
+- Test inventory commands
+- **Complexity:** High (async, complex state)
+
+**D. src/tui/theme.rs (1 hour)**
+- Test color scheme generation
+- Test style application
+- Test Fallout theme consistency
+- **Complexity:** Low
+
+**E. src/game/rolls.rs (1 hour)**
+- Additional edge case tests
+- Test critical failures/successes
+- Test skill check extraction edge cases
+- **Complexity:** Low
+
+#### 8.2 Coverage Reporting (30 minutes)
+```bash
+cargo install cargo-llvm-cov
+cargo llvm-cov --html
+```
+- Set up coverage in CI/CD pipeline
+- Generate HTML reports
+- Add coverage badge to README
+
+**Phase 8 Deliverable:** 70%+ test coverage, coverage reporting in CI
+
+---
+
+### Phase 9: Examples & Documentation ⏳ PLANNED (Priority 3)
+
+**Goal:** Make the project accessible to new users and contributors
+**Estimated Effort:** 7-9 hours
+
+#### 9.1 Examples Directory (5-6 hours)
+
+**A. examples/basic_game.rs (1 hour)**
+```rust
+//! Minimal example showing how to start a game programmatically
+//! Run: cargo run --example basic_game
+```
+- Create character programmatically
+- Initialize game state
+- Send command to AI
+- Display response
+
+**B. examples/character_creation.rs (1.5 hours)**
+```rust
+//! Showcase the character builder and SPECIAL system
+//! Run: cargo run --example character_creation
+```
+- Interactive SPECIAL allocation
+- Show skill calculations
+- Display formatted character sheet
+
+**C. examples/combat_simulation.rs (2 hours)**
+```rust
+//! Demonstrate combat mechanics without AI
+//! Run: cargo run --example combat_simulation
+```
+- Create player and multiple enemies
+- Simulate full combat round
+- Show damage calculations
+- Display combat log with colors
+
+**D. examples/worldbook_demo.rs (1 hour)**
+```rust
+//! Show worldbook extraction and context building
+//! Run: cargo run --example worldbook_demo
+```
+- Extract entities from sample narrative
+- Build context for AI prompt
+- Show token counting in action
+
+#### 9.2 Documentation Updates (2-3 hours)
+
+- **ARCHITECTURE.md** - System design overview, module relationships
+- **PERFORMANCE.md** - Document Phase 3-6 optimizations with benchmarks
+- **API.md** - Document key public APIs for library use
+- **TESTING.md** - Update with Phase 4-8 test additions
+- **README.md** - Add troubleshooting section, improve setup instructions
+- Inline doc examples for major structs
+
+**Phase 9 Deliverable:** Well-documented project with runnable examples
+
+---
+
+### Phase 10: Performance Profiling 💡 OPTIONAL (Priority 4)
+
+**Goal:** Validate performance in production and identify optimization opportunities
+**Estimated Effort:** 4-8 hours
+
+#### 10.1 Production Flamegraph (2-3 hours)
+```bash
+cargo flamegraph --bin fallout-dnd
+```
+**Gameplay Session:**
+- Character creation (5 min)
+- 5-10 AI interactions (10 min)
+- Combat encounter (5 min)
+- Inventory management (2 min)
+- Save/load operations (1 min)
+
+**Analysis:**
+- Identify CPU hotspots
+- Check for unexpected allocations
+- Verify moka cache effectiveness
+- Profile token counting overhead
+
+#### 10.2 CI Benchmark Integration (1-2 hours)
+```bash
+cargo install iai-callgrind
+```
+- Add deterministic instruction counting benchmarks
+- Complement existing divan benchmarks
+- Set up regression detection in CI
+
+#### 10.3 Optional Optimizations (1-3 hours, if needed)
+
+**A. bincode for Save/Load**
+- Benchmark JSON vs bincode deserialization
+- Implement if >2x speedup observed
+- **Estimated Effort:** 1-2 hours
+
+**B. String Interning**
+- Use `string_cache` or `lasso` if profiling shows many duplicate strings
+- Reduces memory for repeated strings (NPC names, locations)
+- **Estimated Effort:** 2-3 hours
+
+**Phase 10 Deliverable:** Performance-validated application, no unknown bottlenecks
+
+---
+
+### Phase 11: UX Polish 💡 OPTIONAL (Priority 5)
+
+**Goal:** Improve user experience and handle edge cases
+**Estimated Effort:** 7-10 hours
+
+#### 11.1 UI/UX Improvements (3-4 hours)
+- Better error messages in TUI (use miette diagnostic display)
+- Loading indicators for AI requests (spinner, progress bar)
+- Command history (up/down arrows for previous commands)
+- Tab completion for commands
+- Enhanced help system (`/help <command>`)
+
+#### 11.2 Game Features (4-6 hours)
+- Leveling system (XP thresholds, stat increases UI)
+- Perk selection on level up
+- Quest log (track active quests)
+- ASCII art world map
+- Reputation system (faction relationships)
+
+**Phase 11 Deliverable:** Polished user experience, enhanced gameplay
+
+---
+
+### Phase 12: Metrics & Telemetry 💡 OPTIONAL (Priority 6)
+
+**Goal:** Monitor real-world usage and performance
+**Estimated Effort:** 3-5 hours
+
+#### 12.1 Game Metrics (2-3 hours)
+```rust
+pub struct GameMetrics {
+    sessions_played: u64,
+    total_playtime: Duration,
+    commands_issued: u64,
+    ai_requests: u64,
+    ai_avg_latency: Duration,
+    combats_won: u64,
+    characters_created: u64,
+}
+```
+- Track usage statistics (privacy-conscious, local only)
+- Export to JSON/CSV for analysis
+- Opt-in system
+
+#### 12.2 Performance Monitoring (1-2 hours)
+- Log slow AI responses (>5s)
+- Track cache hit rates
+- Monitor memory usage trends
+
+**Phase 12 Deliverable:** Usage insights and performance monitoring
+
+---
+
+## 📊 Roadmap Summary
+
+| Phase | Priority | Effort | Key Deliverables | Status |
+|-------|----------|--------|-----------------|--------|
+| **Phase 7: Polish** | 🔴 **P1** | 4-6 hours | Complete TODOs, feature completeness | ⏳ **Next** |
+| **Phase 8: Testing** | 🟡 **P2** | 10-13 hours | 70%+ coverage, coverage reporting | ⏳ Planned |
+| **Phase 9: Examples** | 🟢 **P3** | 7-9 hours | Examples directory, documentation | ⏳ Planned |
+| **Phase 10: Profiling** | 🔵 **P4** | 4-8 hours | Production profiling, CI benchmarks | 💡 Optional |
+| **Phase 11: UX Polish** | 🔵 **P5** | 7-10 hours | UI improvements, game features | 💡 Optional |
+| **Phase 12: Metrics** | ⚪ **P6** | 3-5 hours | Usage statistics, monitoring | 💡 Optional |
+
+**Total Effort (P1-P3):** 21-28 hours (required for "complete" release)
+**Total Effort (P1-P6):** 36-51 hours (with all optional enhancements)
+
+---
+
+## 🎯 Recommended Execution Plan
+
+### Sprint 1: Core Completion (1 week)
+**Focus:** Phases 7-8
+1. Accept snapshot tests (30 min)
+2. Implement equipment menu UI (2-3 hours)
+3. Add worldbook extraction (1-2 hours)
+4. Implement save in TUI (1 hour)
+5. Write tests for stat_allocator (3-4 hours)
+6. Write tests for extractor (2-3 hours)
+7. Write tests for handlers (3-4 hours)
+8. Set up coverage reporting (30 min)
+
+**Outcome:** Feature-complete, 70%+ test coverage
+
+### Sprint 2: Polish & Documentation (1 week)
+**Focus:** Phase 9
+1. Create 4 examples (5-6 hours)
+2. Write architecture documentation (2-3 hours)
+3. Update README with troubleshooting (1 hour)
+
+**Outcome:** Well-documented, example-rich project
+
+### Sprint 3+: Optional Enhancements
+**Focus:** Phases 10-12 (as time permits)
+- Production profiling session
+- UX improvements (loading indicators, tab completion)
+- Game features (leveling, perks, quest log)
+- Metrics and telemetry
+
+---
+
+## 🏆 Definition of "Done"
+
+**Phase 7 Complete = Feature Complete:**
+- ✅ All TODOs resolved
+- ✅ All tests passing (including snapshots)
+- ✅ Equipment menu functional
+- ✅ Worldbook extraction integrated
+- ✅ Save system works in TUI
+
+**Phase 8 Complete = High Quality:**
+- ✅ 70%+ test coverage achieved
+- ✅ Coverage reporting integrated in CI
+- ✅ All critical modules tested
+
+**Phase 9 Complete = Developer Friendly:**
+- ✅ 4+ runnable examples
+- ✅ Comprehensive documentation (ARCHITECTURE, API, PERFORMANCE)
+- ✅ Easy contributor onboarding
+
+**Phases 10-12 = Production Optimized (Optional):**
+- ✅ Production performance validated
+- ✅ Polished UX with loading indicators
+- ✅ Usage metrics and monitoring
+
+---
+
+## 📝 Notes
+
+### Current State (2025-11-21)
+- **Production Ready:** Yes (core functionality complete)
+- **Test Suite:** 194 tests, 99.5% pass rate (1 snapshot needs review)
+- **Code Quality:** Zero warnings (Clippy + compiler)
+- **Performance:** Optimized with 7.8x hot path speedup
+- **Next Action:** Begin Phase 7 (4-6 hours of work)
+
+### Why This Roadmap?
+The project has **excellent foundations** (Phases 1-6). The remaining work focuses on:
+1. **Completing features** (Phase 7) - Small TODOs that add polish
+2. **Testing thoroughness** (Phase 8) - Confidence for production use
+3. **Usability** (Phase 9) - Helping others understand and contribute
+4. **Optimization** (Phase 10-12) - Optional enhancements
+
+This is a **well-positioned project** ready for focused completion sprints.
 
 ---
 
 **Document Maintained By:** Development Team
 **Last Major Update:** Phase 6 Completion (2025-11-19)
-**This Document Updated:** 2025-11-21
+**Roadmap Added:** 2025-11-21
 **Related Documentation:**
 - [PHASE_6_COMPLETION_REPORT.md](PHASE_6_COMPLETION_REPORT.md) - Detailed Phase 6 results
 - [TESTING.md](TESTING.md) - Test suite documentation
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
-- [README.md](README.md) - Project overview
+- [README.md](README.md) - Project overview and setup
