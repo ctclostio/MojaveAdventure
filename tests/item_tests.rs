@@ -52,9 +52,9 @@ fn test_create_armor_item() {
 #[test]
 fn test_create_consumable_item() {
     let stimpak = Item {
-        id: "stimpak".to_string(),
-        name: "Stimpak".to_string(),
-        description: "Heals HP".to_string(),
+        id: "stimpak".into(),
+        name: "Stimpak".into(),
+        description: "Heals HP".into(),
         item_type: ItemType::Consumable(ConsumableEffect::Healing(30)),
         weight: 0.5,
         value: 25,
@@ -158,7 +158,7 @@ fn test_unequipped_returns_unarmed() {
 #[test]
 fn test_weapon_types_map_to_correct_skills() {
     let special = Special::new();
-    let mut character = Character::new("Test".to_string(), special);
+    let mut character = Character::new("Test", special);
 
     // Test different weapon types
     let small_gun = Item::new_weapon(
@@ -200,18 +200,18 @@ fn test_weapon_types_map_to_correct_skills() {
     character.inventory.push(melee);
 
     // Test small gun
-    character.equipped_weapon = Some("pistol".to_string());
+    character.equipped_weapon = Some("pistol".into());
     assert_eq!(character.get_weapon_skill(), character.skills.small_guns);
 
     // Test energy weapon
-    character.equipped_weapon = Some("laser".to_string());
+    character.equipped_weapon = Some("laser".into());
     assert_eq!(
         character.get_weapon_skill(),
         character.skills.energy_weapons
     );
 
     // Test melee
-    character.equipped_weapon = Some("sword".to_string());
+    character.equipped_weapon = Some("sword".into());
     assert_eq!(character.get_weapon_skill(), character.skills.melee_weapons);
 }
 
@@ -234,9 +234,9 @@ fn test_find_item_by_id() {
 #[test]
 fn test_radaway_consumable_effect() {
     let radaway = Item {
-        id: "radaway".to_string(),
-        name: "RadAway".to_string(),
-        description: "Removes radiation".to_string(),
+        id: "radaway".into(),
+        name: "RadAway".into(),
+        description: "Removes radiation".into(),
         item_type: ItemType::Consumable(ConsumableEffect::RadAway(20)),
         weight: 0.5,
         value: 50,
@@ -253,11 +253,11 @@ fn test_radaway_consumable_effect() {
 #[test]
 fn test_stat_buff_consumable_effect() {
     let buff = Item {
-        id: "buffout".to_string(),
-        name: "Buffout".to_string(),
-        description: "Increases strength".to_string(),
+        id: "buffout".into(),
+        name: "Buffout".into(),
+        description: "Increases strength".into(),
         item_type: ItemType::Consumable(ConsumableEffect::StatBuff {
-            stat: "strength".to_string(),
+            stat: "strength".into(),
             amount: 2,
             duration: 300,
         }),

@@ -168,8 +168,8 @@ fn test_endurance_affects_hp_gain() {
         luck: 5,
     };
 
-    let mut char_low = Character::new("Low End".to_string(), low_end);
-    let mut char_high = Character::new("High End".to_string(), high_end);
+    let mut char_low = Character::new("Low End", low_end);
+    let mut char_high = Character::new("High End", high_end);
 
     let low_initial_hp = char_low.max_hp;
     let high_initial_hp = char_high.max_hp;
@@ -279,7 +279,7 @@ fn test_custom_special_stats() {
         luck: 10,
     };
 
-    let character = Character::new("Test".to_string(), special);
+    let character = Character::new("Test", special);
 
     assert_eq!(character.special.strength, 10);
     assert_eq!(character.special.luck, 10);
@@ -298,7 +298,7 @@ fn test_skills_derived_from_special() {
         luck: 5,
     };
 
-    let character = Character::new("Test".to_string(), special);
+    let character = Character::new("Test", special);
 
     // Skills should be influenced by SPECIAL stats
     // The exact formula depends on implementation, but higher stats should give higher skills
@@ -337,8 +337,8 @@ fn test_character_traits_and_perks() {
     assert_eq!(character.traits.len(), 0, "Should start with no traits");
     assert_eq!(character.perks.len(), 0, "Should start with no perks");
 
-    character.traits.push("Gifted".to_string());
-    character.perks.push("Toughness".to_string());
+    character.traits.push("Gifted".into());
+    character.perks.push("Toughness".into());
 
     assert_eq!(character.traits.len(), 1);
     assert_eq!(character.perks.len(), 1);

@@ -197,6 +197,7 @@ fn test_custom_llama_config() {
         top_p: 0.85,
         top_k: 30,
         max_tokens: 256,
+        context_window: 8192,
         repeat_penalty: 1.0,
         system_prompt: "Custom prompt".to_string(),
     };

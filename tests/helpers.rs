@@ -17,13 +17,13 @@ pub fn create_test_character(name: &str) -> Character {
         agility: 5,
         luck: 5,
     };
-    Character::new(name.to_string(), special)
+    Character::new(name, special)
 }
 
 /// Create a test character with custom SPECIAL stats
 #[allow(dead_code)]
 pub fn create_custom_character(name: &str, special: Special) -> Character {
-    Character::new(name.to_string(), special)
+    Character::new(name, special)
 }
 
 /// Create a test game state with a default character
@@ -45,16 +45,16 @@ pub fn create_high_stat_character(name: &str) -> Character {
         agility: 10,
         luck: 10,
     };
-    Character::new(name.to_string(), special)
+    Character::new(name, special)
 }
 
 /// Create a test healing item
 #[allow(dead_code)]
 pub fn create_healing_item(id: &str, heal_amount: i32) -> Item {
     Item {
-        id: id.to_string(),
-        name: format!("Test Stimpak {}", id),
-        description: "A test healing item".to_string(),
+        id: id.into(),
+        name: format!("Test Stimpak {}", id).into(),
+        description: "A test healing item".into(),
         item_type: ItemType::Consumable(ConsumableEffect::Healing(heal_amount)),
         weight: 0.5,
         value: 25,
@@ -87,13 +87,13 @@ pub fn create_test_armor(id: &str, dr: i32) -> Item {
 #[allow(dead_code)]
 pub fn create_test_enemy(name: &str, hp: i32, skill: u8) -> Enemy {
     Enemy {
-        name: name.to_string(),
+        name: name.into(),
         level: 1,
         max_hp: hp,
         current_hp: hp,
         armor_class: 10,
         skill,
-        damage: "1d6".to_string(),
+        damage: "1d6".into(),
         ap: 5,
         xp_reward: 50,
         strength: 5,

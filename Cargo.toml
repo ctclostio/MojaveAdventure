@@ -63,7 +63,7 @@ moka = { version = "0.12", features = ["future"] }
 tempfile = "3.8"
 proptest = "1.4"
 serial_test = "3.2"
-insta = { version = "1.40", features = ["json", "yaml"] }
+insta = { version = "1.40", features = ["json", "yaml", "redactions"] }
 divan = "0.1"
 
 [[bench]]

@@ -199,7 +199,7 @@ Output JSON:"#,
     }
 
     /// Parse extraction response
-    fn parse_extraction(&self, content: &str) -> Result<ExtractedEntities> {
+    pub fn parse_extraction(&self, content: &str) -> Result<ExtractedEntities> {
         // Try to find JSON in the response
         let json_str = if let Some(start) = content.find('{') {
             if let Some(end) = content.rfind('}') {

@@ -12,7 +12,7 @@ use fallout_dnd::game::worldbook::Location;
 fn snapshot_ai_extraction_prompt() {
     use fallout_dnd::ai::extractor::ExtractionAI;
 
-    let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+    let extractor = ExtractionAI::new("http://localhost:8081".into());
     let narrative = "You arrive at Megaton, a settlement built around an unexploded atomic bomb. Sheriff Lucas Simms, a stern lawman, greets you warily.";
 
     // We can't directly call build_extraction_prompt since it's private,
@@ -33,21 +33,21 @@ fn snapshot_ai_extraction_prompt() {
 fn snapshot_extracted_entities_summary() {
     let entities = ExtractedEntities {
         locations: vec![ExtractedLocation {
-            name: "Megaton".to_string(),
-            description: "Settlement around a bomb".to_string(),
-            location_type: "settlement".to_string(),
+            name: "Megaton".into(),
+            description: "Settlement around a bomb".into(),
+            location_type: "settlement".into(),
         }],
         npcs: vec![ExtractedNPC {
-            name: "Sheriff Simms".to_string(),
-            role: "guard".to_string(),
-            personality: vec!["stern".to_string()],
-            location: Some("Megaton".to_string()),
+            name: "Sheriff Simms".into(),
+            role: "guard".into(),
+            personality: vec!["stern".into()],
+            location: Some("Megaton".into()),
         }],
         events: vec![ExtractedEvent {
-            event_type: "npc_met".to_string(),
-            description: "Met the sheriff".to_string(),
-            location: Some("Megaton".to_string()),
-            entities: vec!["Sheriff Simms".to_string()],
+            event_type: "npc_met".into(),
+            description: "Met the sheriff".into(),
+            location: Some("Megaton".into()),
+            entities: vec!["Sheriff Simms".into()],
         }],
     };
 
@@ -67,14 +67,14 @@ fn snapshot_partial_entities_summary() {
     let entities = ExtractedEntities {
         locations: vec![],
         npcs: vec![ExtractedNPC {
-            name: "Trader".to_string(),
-            role: "merchant".to_string(),
+            name: "Trader".into(),
+            role: "merchant".into(),
             personality: vec![],
             location: None,
         }],
         events: vec![ExtractedEvent {
-            event_type: "dialogue".to_string(),
-            description: "Talked to trader".to_string(),
+            event_type: "dialogue".into(),
+            description: "Talked to trader".into(),
             location: None,
             entities: vec![],
         }],
@@ -126,29 +126,29 @@ impl MockExtractionAI {
 /// Create a mock extracted location for testing
 pub fn mock_extracted_location(name: &str, desc: &str) -> ExtractedLocation {
     ExtractedLocation {
-        name: name.to_string(),
-        description: desc.to_string(),
-        location_type: "settlement".to_string(),
+        name: name.into(),
+        description: desc.into(),
+        location_type: "settlement".into(),
     }
 }
 
 /// Create a mock extracted NPC for testing
 pub fn mock_extracted_npc(name: &str, role: &str) -> ExtractedNPC {
     ExtractedNPC {
-        name: name.to_string(),
-        role: role.to_string(),
-        personality: vec!["brave".to_string(), "honest".to_string()],
-        location: Some("test_location".to_string()),
+        name: name.into(),
+        role: role.into(),
+        personality: vec!["brave".into(), "honest".into()],
+        location: Some("test_location".into()),
     }
 }
 
 /// Create a mock extracted event for testing
 pub fn mock_extracted_event(event_type: &str, desc: &str) -> ExtractedEvent {
     ExtractedEvent {
-        event_type: event_type.to_string(),
-        description: desc.to_string(),
-        location: Some("test_location".to_string()),
-        entities: vec!["test_npc".to_string()],
+        event_type: event_type.into(),
+        description: desc.into(),
+        location: Some("test_location".into()),
+        entities: vec!["test_npc".into()],
     }
 }
 
@@ -187,11 +187,11 @@ fn test_extracted_to_worldbook_conversion() {
 
     // Convert to worldbook Location
     let location = Location {
-        id: "megaton_01".to_string(),
-        name: extracted_loc.name,
-        name_lowercase: String::new(),
-        description: extracted_loc.description,
-        location_type: extracted_loc.location_type,
+        id: "megaton_01".into(),
+        name: extracted_loc.name.into(),
+        name_lowercase: "".into(),
+        description: extracted_loc.description.into(),
+        location_type: extracted_loc.location_type.into(),
         npcs_present: vec![],
         atmosphere: None,
         first_visited: None,
@@ -218,10 +218,10 @@ fn test_empty_extraction_response() {
 /// Helper to create a mock game narrative for testing
 pub fn create_mock_narrative_scenario() -> Vec<String> {
     vec![
-        "You wake up in Vault 101.".to_string(),
-        "Your father, James, greets you.".to_string(),
-        "The Overseer seems suspicious.".to_string(),
-        "You decide to explore the vault.".to_string(),
+        "You wake up in Vault 101.".into(),
+        "Your father, James, greets you.".into(),
+        "The Overseer seems suspicious.".into(),
+        "You decide to explore the vault.".into(),
     ]
 }
 

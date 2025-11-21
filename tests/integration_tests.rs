@@ -7,7 +7,7 @@ use fallout_dnd::game::{
 fn test_character_creation_to_combat_flow() {
     // Create a new character with SPECIAL stats
     let special = Special::new();
-    let character = Character::new("Test Hero".to_string(), special);
+    let character = Character::new("Test Hero", special);
 
     // Verify initial state
     assert_eq!(character.name, "Test Hero");
@@ -32,17 +32,17 @@ fn test_game_state_save_load_roundtrip() {
 
     // Create initial game state with a character
     let special = Special::new();
-    let character = Character::new("Test Character".to_string(), special);
+    let character = Character::new("Test Character", special);
     let mut game_state = GameState::new(character);
-    game_state.location = "Test Vault".to_string();
+    game_state.location = "Test Vault".into();
     // Test both conversation systems
     game_state
         .conversation
-        .add_player_turn("I explore the vault".to_string());
+        .add_player_turn("I explore the vault".into());
     game_state
         .conversation
-        .add_dm_turn("You find a locked door".to_string());
-    game_state.story.add("Test event happened".to_string()); // Legacy support
+        .add_dm_turn("You find a locked door".into());
+    game_state.story.add("Test event happened".into()); // Legacy support
 
     // Use a unique test save name
     let save_name = "test_integration_save";
@@ -69,7 +69,7 @@ fn test_combat_encounter_lifecycle() {
     use fallout_dnd::game::combat::Enemy;
 
     let special = Special::new();
-    let character = Character::new("Test Hero".to_string(), special);
+    let character = Character::new("Test Hero", special);
     let mut game_state = GameState::new(character);
 
     // Start combat with test enemies
@@ -98,7 +98,7 @@ fn test_combat_encounter_lifecycle() {
 fn test_new_game_has_vault_13_in_worldbook() {
     // Create a new game state
     let special = Special::new();
-    let character = Character::new("Vault Dweller".to_string(), special);
+    let character = Character::new("Vault Dweller", special);
     let game_state = GameState::new(character);
 
     // Verify Vault 13 is in the worldbook by default
@@ -116,6 +116,6 @@ fn test_new_game_has_vault_13_in_worldbook() {
     // Verify current location is set to vault_13
     assert_eq!(
         game_state.worldbook.current_location,
-        Some("vault_13".to_string())
+        Some("vault_13".into())
     );
 }

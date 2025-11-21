@@ -229,7 +229,13 @@ fn snapshot_extraction_to_worldbook_conversion() {
     let (locations, npcs, events) = extracted.to_worldbook_entries();
 
     // Snapshot the converted worldbook entries
-    insta::assert_json_snapshot!((locations, npcs, events), @r###"
+    insta::assert_json_snapshot!((locations, npcs, events), {
+        ".[]..timestamp" => insta::dynamic_redaction(|value, _path| {
+            // Redact timestamps since they'll change every test run
+            assert!(value.as_str().is_some());
+            "<redacted timestamp>"
+        }),
+    }, @r###"
     [
       [
         {
@@ -276,23 +282,17 @@ fn snapshot_extraction_to_worldbook_conversion() {
         }
       ]
     ]
-    "###, {
-        ".[]..timestamp" => insta::dynamic_redaction(|value, _path| {
-            // Redact timestamps since they'll change every test run
-            assert!(value.as_str().is_some());
-            "<redacted timestamp>"
-        }),
-    });
+    "###);
 }
 
 // Helper function to create a test location
 fn create_test_location(id: &str, name: &str, desc: &str, loc_type: &str) -> Location {
     Location {
-        id: id.to_string(),
-        name: name.to_string(),
-        name_lowercase: String::new(),
-        description: desc.to_string(),
-        location_type: loc_type.to_string(),
+        id: id.into(),
+        name: name.into(),
+        name_lowercase: String::new().into(),
+        description: desc.into(),
+        location_type: loc_type.into(),
         npcs_present: vec![],
         atmosphere: None,
         first_visited: None,
@@ -306,15 +306,15 @@ fn create_test_location(id: &str, name: &str, desc: &str, loc_type: &str) -> Loc
 // Helper function to create a test NPC
 fn create_test_npc(id: &str, name: &str, role: &str) -> NPC {
     NPC {
-        id: id.to_string(),
-        name: name.to_string(),
-        name_lowercase: String::new(),
-        role: role.to_string(),
+        id: id.into(),
+        name: name.into(),
+        name_lowercase: String::new().into(),
+        role: role.into(),
         personality: vec![],
         current_location: None,
         disposition: 0,
         knowledge: vec![],
-        notes: String::new(),
+        notes: String::new().into(),
         alive: true,
     }
 }
@@ -322,10 +322,10 @@ fn create_test_npc(id: &str, name: &str, role: &str) -> NPC {
 // Helper function to create a test event
 fn create_test_event(location: Option<String>, event_type: &str, desc: &str) -> WorldEvent {
     WorldEvent {
-        timestamp: chrono::Utc::now().to_rfc3339(),
-        location,
-        event_type: event_type.to_string(),
-        description: desc.to_string(),
+        timestamp: chrono::Utc::now().to_rfc3339().into(),
+        location: location.map(|s| s.into()),
+        event_type: event_type.into(),
+        description: desc.into(),
         entities: vec![],
     }
 }
@@ -386,7 +386,7 @@ fn test_update_existing_location() {
     worldbook.add_location(location.clone());
 
     // Update the location
-    location.description = "Updated description".to_string();
+    location.description = "Updated description".into();
     worldbook.add_location(location);
 
     assert_eq!(
@@ -450,20 +450,20 @@ fn test_npc_knowledge() {
 
     assert_eq!(npc.knowledge.len(), 0);
 
-    npc.knowledge.push("location_of_vault".to_string());
-    npc.knowledge.push("password_to_armory".to_string());
+    npc.knowledge.push("location_of_vault".into());
+    npc.knowledge.push("password_to_armory".into());
 
     assert_eq!(npc.knowledge.len(), 2);
-    assert!(npc.knowledge.contains(&"location_of_vault".to_string()));
+    assert!(npc.knowledge.contains(&"location_of_vault".into()));
 }
 
 #[test]
 fn test_npc_personality_traits() {
     let mut npc = create_test_npc("test", "Test NPC", "settler");
 
-    npc.personality.push("gruff".to_string());
-    npc.personality.push("honest".to_string());
-    npc.personality.push("paranoid".to_string());
+    npc.personality.push("gruff".into());
+    npc.personality.push("honest".into());
+    npc.personality.push("paranoid".into());
 
     assert_eq!(npc.personality.len(), 3);
 }
@@ -473,7 +473,7 @@ fn test_record_event() {
     let mut worldbook = Worldbook::new();
 
     worldbook.add_event(create_test_event(
-        Some("megaton_01".to_string()),
+        Some("megaton_01".into()),
         "npc_met",
         "Met Sheriff Lucas Simms",
     ));
@@ -481,7 +481,7 @@ fn test_record_event() {
     assert_eq!(worldbook.events.len(), 1);
 
     let event = &worldbook.events[0];
-    assert_eq!(event.location, Some("megaton_01".to_string()));
+    assert_eq!(event.location, Some("megaton_01".into()));
     assert_eq!(event.event_type, "npc_met");
     assert_eq!(event.description, "Met Sheriff Lucas Simms");
 }
@@ -491,12 +491,12 @@ fn test_multiple_events() {
     let mut worldbook = Worldbook::new();
 
     worldbook.add_event(create_test_event(
-        Some("loc1".to_string()),
+        Some("loc1".into()),
         "discovery",
         "Found a vault",
     ));
     worldbook.add_event(create_test_event(
-        Some("loc2".to_string()),
+        Some("loc2".into()),
         "combat",
         "Fought raiders",
     ));
@@ -522,7 +522,7 @@ fn test_event_timeline_order() {
     assert_eq!(worldbook.events.len(), 3);
 
     // Events should be in chronological order
-    let timestamps: Vec<&String> = worldbook.events.iter().map(|e| &e.timestamp).collect();
+    let timestamps: Vec<_> = worldbook.events.iter().map(|e| &e.timestamp).collect();
     for i in 1..timestamps.len() {
         assert!(
             timestamps[i] >= timestamps[i - 1],
@@ -585,8 +585,8 @@ fn test_location_npcs_present() {
 
     assert_eq!(location.npcs_present.len(), 0);
 
-    location.npcs_present.push("npc1".to_string());
-    location.npcs_present.push("npc2".to_string());
+    location.npcs_present.push("npc1".into());
+    location.npcs_present.push("npc2".into());
 
     assert_eq!(location.npcs_present.len(), 2);
 }
@@ -595,10 +595,8 @@ fn test_location_npcs_present() {
 fn test_location_notes() {
     let mut location = create_test_location("test", "Test", "Desc", "settlement");
 
-    location.notes.push("Found a secret stash here".to_string());
-    location
-        .notes
-        .push("Guard mentioned a password".to_string());
+    location.notes.push("Found a secret stash here".into());
+    location.notes.push("Guard mentioned a password".into());
 
     assert_eq!(location.notes.len(), 2);
 }
@@ -609,16 +607,13 @@ fn test_location_state() {
 
     location
         .state
-        .insert("quest_completed".to_string(), "true".to_string());
+        .insert("quest_completed".into(), "true".into());
     location
         .state
-        .insert("door_unlocked".to_string(), "false".to_string());
+        .insert("door_unlocked".into(), "false".into());
 
     assert_eq!(location.state.len(), 2);
-    assert_eq!(
-        location.state.get("quest_completed"),
-        Some(&"true".to_string())
-    );
+    assert_eq!(location.state.get("quest_completed"), Some(&"true".into()));
 }
 
 #[test]
@@ -697,7 +692,7 @@ fn test_worldbook_save_and_load() {
     worldbook.add_location(create_test_location("test", "Test", "Desc", "settlement"));
     worldbook.add_npc(create_test_npc("npc1", "NPC", "merchant"));
     worldbook.add_event(create_test_event(
-        Some("test".to_string()),
+        Some("test".into()),
         "discovery",
         "Found location",
     ));
@@ -730,8 +725,8 @@ fn test_current_location_tracking() {
 
     assert!(worldbook.current_location.is_none());
 
-    worldbook.current_location = Some("megaton_01".to_string());
-    assert_eq!(worldbook.current_location, Some("megaton_01".to_string()));
+    worldbook.current_location = Some("megaton_01".into());
+    assert_eq!(worldbook.current_location, Some("megaton_01".into()));
 
     worldbook.current_location = None;
     assert!(worldbook.current_location.is_none());
@@ -743,8 +738,8 @@ fn test_npc_current_location() {
 
     assert!(npc.current_location.is_none());
 
-    npc.current_location = Some("megaton_01".to_string());
-    assert_eq!(npc.current_location, Some("megaton_01".to_string()));
+    npc.current_location = Some("megaton_01".into());
+    assert_eq!(npc.current_location, Some("megaton_01".into()));
 }
 
 #[test]
@@ -753,8 +748,8 @@ fn test_location_atmosphere() {
 
     assert!(location.atmosphere.is_none());
 
-    location.atmosphere = Some("Tense and hostile".to_string());
-    assert_eq!(location.atmosphere, Some("Tense and hostile".to_string()));
+    location.atmosphere = Some("Tense and hostile".into());
+    assert_eq!(location.atmosphere, Some("Tense and hostile".into()));
 }
 
 #[test]
@@ -762,11 +757,11 @@ fn test_event_entities() {
     let mut worldbook = Worldbook::new();
 
     let event = WorldEvent {
-        timestamp: chrono::Utc::now().to_rfc3339(),
-        location: Some("loc1".to_string()),
-        event_type: "combat".to_string(),
-        description: "Battle with raiders".to_string(),
-        entities: vec!["raider_01".to_string(), "raider_02".to_string()],
+        timestamp: chrono::Utc::now().to_rfc3339().into(),
+        location: Some("loc1".into()),
+        event_type: "combat".into(),
+        description: "Battle with raiders".into(),
+        entities: vec!["raider_01".into(), "raider_02".into()],
     };
 
     worldbook.add_event(event);
@@ -791,28 +786,28 @@ fn test_complex_worldbook_scenario() {
 
     // Add NPCs
     let mut lucas = create_test_npc("lucas_01", "Lucas Simms", "sheriff");
-    lucas.current_location = Some("megaton_01".to_string());
+    lucas.current_location = Some("megaton_01".into());
     lucas.disposition = 25;
     worldbook.add_npc(lucas);
 
     let mut moira = create_test_npc("moira_01", "Moira Brown", "merchant");
-    moira.current_location = Some("megaton_01".to_string());
+    moira.current_location = Some("megaton_01".into());
     moira.disposition = 50;
     worldbook.add_npc(moira);
 
     // Record events
     worldbook.add_event(create_test_event(
-        Some("megaton_01".to_string()),
+        Some("megaton_01".into()),
         "arrival",
         "Entered Megaton for the first time",
     ));
     worldbook.add_event(create_test_event(
-        Some("megaton_01".to_string()),
+        Some("megaton_01".into()),
         "npc_met",
         "Met Sheriff Lucas Simms",
     ));
     worldbook.add_event(create_test_event(
-        Some("megaton_01".to_string()),
+        Some("megaton_01".into()),
         "dialogue",
         "Talked to Moira about the wasteland",
     ));

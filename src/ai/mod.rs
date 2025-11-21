@@ -465,6 +465,7 @@ impl AIDungeonMaster {
     }
 
     /// Build combat status section (legacy fallback)
+    #[allow(dead_code)]
     fn build_combat_section(combat: &crate::game::combat::CombatState) -> String {
         // Pre-allocate: ~100 bytes header + ~50 bytes per enemy
         let mut section = String::with_capacity(100 + combat.enemies.len() * 50);
@@ -484,6 +485,7 @@ impl AIDungeonMaster {
     /// Build recent story context section
     ///
     /// DEPRECATED: This uses the old StoryManager. New code should use build_conversation_section.
+    #[allow(dead_code)]
     fn build_story_section(story_context: &std::collections::VecDeque<String>) -> String {
         if story_context.is_empty() {
             return String::new();
@@ -509,6 +511,7 @@ impl AIDungeonMaster {
     /// Build conversation context section using structured ConversationManager
     ///
     /// This is the preferred method for building conversation context.
+    #[allow(dead_code)]
     fn build_conversation_section(
         conversation: &crate::game::conversation::ConversationManager,
     ) -> String {

@@ -152,6 +152,7 @@ impl SpecialStat {
 }
 
 /// Complete SPECIAL allocation with validation
+#[non_exhaustive]
 #[derive(Debug, Clone, Validate)]
 pub struct SpecialAllocation {
     #[garde(range(min = 1, max = 10))]
@@ -168,8 +169,6 @@ pub struct SpecialAllocation {
     pub agility: u8,
     #[garde(range(min = 1, max = 10))]
     pub luck: u8,
-    #[garde(skip)]
-    _phantom: (),
 }
 
 impl SpecialAllocation {
@@ -192,7 +191,6 @@ impl SpecialAllocation {
             intelligence,
             agility,
             luck,
-            _phantom: (),
         };
 
         // Validate individual stats
