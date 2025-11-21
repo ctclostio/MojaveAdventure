@@ -73,6 +73,9 @@ pub fn render(f: &mut Frame, app: &App) {
         ViewMode::Worldbook => {
             crate::tui::worldbook_ui::render_worldbook(f, app, content_chunks[0]);
         }
+        ViewMode::Equipment => {
+            render_inventory(f, app, content_chunks[0]);
+        }
         ViewMode::GameOver => {
             render_game_over(f, app, content_chunks[0]);
         }
@@ -565,6 +568,372 @@ fn render_inventory(f: &mut Frame, app: &App, area: Rect) {
 
     let list = List::new(items);
     f.render_widget(list, inner_area);
+}
+
+/// Render equipment menu for equipping/unequipping items
+fn render_equipment_menu(f: &mut Frame, app: &App, area: Rect) {
+    let character = &app.game_state.character;
+
+    // Main border
+    let block = Block::default()
+        .title("⚔ Equipment Manager")
+        .title_alignment(Alignment::Left)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Yellow))
+        .border_type(BorderType::Double);
+
+    let inner_area = block.inner(area);
+    f.render_widget(block, area);
+
+    // Split into left (item list) and right (details/comparison)
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(50), // Item list
+            Constraint::Percentage(50), // Details panel
+        ])
+        .split(inner_area);
+
+    // Filter equippable items (weapons and armor)
+    let equippable_items: Vec<_> = character
+        .inventory
+        .iter()
+        .filter(|item| {
+            matches!(
+                item.item_type,
+                crate::game::items::ItemType::Weapon(_) | crate::game::items::ItemType::Armor(_)
+            )
+        })
+        .collect();
+
+    // Left panel: Item list
+    let list_block = Block::default()
+        .title(" Equippable Items ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Green))
+        .border_type(BorderType::Plain);
+
+    let list_inner = list_block.inner(chunks[0]);
+    f.render_widget(list_block, chunks[0]);
+
+    if equippable_items.is_empty() {
+        let text = Paragraph::new("No equippable items in inventory.\n\nPress ESC to go back.")
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center);
+        f.render_widget(text, list_inner);
+    } else {
+        // Ensure selected index is in bounds
+        let selected_index = app.equipment_selected_index.min(equippable_items.len() - 1);
+
+        let items: Vec<ListItem> = equippable_items
+            .iter()
+            .enumerate()
+            .map(|(idx, item)| {
+                let is_equipped = character.equipped_weapon.as_ref() == Some(&item.id)
+                    || character.equipped_armor.as_ref() == Some(&item.id);
+                let is_selected = idx == selected_index;
+
+                // Determine marker and style
+                let (marker, style) = if is_selected && is_equipped {
+                    (
+                        "► ",
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+                    )
+                } else if is_selected {
+                    (
+                        "► ",
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                } else if is_equipped {
+                    (
+                        "  ",
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                } else {
+                    ("  ", Style::default().fg(Color::White))
+                };
+
+                let equipped_marker = if is_equipped { " [EQUIPPED]" } else { "" };
+
+                // Show item details based on type
+                let details = match &item.item_type {
+                    crate::game::items::ItemType::Weapon(stats) => {
+                        format!(" - DMG: {}", stats.damage)
+                    }
+                    crate::game::items::ItemType::Armor(stats) => {
+                        format!(
+                            " - DR: {}, AC: {}",
+                            stats.damage_resistance, stats.armor_class
+                        )
+                    }
+                    _ => String::new(),
+                };
+
+                ListItem::new(format!(
+                    "{}{}{}{}",
+                    marker, item.name, details, equipped_marker
+                ))
+                .style(style)
+            })
+            .collect();
+
+        let list = List::new(items);
+        f.render_widget(list, list_inner);
+
+        // Right panel: Details and comparison
+        let details_block = Block::default()
+            .title(" Details & Comparison ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Green))
+            .border_type(BorderType::Plain);
+
+        let details_inner = details_block.inner(chunks[1]);
+        f.render_widget(details_block, chunks[1]);
+
+        // Show detailed comparison for selected item
+        let selected_item = equippable_items[selected_index];
+        let mut lines = vec![];
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![Span::styled(
+            selected_item.name.as_str(),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )]));
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![Span::styled(
+            selected_item.description.as_str(),
+            Style::default().fg(Color::DarkGray),
+        )]));
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "─".repeat(details_inner.width as usize),
+            Style::default().fg(Color::DarkGray),
+        )));
+        lines.push(Line::from(""));
+
+        match &selected_item.item_type {
+            crate::game::items::ItemType::Weapon(stats) => {
+                lines.push(Line::from(vec![
+                    Span::styled("Type: ", Style::default().fg(Color::Yellow)),
+                    Span::styled("Weapon", Style::default().fg(Color::White)),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("Damage: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        stats.damage.as_str(),
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("AP Cost: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        format!("{}", stats.ap_cost),
+                        Style::default().fg(Color::White),
+                    ),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("Range: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        format!("{}m", stats.range),
+                        Style::default().fg(Color::White),
+                    ),
+                ]));
+
+                // Show comparison if different weapon equipped
+                if let Some(equipped_id) = &character.equipped_weapon {
+                    if equipped_id != &selected_item.id {
+                        if let Some(equipped_weapon) =
+                            character.inventory.iter().find(|i| &i.id == equipped_id)
+                        {
+                            if let crate::game::items::ItemType::Weapon(equipped_stats) =
+                                &equipped_weapon.item_type
+                            {
+                                lines.push(Line::from(""));
+                                lines.push(Line::from(Span::styled(
+                                    "─".repeat(details_inner.width as usize),
+                                    Style::default().fg(Color::DarkGray),
+                                )));
+                                lines.push(Line::from(""));
+                                lines.push(Line::from(vec![Span::styled(
+                                    "Currently Equipped:",
+                                    Style::default()
+                                        .fg(Color::Cyan)
+                                        .add_modifier(Modifier::BOLD),
+                                )]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  ", Style::default()),
+                                    Span::styled(
+                                        equipped_weapon.name.as_str(),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  Damage: ", Style::default().fg(Color::Yellow)),
+                                    Span::styled(
+                                        equipped_stats.damage.as_str(),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  AP Cost: ", Style::default().fg(Color::Yellow)),
+                                    Span::styled(
+                                        format!("{}", equipped_stats.ap_cost),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                            }
+                        }
+                    }
+                }
+            }
+            crate::game::items::ItemType::Armor(stats) => {
+                lines.push(Line::from(vec![
+                    Span::styled("Type: ", Style::default().fg(Color::Yellow)),
+                    Span::styled("Armor", Style::default().fg(Color::White)),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("Damage Resistance: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        format!("{}", stats.damage_resistance),
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("Armor Class: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        format!("+{}", stats.armor_class),
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ]));
+                lines.push(Line::from(vec![
+                    Span::styled("Rad Resistance: ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        format!("+{}", stats.radiation_resistance),
+                        Style::default().fg(Color::White),
+                    ),
+                ]));
+
+                // Show comparison if different armor equipped
+                if let Some(equipped_id) = &character.equipped_armor {
+                    if equipped_id != &selected_item.id {
+                        if let Some(equipped_armor) =
+                            character.inventory.iter().find(|i| &i.id == equipped_id)
+                        {
+                            if let crate::game::items::ItemType::Armor(equipped_stats) =
+                                &equipped_armor.item_type
+                            {
+                                lines.push(Line::from(""));
+                                lines.push(Line::from(Span::styled(
+                                    "─".repeat(details_inner.width as usize),
+                                    Style::default().fg(Color::DarkGray),
+                                )));
+                                lines.push(Line::from(""));
+                                lines.push(Line::from(vec![Span::styled(
+                                    "Currently Equipped:",
+                                    Style::default()
+                                        .fg(Color::Cyan)
+                                        .add_modifier(Modifier::BOLD),
+                                )]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  ", Style::default()),
+                                    Span::styled(
+                                        equipped_armor.name.as_str(),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  DR: ", Style::default().fg(Color::Yellow)),
+                                    Span::styled(
+                                        format!("{}", equipped_stats.damage_resistance),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                                lines.push(Line::from(vec![
+                                    Span::styled("  AC: ", Style::default().fg(Color::Yellow)),
+                                    Span::styled(
+                                        format!("+{}", equipped_stats.armor_class),
+                                        Style::default().fg(Color::White),
+                                    ),
+                                ]));
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+            "─".repeat(details_inner.width as usize),
+            Style::default().fg(Color::DarkGray),
+        )));
+        lines.push(Line::from(""));
+
+        // Show controls
+        let is_equipped = character.equipped_weapon.as_ref() == Some(&selected_item.id)
+            || character.equipped_armor.as_ref() == Some(&selected_item.id);
+
+        if is_equipped {
+            lines.push(Line::from(vec![
+                Span::styled(
+                    "U",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" - Unequip   ", Style::default().fg(Color::White)),
+                Span::styled(
+                    "ESC",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" - Back", Style::default().fg(Color::White)),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::styled(
+                    "E",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" - Equip   ", Style::default().fg(Color::White)),
+                Span::styled(
+                    "ESC",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" - Back", Style::default().fg(Color::White)),
+            ]));
+        }
+        lines.push(Line::from(vec![
+            Span::styled(
+                "↑↓",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(" - Navigate", Style::default().fg(Color::White)),
+        ]));
+
+        let paragraph = Paragraph::new(lines);
+        f.render_widget(paragraph, details_inner);
+    }
 }
 
 /// Render detailed stats view with beautiful visual hierarchy

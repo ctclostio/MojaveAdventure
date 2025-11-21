@@ -11,7 +11,7 @@ fn snapshot_combat_state_single_raider() {
     let mut combat = CombatState::new();
     combat.start_combat(vec![Enemy::raider(3)]);
 
-    insta::assert_json_snapshot!(combat, @r###"
+    insta::assert_json_snapshot!(combat, @r#"
     {
       "active": true,
       "round": 1,
@@ -22,7 +22,7 @@ fn snapshot_combat_state_single_raider() {
           "max_hp": 50,
           "current_hp": 50,
           "armor_class": 13,
-          "damage": "1d6+3",
+          "damage": "2d6+3",
           "ap": 6,
           "xp_reward": 300,
           "skill": 64,
@@ -30,7 +30,7 @@ fn snapshot_combat_state_single_raider() {
         }
       ]
     }
-    "###);
+    "#);
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn snapshot_combat_state_multiple_enemies() {
         Enemy::super_mutant(2),
     ]);
 
-    insta::assert_json_snapshot!(combat, @r###"
+    insta::assert_json_snapshot!(combat, @r#"
     {
       "active": true,
       "round": 1,
@@ -74,9 +74,9 @@ fn snapshot_combat_state_multiple_enemies() {
         {
           "name": "Super Mutant",
           "level": 4,
-          "max_hp": 100,
-          "current_hp": 100,
-          "armor_class": 19,
+          "max_hp": 70,
+          "current_hp": 70,
+          "armor_class": 17,
           "damage": "2d8+4",
           "ap": 7,
           "xp_reward": 400,
@@ -85,7 +85,7 @@ fn snapshot_combat_state_multiple_enemies() {
         }
       ]
     }
-    "###);
+    "#);
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn snapshot_combat_state_mid_battle() {
     combat.next_round();
     combat.next_round();
 
-    insta::assert_json_snapshot!(combat, @r###"
+    insta::assert_json_snapshot!(combat, @r#"
     {
       "active": true,
       "round": 3,
@@ -110,7 +110,7 @@ fn snapshot_combat_state_mid_battle() {
           "max_hp": 70,
           "current_hp": 45,
           "armor_class": 15,
-          "damage": "1d6+5",
+          "damage": "2d6+5",
           "ap": 7,
           "xp_reward": 500,
           "skill": 80,
@@ -122,7 +122,7 @@ fn snapshot_combat_state_mid_battle() {
           "max_hp": 70,
           "current_hp": 0,
           "armor_class": 15,
-          "damage": "1d6+5",
+          "damage": "2d6+5",
           "ap": 7,
           "xp_reward": 500,
           "skill": 80,
@@ -130,14 +130,14 @@ fn snapshot_combat_state_mid_battle() {
         }
       ]
     }
-    "###);
+    "#);
 }
 
 #[test]
 fn snapshot_enemy_types_at_different_levels() {
     let enemies = vec![Enemy::radroach(1), Enemy::raider(3), Enemy::super_mutant(5)];
 
-    insta::assert_json_snapshot!(enemies, @r###"
+    insta::assert_json_snapshot!(enemies, @r#"
     [
       {
         "name": "Radroach",
@@ -157,7 +157,7 @@ fn snapshot_enemy_types_at_different_levels() {
         "max_hp": 50,
         "current_hp": 50,
         "armor_class": 13,
-        "damage": "1d6+3",
+        "damage": "2d6+3",
         "ap": 6,
         "xp_reward": 300,
         "skill": 64,
@@ -166,9 +166,9 @@ fn snapshot_enemy_types_at_different_levels() {
       {
         "name": "Super Mutant",
         "level": 7,
-        "max_hp": 145,
-        "current_hp": 145,
-        "armor_class": 22,
+        "max_hp": 115,
+        "current_hp": 115,
+        "armor_class": 20,
         "damage": "3d8+10",
         "ap": 8,
         "xp_reward": 700,
@@ -176,7 +176,7 @@ fn snapshot_enemy_types_at_different_levels() {
         "strength": 15
       }
     ]
-    "###);
+    "#);
 }
 
 #[test]

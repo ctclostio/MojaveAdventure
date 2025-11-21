@@ -1,3 +1,4 @@
+use crate::ai::extractor::ExtractionAI;
 use crate::ai::AIDungeonMaster;
 use crate::config::Config;
 use crate::game::rolls::{
@@ -12,7 +13,8 @@ use std::io;
 pub async fn run_game_with_tui(
     game_state: GameState,
     ai_dm: &AIDungeonMaster,
-    _config: Config,
+    _extractor: &ExtractionAI,
+    config: Config,
 ) -> io::Result<()> {
     // Initialize terminal
     let mut terminal = tui::init_terminal()?;
@@ -24,7 +26,15 @@ pub async fn run_game_with_tui(
     let event_handler = EventHandler::new(50);
 
     // Main loop
-    let result = run_app(&mut terminal, &mut app, &event_handler, ai_dm).await;
+    let result = run_app(
+        &mut terminal,
+        &mut app,
+        &event_handler,
+        ai_dm,
+        _extractor,
+        &config,
+    )
+    .await;
 
     // Restore terminal
     tui::restore_terminal(terminal)?;
@@ -37,6 +47,8 @@ async fn run_app<B: ratatui::backend::Backend>(
     app: &mut App,
     event_handler: &EventHandler,
     ai_dm: &AIDungeonMaster,
+    extractor: &ExtractionAI,
+    config: &Config,
 ) -> io::Result<()> {
     loop {
         // Update view mode based on combat status
@@ -78,6 +90,9 @@ async fn run_app<B: ratatui::backend::Backend>(
                     app.loading_spinner.next_frame();
                 }
 
+                // Check and perform autosave if needed
+                app.check_and_perform_autosave(config.game.autosave_interval);
+
                 // Process streaming tokens if available
                 if app.is_streaming {
                     while let Some(result) = app.try_recv_token() {
@@ -101,10 +116,12 @@ async fn run_app<B: ratatui::backend::Backend>(
                         {
                             app.add_error_message(format!("Skill check error: {}", e));
                         }
+
+                        // Extract and integrate worldbook entities from the completed response
+                        // This runs asynchronously and won't block gameplay
+                        extract_and_integrate_entities(extractor, &dm_response, app).await;
+
                         app.waiting_for_ai = false;
-                        // TODO: Implement worldbook extraction from the completed response
-                        // This would require passing the extraction AI client to this function
-                        // and calling extract_and_save_entities() like in the classic mode
                     }
                 }
             }
@@ -128,6 +145,11 @@ async fn handle_key_event(
     if app.view_mode == crate::tui::app::ViewMode::Worldbook {
         return handle_worldbook_keys(app, key);
     }
+
+    // TODO: Special handling for Equipment view mode
+    // if app.view_mode == crate::tui::app::ViewMode::Equipment {
+    //     return handle_equipment_keys(app, key);
+    // }
 
     match key.code {
         // Quit
@@ -286,6 +308,122 @@ fn handle_worldbook_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Handle keyboard events when in equipment menu
+fn handle_equipment_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
+    use crate::game::items::ItemType;
+
+    match key.code {
+        // Quit equipment menu
+        KeyCode::Esc => {
+            app.set_view_mode(crate::tui::app::ViewMode::Normal);
+            app.equipment_selected_index = 0; // Reset selection
+        }
+
+        // Navigation
+        KeyCode::Up => {
+            if app.equipment_selected_index > 0 {
+                app.equipment_selected_index -= 1;
+            }
+        }
+        KeyCode::Down => {
+            // Get count of equippable items
+            let equippable_count = app
+                .game_state
+                .character
+                .inventory
+                .iter()
+                .filter(|item| matches!(item.item_type, ItemType::Weapon(_) | ItemType::Armor(_)))
+                .count();
+
+            if equippable_count > 0 && app.equipment_selected_index < equippable_count - 1 {
+                app.equipment_selected_index += 1;
+            }
+        }
+
+        // Equip item
+        KeyCode::Char('e') | KeyCode::Char('E') => {
+            // Get the selected item
+            let equippable_items: Vec<_> = app
+                .game_state
+                .character
+                .inventory
+                .iter()
+                .filter(|item| matches!(item.item_type, ItemType::Weapon(_) | ItemType::Armor(_)))
+                .collect();
+
+            if let Some(selected_item) = equippable_items.get(app.equipment_selected_index) {
+                let item_id = selected_item.id.clone();
+                let item_name = selected_item.name.clone();
+
+                // Check if already equipped
+                let already_equipped = app.game_state.character.equipped_weapon.as_ref()
+                    == Some(&item_id)
+                    || app.game_state.character.equipped_armor.as_ref() == Some(&item_id);
+
+                if !already_equipped {
+                    // Equip the item
+                    match &selected_item.item_type {
+                        ItemType::Weapon(_) => {
+                            app.game_state.character.equipped_weapon = Some(item_id);
+                            app.add_system_message(format!("Equipped: {}", item_name));
+                        }
+                        ItemType::Armor(_) => {
+                            app.game_state.character.equipped_armor = Some(item_id);
+                            app.add_system_message(format!("Equipped: {}", item_name));
+                        }
+                        _ => {}
+                    }
+                } else {
+                    app.add_info_message("Item is already equipped.".to_string());
+                }
+            }
+        }
+
+        // Unequip item
+        KeyCode::Char('u') | KeyCode::Char('U') => {
+            // Get the selected item
+            let equippable_items: Vec<_> = app
+                .game_state
+                .character
+                .inventory
+                .iter()
+                .filter(|item| matches!(item.item_type, ItemType::Weapon(_) | ItemType::Armor(_)))
+                .collect();
+
+            if let Some(selected_item) = equippable_items.get(app.equipment_selected_index) {
+                let item_id = selected_item.id.clone();
+                let item_name = selected_item.name.clone();
+
+                // Check if equipped
+                let is_equipped = app.game_state.character.equipped_weapon.as_ref()
+                    == Some(&item_id)
+                    || app.game_state.character.equipped_armor.as_ref() == Some(&item_id);
+
+                if is_equipped {
+                    // Unequip the item
+                    match &selected_item.item_type {
+                        ItemType::Weapon(_) => {
+                            app.game_state.character.equipped_weapon = None;
+                            app.add_system_message(format!("Unequipped: {}", item_name));
+                        }
+                        ItemType::Armor(_) => {
+                            app.game_state.character.equipped_armor = None;
+                            app.add_system_message(format!("Unequipped: {}", item_name));
+                        }
+                        _ => {}
+                    }
+                } else {
+                    app.add_info_message("Item is not equipped.".to_string());
+                }
+            }
+        }
+
+        _ => {}
+    }
+
+    Ok(())
+}
+
 async fn handle_player_input(
     app: &mut App,
     input: &str,
@@ -320,11 +458,6 @@ async fn handle_player_input(
             app.set_view_mode(crate::tui::app::ViewMode::Worldbook);
             return Ok(());
         }
-        "save" => {
-            // TODO: Implement save in TUI mode
-            app.add_system_message("Save functionality coming soon in TUI mode!".to_string());
-            return Ok(());
-        }
         "help" => {
             show_help(app);
             return Ok(());
@@ -333,7 +466,18 @@ async fn handle_player_input(
             show_debug_context(app);
             return Ok(());
         }
-        _ => {}
+        _ => {
+            // Handle /save command with optional save name
+            if input.starts_with("save") {
+                let save_name = input.strip_prefix("save").unwrap_or("").trim();
+                app.perform_save(if save_name.is_empty() {
+                    None
+                } else {
+                    Some(save_name)
+                });
+                return Ok(());
+            }
+        }
     }
 
     // Handle combat commands if in combat
@@ -569,7 +713,7 @@ fn show_help(app: &mut App) {
     app.add_info_message("inventory, inv, i  - View your inventory".to_string());
     app.add_info_message("stats, sheet       - View character stats".to_string());
     app.add_info_message("worldbook, wb      - View worldbook".to_string());
-    app.add_info_message("save               - Save your game".to_string());
+    app.add_info_message("save [name]        - Save game (default: 'quicksave')".to_string());
     app.add_info_message("help               - Show this help".to_string());
     app.add_info_message("debug, context     - Show AI conversation context".to_string());
     app.add_info_message("quit, exit         - Exit game".to_string());
@@ -734,4 +878,66 @@ async fn handle_skill_check_if_needed(
     }
 
     Ok(())
+}
+
+/// Extract entities from AI narrative and integrate into worldbook
+/// This runs silently in the background to avoid disrupting gameplay
+async fn extract_and_integrate_entities(extractor: &ExtractionAI, narrative: &str, app: &mut App) {
+    // Extract entities from the narrative
+    match extractor.extract_entities(narrative).await {
+        Ok(entities) if !entities.is_empty() => {
+            // Show brief status message
+            app.add_info_message(format!("[Worldbook: {}]", entities.summary()));
+
+            // Convert extracted entities to worldbook entries
+            let (locations, npcs, events) = entities.to_worldbook_entries();
+            let mut saved_count = 0;
+
+            // Integrate locations
+            for location in locations {
+                let loc_id = location.id.clone();
+
+                // Only add if it's new
+                if app.game_state.worldbook.get_location(&loc_id).is_none() {
+                    app.game_state.worldbook.add_location(location);
+                    saved_count += 1;
+
+                    // Only set as current location if we don't have one
+                    if app.game_state.worldbook.current_location.is_none() {
+                        app.game_state
+                            .worldbook
+                            .set_current_location(Some(loc_id.clone()));
+                        app.game_state.worldbook.visit_location(&loc_id);
+                    }
+                }
+            }
+
+            // Integrate NPCs
+            for npc in npcs {
+                // Only add if it's new
+                if app.game_state.worldbook.get_npc(&npc.id).is_none() {
+                    app.game_state.worldbook.add_npc(npc);
+                    saved_count += 1;
+                }
+            }
+
+            // Always add events (they represent unique moments)
+            for event in events {
+                app.game_state.worldbook.add_event(event);
+                saved_count += 1;
+            }
+
+            // Log success
+            tracing::info!("Worldbook updated: {} new entries saved", saved_count);
+        }
+        Ok(_) => {
+            // No entities found - this is normal, don't show message
+            tracing::debug!("No entities extracted from narrative");
+        }
+        Err(e) => {
+            // Log error but don't disrupt gameplay
+            tracing::warn!("Worldbook extraction error: {}", e);
+            // Silently fail - worldbook extraction is non-critical
+        }
+    }
 }

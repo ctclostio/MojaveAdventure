@@ -486,4 +486,540 @@ mod tests {
         let result = parse_natural_roll_request("You walk into the room and see a desk.");
         assert_eq!(result, None);
     }
+
+    // ============ EDGE CASE TESTS ============
+
+    #[test]
+    fn test_critical_success_nat_20() {
+        // Critical success should always be true when rolling nat 20
+        let character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 2,
+                perception: 2,
+                endurance: 2,
+                charisma: 2,
+                intelligence: 2,
+                agility: 2,
+                luck: 2,
+            },
+        );
+
+        // Even with nat 20 and low modifier, total might still be low,
+        // but critical flag should be true
+        for _ in 0..5 {
+            // Run multiple times to catch a nat 20
+            let result = perform_roll(&character, "luck", 100);
+            if result.roll == 20 {
+                assert!(result.critical, "Nat 20 should always be critical");
+                assert!(result.success, "Nat 20 should always succeed");
+            }
+        }
+    }
+
+    #[test]
+    fn test_critical_failure_nat_1() {
+        // Critical failure should always be true when rolling nat 1
+        let character = Character::new(
+            "Test".to_string(),
+            Special {
+                strength: 10,
+                perception: 10,
+                endurance: 10,
+                charisma: 10,
+                intelligence: 10,
+                agility: 10,
+                luck: 10,
+            },
+        );
+
+        // Even with nat 1 and high modifier, fumble flag should be true
+        for _ in 0..5 {
+            let result = perform_roll(&character, "strength", 5);
+            if result.roll == 1 {
+                assert!(result.fumble, "Nat 1 should always be fumble");
+            }
+        }
+    }
+
+    #[test]
+    fn test_extreme_positive_modifier() {
+        // Test with very high skill modifier
+        let mut character = Character::new(
+            "TestHighSkill".to_string(),
+            Special {
+                strength: 10,
+                perception: 10,
+                endurance: 10,
+                charisma: 10,
+                intelligence: 10,
+                agility: 10,
+                luck: 10,
+            },
+        );
+        // Max out a skill to 100+
+        character.skills.small_guns = 100;
+
+        let result = perform_roll(&character, "small guns", 50);
+        // With 100 skill modifier, even a nat 1 (1 + 100 = 101) should succeed against DC 50
+        assert!(result.total >= 101);
+        if result.roll != 1 {
+            assert!(result.success, "High skill should ensure success");
+        }
+    }
+
+    #[test]
+    fn test_extreme_negative_modifier() {
+        // Test with very low stats (modifier = 0 for untrained)
+        let character = Character::new(
+            "TestLowStats".to_string(),
+            Special {
+                strength: 1,
+                perception: 1,
+                endurance: 1,
+                charisma: 1,
+                intelligence: 1,
+                agility: 1,
+                luck: 1,
+            },
+        );
+
+        let result = perform_roll(&character, "luck", 1);
+        // With luck 1 modifier and DC 1, only nat 1 fails (1 + 1 = 2 >= 1)
+        assert!(result.total >= 2, "Minimum roll should be 1 + 1 = 2");
+    }
+
+    #[test]
+    fn test_parse_invalid_dice_string_empty() {
+        // Empty string should return None
+        let result = parse_roll_request("");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_invalid_dice_string_no_dc() {
+        // String with skill keyword but no DC should return None
+        let result = parse_roll_request("You need to SKILL: lockpick");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_invalid_dice_string_malformed_dc() {
+        // Malformed DC (non-numeric) should return None
+        let result = parse_roll_request("SKILL: lockpick DC abc");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_empty_skill_name() {
+        // Empty skill name before DC should return None
+        let result = parse_roll_request("SKILL:  DC 15");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_skill_check_very_high_dc() {
+        // Test with extremely high DC (like 100)
+        let character = Character::new(
+            "TestHighDC".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let result = perform_roll(&character, "luck", 100);
+        // Only nat 20 should succeed against DC 100 with low modifier
+        if result.roll != 20 {
+            assert!(!result.success, "Low roll should fail against DC 100");
+        }
+    }
+
+    #[test]
+    fn test_skill_check_zero_dc() {
+        // Test with DC 0 (auto-succeed)
+        let character = Character::new(
+            "TestZeroDC".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let result = perform_roll(&character, "luck", 0);
+        // Any roll with any positive modifier should succeed against DC 0
+        assert!(result.total >= 0);
+    }
+
+    #[test]
+    fn test_skill_check_negative_dc() {
+        // Test with negative DC (always succeed)
+        let character = Character::new(
+            "TestNegDC".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let result = perform_roll(&character, "luck", -50);
+        // Even nat 1 should succeed against negative DC
+        assert!(
+            result.success,
+            "Any roll should succeed against negative DC"
+        );
+    }
+
+    #[test]
+    fn test_roll_result_format_critical() {
+        // Test formatting of critical success
+        let result = RollResult {
+            skill_name: "Lockpick".to_string(),
+            roll: 20,
+            modifier: 5,
+            total: 25,
+            dc: 15,
+            success: true,
+            critical: true,
+            fumble: false,
+        };
+
+        let formatted = result.format();
+        assert!(formatted.contains("CRITICAL SUCCESS!"));
+        assert!(formatted.contains("Lockpick"));
+        assert!(formatted.contains("20"));
+        assert!(formatted.contains("5"));
+        assert!(formatted.contains("25"));
+        assert!(formatted.contains("15"));
+    }
+
+    #[test]
+    fn test_roll_result_format_fumble() {
+        // Test formatting of critical failure
+        let result = RollResult {
+            skill_name: "Science".to_string(),
+            roll: 1,
+            modifier: 10,
+            total: 11,
+            dc: 15,
+            success: false,
+            critical: false,
+            fumble: true,
+        };
+
+        let formatted = result.format();
+        assert!(formatted.contains("CRITICAL FAILURE!"));
+        assert!(formatted.contains("Science"));
+        assert!(formatted.contains("1"));
+        assert!(formatted.contains("10"));
+        assert!(formatted.contains("11"));
+    }
+
+    #[test]
+    fn test_roll_result_format_success() {
+        // Test formatting of normal success
+        let result = RollResult {
+            skill_name: "Speech".to_string(),
+            roll: 12,
+            modifier: 3,
+            total: 15,
+            dc: 12,
+            success: true,
+            critical: false,
+            fumble: false,
+        };
+
+        let formatted = result.format();
+        assert!(formatted.contains("Success"));
+        assert!(!formatted.contains("CRITICAL"));
+        assert!(formatted.contains("Speech"));
+    }
+
+    #[test]
+    fn test_roll_result_format_failure() {
+        // Test formatting of normal failure
+        let result = RollResult {
+            skill_name: "Repair".to_string(),
+            roll: 3,
+            modifier: 2,
+            total: 5,
+            dc: 12,
+            success: false,
+            critical: false,
+            fumble: false,
+        };
+
+        let formatted = result.format();
+        assert!(formatted.contains("Failure"));
+        assert!(!formatted.contains("CRITICAL"));
+        assert!(formatted.contains("Repair"));
+    }
+
+    #[test]
+    fn test_roll_result_emoji() {
+        // Test emoji selection
+        let critical_result = RollResult {
+            skill_name: "Test".to_string(),
+            roll: 20,
+            modifier: 0,
+            total: 20,
+            dc: 15,
+            success: true,
+            critical: true,
+            fumble: false,
+        };
+        assert_eq!(critical_result.emoji(), "⭐");
+
+        let fumble_result = RollResult {
+            skill_name: "Test".to_string(),
+            roll: 1,
+            modifier: 0,
+            total: 1,
+            dc: 15,
+            success: false,
+            critical: false,
+            fumble: true,
+        };
+        assert_eq!(fumble_result.emoji(), "💀");
+
+        let success_result = RollResult {
+            skill_name: "Test".to_string(),
+            roll: 10,
+            modifier: 5,
+            total: 15,
+            dc: 12,
+            success: true,
+            critical: false,
+            fumble: false,
+        };
+        assert_eq!(success_result.emoji(), "✓");
+
+        let failure_result = RollResult {
+            skill_name: "Test".to_string(),
+            roll: 3,
+            modifier: 2,
+            total: 5,
+            dc: 12,
+            success: false,
+            critical: false,
+            fumble: false,
+        };
+        assert_eq!(failure_result.emoji(), "✗");
+    }
+
+    #[test]
+    fn test_truncate_response_at_skill_check_basic() {
+        // Test basic truncation
+        let text =
+            "You try to pick the lock. This requires a Lockpick check (DC 15). Roll the dice!";
+        let result = truncate_response_at_skill_check(text);
+        assert!(result.is_some());
+        let truncated = result.unwrap();
+        assert!(truncated.contains("(DC 15)"));
+        // Should end after the DC statement
+        assert!(!truncated.contains("Roll the dice"));
+    }
+
+    #[test]
+    fn test_truncate_response_no_skill_check() {
+        // Text without skill check should return None
+        let text = "You walk into the room and see a table.";
+        let result = truncate_response_at_skill_check(text);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_truncate_response_with_sentence_ending() {
+        // Test truncation when sentence ends right after DC
+        let text = "You need a Science check (DC 18). The device hums mysteriously.";
+        let result = truncate_response_at_skill_check(text);
+        assert!(result.is_some());
+        let truncated = result.unwrap();
+        assert!(truncated.contains("DC 18"));
+    }
+
+    #[test]
+    fn test_get_modifier_all_skills() {
+        // Test that all skill names are recognized
+        let character = Character::new(
+            "TestAllSkills".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        let skills_to_test = vec![
+            "small guns",
+            "big guns",
+            "energy weapons",
+            "melee weapons",
+            "unarmed",
+            "speech",
+            "sneak",
+            "lockpick",
+            "science",
+            "repair",
+            "barter",
+            "explosives",
+            "medicine",
+            "survival",
+            "throwing",
+            "first aid",
+            "doctor",
+            "outdoorsman",
+        ];
+
+        for skill in skills_to_test {
+            let (name, _modifier) = get_modifier(&character, skill);
+            assert!(!name.is_empty(), "Should recognize skill: {}", skill);
+        }
+    }
+
+    #[test]
+    fn test_get_modifier_all_stats() {
+        // Test that all SPECIAL stats are recognized
+        let character = Character::new(
+            "TestAllStats".to_string(),
+            Special {
+                strength: 6,
+                perception: 7,
+                endurance: 5,
+                charisma: 8,
+                intelligence: 9,
+                agility: 4,
+                luck: 3,
+            },
+        );
+
+        let stats = vec![
+            ("strength", 6),
+            ("perception", 7),
+            ("endurance", 5),
+            ("charisma", 8),
+            ("intelligence", 9),
+            ("agility", 4),
+            ("luck", 3),
+        ];
+
+        for (stat_name, expected_value) in stats {
+            let (_name, modifier) = get_modifier(&character, stat_name);
+            assert_eq!(
+                modifier as u8, expected_value,
+                "Wrong modifier for {}",
+                stat_name
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_modifier_abbreviations() {
+        // Test abbreviated stat names
+        let character = Character::new(
+            "TestAbbrev".to_string(),
+            Special {
+                strength: 6,
+                perception: 7,
+                endurance: 5,
+                charisma: 8,
+                intelligence: 9,
+                agility: 4,
+                luck: 3,
+            },
+        );
+
+        let abbrevs = vec![
+            ("str", 6),
+            ("per", 7),
+            ("end", 5),
+            ("cha", 8),
+            ("int", 9),
+            ("agi", 4),
+            ("lck", 3),
+        ];
+
+        for (abbrev, expected_value) in abbrevs {
+            let (_, modifier) = get_modifier(&character, abbrev);
+            assert_eq!(
+                modifier as u8, expected_value,
+                "Wrong modifier for {}",
+                abbrev
+            );
+        }
+    }
+
+    #[test]
+    fn test_parse_roll_request_case_insensitive() {
+        // Test that parsing is case insensitive
+        let tests = vec![
+            ("skill: lockpick dc 15", Some(("lockpick".to_string(), 15))),
+            ("SKILL: LOCKPICK DC 15", Some(("LOCKPICK".to_string(), 15))),
+            ("Skill: Lockpick DC 15", Some(("Lockpick".to_string(), 15))),
+            (
+                "stat: perception dc 10",
+                Some(("perception".to_string(), 10)),
+            ),
+        ];
+
+        for (input, expected) in tests {
+            let result = parse_roll_request(input);
+            assert_eq!(result, expected, "Failed to parse: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_parse_natural_roll_no_dc_found() {
+        // Test natural language roll request when check phrase exists but no DC
+        let result =
+            parse_natural_roll_request("You need to make a Lockpick check but we'll skip the DC.");
+        // Should return None since there's no DC value
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_roll_bounds_validation() {
+        // Ensure rolls are always within 1-20 range
+        let character = Character::new(
+            "TestBounds".to_string(),
+            Special {
+                strength: 5,
+                perception: 5,
+                endurance: 5,
+                charisma: 5,
+                intelligence: 5,
+                agility: 5,
+                luck: 5,
+            },
+        );
+
+        for _ in 0..20 {
+            let result = perform_roll(&character, "luck", 10);
+            assert!(
+                result.roll >= 1 && result.roll <= 20,
+                "Roll {} out of bounds [1, 20]",
+                result.roll
+            );
+            assert_eq!(result.total, result.roll + result.modifier);
+        }
+    }
 }

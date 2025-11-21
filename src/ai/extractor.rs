@@ -333,6 +333,10 @@ impl ExtractedEntities {
 mod tests {
     use super::*;
 
+    // ============================================================================
+    // JSON PARSING TESTS
+    // ============================================================================
+
     #[test]
     fn test_parse_extraction() {
         let extractor = ExtractionAI::new("http://localhost:8081".to_string());
@@ -350,6 +354,351 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_valid_extraction_minimal() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{"locations": [], "npcs": [], "events": []}"#;
+        let entities = extractor.parse_extraction(json).unwrap();
+
+        assert!(entities.locations.is_empty());
+        assert!(entities.npcs.is_empty());
+        assert!(entities.events.is_empty());
+    }
+
+    #[test]
+    fn test_parse_extraction_with_embedded_json() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let content = r#"Some narrative text and then the JSON:
+        {
+            "locations": [{"name": "Vault 101", "description": "Underground vault", "location_type": "vault"}],
+            "npcs": [],
+            "events": []
+        }
+        And some more text after"#;
+
+        let entities = extractor.parse_extraction(content).unwrap();
+        assert_eq!(entities.locations.len(), 1);
+        assert_eq!(entities.locations[0].name, "Vault 101");
+        assert_eq!(entities.locations[0].location_type, "vault");
+    }
+
+    #[test]
+    fn test_parse_malformed_json() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{"locations": [{"name": "Test"}], invalid json"#;
+        let result = extractor.parse_extraction(json);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_missing_fields() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        // Missing 'location_type' field in location
+        let json = r#"{
+            "locations": [{"name": "Test", "description": "Test"}],
+            "npcs": [],
+            "events": []
+        }"#;
+
+        let result = extractor.parse_extraction(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_invalid_json_completely() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let result = extractor.parse_extraction("not json at all");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_json_with_extra_fields() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        // JSON with extra unknown fields (should still parse)
+        let json = r#"{
+            "locations": [{"name": "Test", "description": "Test", "location_type": "settlement", "extra_field": "should be ignored"}],
+            "npcs": [],
+            "events": [],
+            "unknown_key": "value"
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations.len(), 1);
+    }
+
+    // ============================================================================
+    // LOCATION EXTRACTION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_extract_location_basic() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [{
+                "name": "Megaton",
+                "description": "Settlement built around an unexploded bomb",
+                "location_type": "settlement"
+            }],
+            "npcs": [],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations.len(), 1);
+        assert_eq!(entities.locations[0].name, "Megaton");
+        assert_eq!(
+            entities.locations[0].description,
+            "Settlement built around an unexploded bomb"
+        );
+        assert_eq!(entities.locations[0].location_type, "settlement");
+    }
+
+    #[test]
+    fn test_extract_multiple_locations() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [
+                {"name": "Megaton", "description": "Settlement", "location_type": "settlement"},
+                {"name": "Super Duper Mart", "description": "Ruined store", "location_type": "ruin"},
+                {"name": "Vault 101", "description": "Underground vault", "location_type": "vault"}
+            ],
+            "npcs": [],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations.len(), 3);
+        assert_eq!(entities.locations[0].location_type, "settlement");
+        assert_eq!(entities.locations[1].location_type, "ruin");
+        assert_eq!(entities.locations[2].location_type, "vault");
+    }
+
+    #[test]
+    fn test_extract_wasteland_location() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [{
+                "name": "Capital Wasteland",
+                "description": "Irradiated zone",
+                "location_type": "wasteland"
+            }],
+            "npcs": [],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations[0].location_type, "wasteland");
+    }
+
+    // ============================================================================
+    // NPC EXTRACTION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_extract_npc_basic() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [{
+                "name": "Lucas Simms",
+                "role": "guard",
+                "personality": ["stern", "wary"],
+                "location": "Megaton"
+            }],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.npcs.len(), 1);
+        assert_eq!(entities.npcs[0].name, "Lucas Simms");
+        assert_eq!(entities.npcs[0].role, "guard");
+        assert_eq!(entities.npcs[0].personality.len(), 2);
+        assert_eq!(entities.npcs[0].location, Some("Megaton".to_string()));
+    }
+
+    #[test]
+    fn test_extract_npc_without_location() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [{
+                "name": "Unknown Trader",
+                "role": "merchant",
+                "personality": ["cautious"],
+                "location": null
+            }],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.npcs[0].location, None);
+    }
+
+    #[test]
+    fn test_extract_multiple_npcs() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [
+                {"name": "Marcus", "role": "trader", "personality": ["gruff", "honest"], "location": "Megaton"},
+                {"name": "Sheriff Simms", "role": "guard", "personality": ["stern"], "location": "Megaton"},
+                {"name": "Raider Chief", "role": "raider", "personality": ["aggressive", "cruel"], "location": null}
+            ],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.npcs.len(), 3);
+        assert_eq!(entities.npcs[0].role, "trader");
+        assert_eq!(entities.npcs[1].role, "guard");
+        assert_eq!(entities.npcs[2].role, "raider");
+    }
+
+    #[test]
+    fn test_extract_npc_with_multiple_personality_traits() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [{
+                "name": "Complex Character",
+                "role": "settler",
+                "personality": ["brave", "cautious", "friendly", "determined"],
+                "location": null
+            }],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.npcs[0].personality.len(), 4);
+        assert!(entities.npcs[0].personality.contains(&"brave".to_string()));
+        assert!(entities.npcs[0]
+            .personality
+            .contains(&"determined".to_string()));
+    }
+
+    // ============================================================================
+    // EVENT EXTRACTION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_extract_npc_met_event() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [],
+            "events": [{
+                "event_type": "npc_met",
+                "description": "Met Sheriff Lucas Simms",
+                "location": "Megaton",
+                "entities": ["Sheriff Lucas Simms"]
+            }]
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.events.len(), 1);
+        assert_eq!(entities.events[0].event_type, "npc_met");
+        assert_eq!(entities.events[0].location, Some("Megaton".to_string()));
+        assert_eq!(entities.events[0].entities.len(), 1);
+    }
+
+    #[test]
+    fn test_extract_combat_event() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [],
+            "events": [{
+                "event_type": "combat",
+                "description": "Engaged raiders",
+                "location": null,
+                "entities": ["raider", "raider", "raider"]
+            }]
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.events[0].event_type, "combat");
+        assert_eq!(entities.events[0].entities.len(), 3);
+    }
+
+    #[test]
+    fn test_extract_discovery_event() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [],
+            "events": [{
+                "event_type": "discovery",
+                "description": "Found Vault Boy holotape",
+                "location": "Vault 101",
+                "entities": ["Vault Boy holotape"]
+            }]
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.events[0].event_type, "discovery");
+    }
+
+    #[test]
+    fn test_extract_dialogue_event() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [],
+            "events": [{
+                "event_type": "dialogue",
+                "description": "Learned about the Brotherhood of Steel",
+                "location": "Rivet City",
+                "entities": ["Brotherhood of Steel"]
+            }]
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.events[0].event_type, "dialogue");
+    }
+
+    #[test]
+    fn test_extract_multiple_events() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [],
+            "npcs": [],
+            "events": [
+                {"event_type": "npc_met", "description": "Met Marcus", "location": "Megaton", "entities": ["Marcus"]},
+                {"event_type": "combat", "description": "Fought raiders", "location": null, "entities": ["raider"]},
+                {"event_type": "discovery", "description": "Found ammo", "location": "Ruin", "entities": ["ammo"]}
+            ]
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.events.len(), 3);
+        assert_eq!(entities.events[0].event_type, "npc_met");
+        assert_eq!(entities.events[1].event_type, "combat");
+        assert_eq!(entities.events[2].event_type, "discovery");
+    }
+
+    // ============================================================================
+    // EMPTY/EDGE CASE TESTS
+    // ============================================================================
+
+    #[test]
     fn test_extracted_entities_is_empty() {
         let empty = ExtractedEntities::default();
         assert!(empty.is_empty());
@@ -364,5 +713,328 @@ mod tests {
             events: vec![],
         };
         assert!(!not_empty.is_empty());
+    }
+
+    #[test]
+    fn test_extracted_entities_is_not_empty_with_npcs() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![ExtractedNPC {
+                name: "Test".to_string(),
+                role: "merchant".to_string(),
+                personality: vec![],
+                location: None,
+            }],
+            events: vec![],
+        };
+        assert!(!entities.is_empty());
+    }
+
+    #[test]
+    fn test_extracted_entities_is_not_empty_with_events() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![],
+            events: vec![ExtractedEvent {
+                event_type: "combat".to_string(),
+                description: "Test".to_string(),
+                location: None,
+                entities: vec![],
+            }],
+        };
+        assert!(!entities.is_empty());
+    }
+
+    #[test]
+    fn test_parse_json_with_whitespace_variations() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        // JSON with various whitespace
+        let json = r#"{
+  "locations"  :  [  {  "name"  :  "Test"  ,  "description"  :  "Desc"  ,  "location_type"  :  "settlement"  }  ]  ,
+  "npcs"  :  [  ]  ,
+  "events"  :  [  ]
+}"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_json_with_unicode_characters() {
+        let extractor = ExtractionAI::new("http://localhost:8081".to_string());
+
+        let json = r#"{
+            "locations": [{"name": "Мегатон", "description": "Поселение", "location_type": "settlement"}],
+            "npcs": [{"name": "José", "role": "trader", "personality": ["café"], "location": null}],
+            "events": []
+        }"#;
+
+        let entities = extractor.parse_extraction(json).unwrap();
+        assert_eq!(entities.locations[0].name, "Мегатон");
+        assert_eq!(entities.npcs[0].name, "José");
+    }
+
+    // ============================================================================
+    // WORLDBOOK CONVERSION TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_to_worldbook_entries_empty() {
+        let entities = ExtractedEntities::default();
+        let (locations, npcs, events) = entities.to_worldbook_entries();
+
+        assert!(locations.is_empty());
+        assert!(npcs.is_empty());
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn test_to_worldbook_entries_with_location() {
+        let entities = ExtractedEntities {
+            locations: vec![ExtractedLocation {
+                name: "Megaton".to_string(),
+                description: "Settlement built around bomb".to_string(),
+                location_type: "settlement".to_string(),
+            }],
+            npcs: vec![],
+            events: vec![],
+        };
+
+        let (locations, npcs, events) = entities.to_worldbook_entries();
+
+        assert_eq!(locations.len(), 1);
+        assert_eq!(locations[0].name, "Megaton");
+        assert_eq!(locations[0].description, "Settlement built around bomb");
+        assert_eq!(locations[0].location_type, "settlement");
+        assert_eq!(locations[0].visit_count, 0);
+        assert!(npcs.is_empty());
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn test_to_worldbook_entries_with_npc() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![ExtractedNPC {
+                name: "Marcus".to_string(),
+                role: "trader".to_string(),
+                personality: vec!["gruff".to_string(), "honest".to_string()],
+                location: Some("Megaton".to_string()),
+            }],
+            events: vec![],
+        };
+
+        let (locations, npcs, events) = entities.to_worldbook_entries();
+
+        assert!(locations.is_empty());
+        assert_eq!(npcs.len(), 1);
+        assert_eq!(npcs[0].name, "Marcus");
+        assert_eq!(npcs[0].role, "trader");
+        assert_eq!(npcs[0].personality.len(), 2);
+        assert_eq!(npcs[0].disposition, 0);
+        assert!(npcs[0].alive);
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn test_to_worldbook_entries_with_event() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![],
+            events: vec![ExtractedEvent {
+                event_type: "npc_met".to_string(),
+                description: "Met Marcus at the gate".to_string(),
+                location: Some("Megaton".to_string()),
+                entities: vec!["Marcus".to_string()],
+            }],
+        };
+
+        let (locations, npcs, events) = entities.to_worldbook_entries();
+
+        assert!(locations.is_empty());
+        assert!(npcs.is_empty());
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, "npc_met");
+        assert_eq!(events[0].description, "Met Marcus at the gate");
+    }
+
+    #[test]
+    fn test_to_worldbook_entries_complete() {
+        let entities = ExtractedEntities {
+            locations: vec![ExtractedLocation {
+                name: "Megaton".to_string(),
+                description: "Settlement".to_string(),
+                location_type: "settlement".to_string(),
+            }],
+            npcs: vec![ExtractedNPC {
+                name: "Marcus".to_string(),
+                role: "trader".to_string(),
+                personality: vec!["gruff".to_string()],
+                location: Some("Megaton".to_string()),
+            }],
+            events: vec![ExtractedEvent {
+                event_type: "npc_met".to_string(),
+                description: "Met Marcus".to_string(),
+                location: Some("Megaton".to_string()),
+                entities: vec!["Marcus".to_string()],
+            }],
+        };
+
+        let (locations, npcs, events) = entities.to_worldbook_entries();
+
+        assert_eq!(locations.len(), 1);
+        assert_eq!(npcs.len(), 1);
+        assert_eq!(events.len(), 1);
+    }
+
+    // ============================================================================
+    // SUMMARY TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_summary_empty() {
+        let entities = ExtractedEntities::default();
+        assert_eq!(entities.summary(), "No new entities");
+    }
+
+    #[test]
+    fn test_summary_with_location_only() {
+        let entities = ExtractedEntities {
+            locations: vec![ExtractedLocation {
+                name: "Test".to_string(),
+                description: "Test".to_string(),
+                location_type: "settlement".to_string(),
+            }],
+            npcs: vec![],
+            events: vec![],
+        };
+        assert_eq!(entities.summary(), "Found: 1 location(s)");
+    }
+
+    #[test]
+    fn test_summary_with_multiple_locations() {
+        let entities = ExtractedEntities {
+            locations: vec![
+                ExtractedLocation {
+                    name: "Loc1".to_string(),
+                    description: "Test".to_string(),
+                    location_type: "settlement".to_string(),
+                },
+                ExtractedLocation {
+                    name: "Loc2".to_string(),
+                    description: "Test".to_string(),
+                    location_type: "ruin".to_string(),
+                },
+            ],
+            npcs: vec![],
+            events: vec![],
+        };
+        assert_eq!(entities.summary(), "Found: 2 location(s)");
+    }
+
+    #[test]
+    fn test_summary_with_npcs_only() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![ExtractedNPC {
+                name: "Test".to_string(),
+                role: "merchant".to_string(),
+                personality: vec![],
+                location: None,
+            }],
+            events: vec![],
+        };
+        assert_eq!(entities.summary(), "Found: 1 NPC(s)");
+    }
+
+    #[test]
+    fn test_summary_with_events_only() {
+        let entities = ExtractedEntities {
+            locations: vec![],
+            npcs: vec![],
+            events: vec![ExtractedEvent {
+                event_type: "combat".to_string(),
+                description: "Test".to_string(),
+                location: None,
+                entities: vec![],
+            }],
+        };
+        assert_eq!(entities.summary(), "Found: 1 event(s)");
+    }
+
+    #[test]
+    fn test_summary_with_all_types() {
+        let entities = ExtractedEntities {
+            locations: vec![ExtractedLocation {
+                name: "Loc".to_string(),
+                description: "Test".to_string(),
+                location_type: "settlement".to_string(),
+            }],
+            npcs: vec![ExtractedNPC {
+                name: "NPC".to_string(),
+                role: "merchant".to_string(),
+                personality: vec![],
+                location: None,
+            }],
+            events: vec![ExtractedEvent {
+                event_type: "combat".to_string(),
+                description: "Test".to_string(),
+                location: None,
+                entities: vec![],
+            }],
+        };
+        let summary = entities.summary();
+        assert!(summary.contains("1 location(s)"));
+        assert!(summary.contains("1 NPC(s)"));
+        assert!(summary.contains("1 event(s)"));
+    }
+
+    #[test]
+    fn test_summary_with_mixed_counts() {
+        let entities = ExtractedEntities {
+            locations: vec![
+                ExtractedLocation {
+                    name: "Loc1".to_string(),
+                    description: "Test".to_string(),
+                    location_type: "settlement".to_string(),
+                },
+                ExtractedLocation {
+                    name: "Loc2".to_string(),
+                    description: "Test".to_string(),
+                    location_type: "ruin".to_string(),
+                },
+            ],
+            npcs: vec![
+                ExtractedNPC {
+                    name: "NPC1".to_string(),
+                    role: "merchant".to_string(),
+                    personality: vec![],
+                    location: None,
+                },
+                ExtractedNPC {
+                    name: "NPC2".to_string(),
+                    role: "guard".to_string(),
+                    personality: vec![],
+                    location: None,
+                },
+                ExtractedNPC {
+                    name: "NPC3".to_string(),
+                    role: "settler".to_string(),
+                    personality: vec![],
+                    location: None,
+                },
+            ],
+            events: vec![ExtractedEvent {
+                event_type: "combat".to_string(),
+                description: "Test".to_string(),
+                location: None,
+                entities: vec![],
+            }],
+        };
+        let summary = entities.summary();
+        assert!(summary.contains("2 location(s)"));
+        assert!(summary.contains("3 NPC(s)"));
+        assert!(summary.contains("1 event(s)"));
     }
 }

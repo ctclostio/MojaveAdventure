@@ -91,7 +91,9 @@ async fn main() {
         match choice.as_str() {
             "1" | "new" | "new game" => {
                 let game_state = create_new_character(&config);
-                if let Err(e) = run_game_with_tui(game_state, &ai_dm, config.clone()).await {
+                if let Err(e) =
+                    run_game_with_tui(game_state, &ai_dm, &extractor, config.clone()).await
+                {
                     UI::print_error(&format!("TUI error: {}", e));
                 }
                 // Clean transition back to main menu
@@ -106,7 +108,9 @@ async fn main() {
             }
             "3" | "load" => {
                 if let Some(game_state) = load_game() {
-                    if let Err(e) = run_game_with_tui(game_state, &ai_dm, config.clone()).await {
+                    if let Err(e) =
+                        run_game_with_tui(game_state, &ai_dm, &extractor, config.clone()).await
+                    {
                         UI::print_error(&format!("TUI error: {}", e));
                     }
                     // Clean transition back to main menu

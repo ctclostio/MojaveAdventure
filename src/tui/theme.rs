@@ -346,3 +346,432 @@ impl RetroEffects {
         Style::default().fg(PipBoyTheme::PHOSPHOR_DIM)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ============================================================================
+    // PIPBOYTHEME COLOR TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_pipboy_theme_colors_are_defined() {
+        // Verify all color constants are accessible and not panicking
+        assert_eq!(PipBoyTheme::PHOSPHOR_BRIGHT, Color::Rgb(0, 255, 0));
+        assert_eq!(PipBoyTheme::PHOSPHOR_NORMAL, Color::Rgb(0, 200, 0));
+        assert_eq!(PipBoyTheme::PHOSPHOR_DIM, Color::Rgb(0, 150, 0));
+        assert_eq!(PipBoyTheme::PHOSPHOR_DARK, Color::Rgb(0, 100, 0));
+        assert_eq!(PipBoyTheme::PHOSPHOR_VERY_DARK, Color::Rgb(0, 50, 0));
+        assert_eq!(PipBoyTheme::BACKGROUND, Color::Rgb(0, 20, 0));
+    }
+
+    #[test]
+    fn test_pipboy_theme_accent_colors() {
+        // Test accent colors for warnings and danger states
+        assert_eq!(PipBoyTheme::AMBER_HIGHLIGHT, Color::Rgb(255, 200, 0));
+        assert_eq!(PipBoyTheme::RED_DANGER, Color::Rgb(200, 50, 0));
+    }
+
+    // ============================================================================
+    // PIPBOYTHEME STYLE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_text_style() {
+        let style = PipBoyTheme::text();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_NORMAL));
+        // Default style should not have modifiers
+        assert_eq!(style.add_modifier, Modifier::empty());
+    }
+
+    #[test]
+    fn test_text_bright_style() {
+        let style = PipBoyTheme::text_bright();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_text_dim_style() {
+        let style = PipBoyTheme::text_dim();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+        assert_eq!(style.add_modifier, Modifier::empty());
+    }
+
+    #[test]
+    fn test_text_very_dim_style() {
+        let style = PipBoyTheme::text_very_dim();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_VERY_DARK));
+    }
+
+    #[test]
+    fn test_header_style() {
+        let style = PipBoyTheme::header();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+        assert!(style.add_modifier.contains(Modifier::UNDERLINED));
+    }
+
+    #[test]
+    fn test_border_style() {
+        let style = PipBoyTheme::border();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+    }
+
+    #[test]
+    fn test_border_active_style() {
+        let style = PipBoyTheme::border_active();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+    }
+
+    // ============================================================================
+    // HEALTH BAR STYLE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_health_full_style() {
+        let style = PipBoyTheme::health_full();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        // Health full should be bright green
+    }
+
+    #[test]
+    fn test_health_medium_style() {
+        let style = PipBoyTheme::health_medium();
+        assert_eq!(style.fg, Some(PipBoyTheme::AMBER_HIGHLIGHT));
+        // Medium health is amber/warning color
+    }
+
+    #[test]
+    fn test_health_low_style() {
+        let style = PipBoyTheme::health_low();
+        assert_eq!(style.fg, Some(PipBoyTheme::RED_DANGER));
+        // Low health is danger/red color
+    }
+
+    #[test]
+    fn test_energy_style() {
+        let style = PipBoyTheme::energy();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_NORMAL));
+    }
+
+    // ============================================================================
+    // MESSAGE STYLE TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_player_action_style() {
+        let style = PipBoyTheme::player_action();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert!(style.add_modifier.contains(Modifier::ITALIC));
+    }
+
+    #[test]
+    fn test_dm_text_style() {
+        let style = PipBoyTheme::dm_text();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_NORMAL));
+    }
+
+    #[test]
+    fn test_combat_style() {
+        let style = PipBoyTheme::combat();
+        assert_eq!(style.fg, Some(PipBoyTheme::AMBER_HIGHLIGHT));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_system_style() {
+        let style = PipBoyTheme::system();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+    }
+
+    #[test]
+    fn test_info_style() {
+        let style = PipBoyTheme::info();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_NORMAL));
+    }
+
+    #[test]
+    fn test_success_style() {
+        let style = PipBoyTheme::success();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_error_style() {
+        let style = PipBoyTheme::error();
+        assert_eq!(style.fg, Some(PipBoyTheme::RED_DANGER));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_warning_style() {
+        let style = PipBoyTheme::warning();
+        assert_eq!(style.fg, Some(PipBoyTheme::AMBER_HIGHLIGHT));
+    }
+
+    #[test]
+    fn test_selected_style() {
+        let style = PipBoyTheme::selected();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert_eq!(style.bg, Some(PipBoyTheme::PHOSPHOR_VERY_DARK));
+        assert!(style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn test_loading_style() {
+        let style = PipBoyTheme::loading();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+        assert!(style.add_modifier.contains(Modifier::SLOW_BLINK));
+    }
+
+    // ============================================================================
+    // SCANLINE EFFECT TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_scanline_overlay_pattern() {
+        // Test that scanlines appear on even rows (0, 2, 4, etc.)
+        assert_eq!(ScanlineEffect::get_overlay(0), Some('▒'));
+        assert_eq!(ScanlineEffect::get_overlay(2), Some('▒'));
+        assert_eq!(ScanlineEffect::get_overlay(4), Some('▒'));
+        // Odd rows should have no overlay
+        assert_eq!(ScanlineEffect::get_overlay(1), None);
+        assert_eq!(ScanlineEffect::get_overlay(3), None);
+        assert_eq!(ScanlineEffect::get_overlay(5), None);
+    }
+
+    #[test]
+    fn test_scanline_row_detection() {
+        // Test scanline row detection
+        assert!(ScanlineEffect::is_scanline_row(0));
+        assert!(!ScanlineEffect::is_scanline_row(1));
+        assert!(ScanlineEffect::is_scanline_row(2));
+        assert!(!ScanlineEffect::is_scanline_row(3));
+        assert!(ScanlineEffect::is_scanline_row(100));
+        assert!(!ScanlineEffect::is_scanline_row(101));
+    }
+
+    #[test]
+    fn test_scanline_style() {
+        let style = ScanlineEffect::style();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_VERY_DARK));
+        assert_eq!(style.bg, Some(PipBoyTheme::BACKGROUND));
+    }
+
+    // ============================================================================
+    // LOADING SPINNER TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_loading_spinner_creation() {
+        let spinner = LoadingSpinner::new();
+        assert_eq!(spinner.current(), "⠋");
+        // Should have 10 frames
+        assert_eq!(spinner.frames.len(), 10);
+    }
+
+    #[test]
+    fn test_loading_spinner_next_frame() {
+        let mut spinner = LoadingSpinner::new();
+        let first = spinner.next_frame();
+        assert_eq!(first, "⠋");
+
+        let second = spinner.next_frame();
+        assert_eq!(second, "⠙");
+
+        let third = spinner.next_frame();
+        assert_eq!(third, "⠹");
+    }
+
+    #[test]
+    fn test_loading_spinner_cycles() {
+        let mut spinner = LoadingSpinner::new();
+        // Advance through all 10 frames
+        for _ in 0..10 {
+            spinner.next_frame();
+        }
+        // Next frame should cycle back to first
+        assert_eq!(spinner.current(), "⠋");
+    }
+
+    #[test]
+    fn test_loading_spinner_reset() {
+        let mut spinner = LoadingSpinner::new();
+        spinner.next_frame();
+        spinner.next_frame();
+        spinner.next_frame();
+        assert_ne!(spinner.current(), "⠋");
+
+        spinner.reset();
+        assert_eq!(spinner.current(), "⠋");
+    }
+
+    #[test]
+    fn test_loading_spinner_default() {
+        let spinner = LoadingSpinner::default();
+        assert_eq!(spinner.current(), "⠋");
+    }
+
+    #[test]
+    fn test_loading_spinner_frame_sequence() {
+        let spinner = LoadingSpinner::new();
+        let expected_frames = vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+        assert_eq!(spinner.frames, expected_frames);
+    }
+
+    // ============================================================================
+    // RETRO EFFECTS TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_separator_line_generation() {
+        let sep = RetroEffects::separator_line(5);
+        assert_eq!(sep, "─────");
+        // Unicode character '─' takes 3 bytes, so 5 chars = 15 bytes
+        assert_eq!(sep.chars().count(), 5);
+
+        let sep = RetroEffects::separator_line(10);
+        assert_eq!(sep.chars().count(), 10);
+
+        let sep = RetroEffects::separator_line(0);
+        assert_eq!(sep, "");
+    }
+
+    #[test]
+    fn test_separator_double_generation() {
+        let sep = RetroEffects::separator_double(5);
+        assert_eq!(sep, "═════");
+        // Unicode character '═' takes 3 bytes, so 5 chars = 15 bytes
+        assert_eq!(sep.chars().count(), 5);
+
+        let sep = RetroEffects::separator_double(10);
+        assert_eq!(sep.chars().count(), 10);
+    }
+
+    #[test]
+    fn test_box_corner_characters() {
+        assert_eq!(RetroEffects::box_top_left(), '┌');
+        assert_eq!(RetroEffects::box_top_right(), '┐');
+        assert_eq!(RetroEffects::box_bottom_left(), '└');
+        assert_eq!(RetroEffects::box_bottom_right(), '┘');
+    }
+
+    #[test]
+    fn test_flicker_style() {
+        let style = RetroEffects::flicker_style();
+        assert_eq!(style.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+    }
+
+    #[test]
+    fn test_should_flicker_range() {
+        // Test with 0 intensity (should always be false)
+        for _ in 0..10 {
+            assert!(!RetroEffects::should_flicker(0.0));
+        }
+
+        // Test with 1.0 intensity (should always be true)
+        for _ in 0..10 {
+            assert!(RetroEffects::should_flicker(1.0));
+        }
+    }
+
+    // ============================================================================
+    // PIPBOY HEADER TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_pipboy_header_exists() {
+        let header = PipBoyHeader::get_header();
+        assert!(!header.is_empty());
+        assert_eq!(header.len(), 6);
+    }
+
+    #[test]
+    fn test_pipboy_header_contains_vault_tec_text() {
+        let header = PipBoyHeader::get_header();
+        let header_str = header.join("\n");
+        // Header uses box drawing characters for "PIP-BOY", not literal text
+        // But it does contain "VAULT-TEC" and "PERSONAL TERMINAL"
+        assert!(header_str.contains("VAULT-TEC"));
+        assert!(header_str.contains("PERSONAL TERMINAL"));
+    }
+
+    #[test]
+    fn test_pipboy_boot_sequence_exists() {
+        let boot = PipBoyHeader::get_boot_sequence();
+        assert!(!boot.is_empty());
+        assert_eq!(boot.len(), 11);
+    }
+
+    #[test]
+    fn test_pipboy_boot_sequence_contains_system_info() {
+        let boot = PipBoyHeader::get_boot_sequence();
+        let boot_str = boot.join("\n");
+        assert!(boot_str.contains("ROBCO"));
+        assert!(boot_str.contains("VAULT-TEC"));
+        assert!(boot_str.contains("PIP-BOY 3000"));
+    }
+
+    // ============================================================================
+    // THEME CONSISTENCY TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_health_styles_use_consistent_colors() {
+        // Verify health styles use the expected color hierarchy
+        let full = PipBoyTheme::health_full();
+        let medium = PipBoyTheme::health_medium();
+        let low = PipBoyTheme::health_low();
+
+        // All should be defined
+        assert!(full.fg.is_some());
+        assert!(medium.fg.is_some());
+        assert!(low.fg.is_some());
+
+        // They should be different
+        assert_ne!(full.fg, medium.fg);
+        assert_ne!(medium.fg, low.fg);
+        assert_ne!(full.fg, low.fg);
+    }
+
+    #[test]
+    fn test_message_styles_are_distinguishable() {
+        // Verify that different message types are visually distinct
+        let success = PipBoyTheme::success();
+        let error = PipBoyTheme::error();
+        let warning = PipBoyTheme::warning();
+        let info = PipBoyTheme::info();
+
+        // Each should have defined colors
+        assert!(success.fg.is_some());
+        assert!(error.fg.is_some());
+        assert!(warning.fg.is_some());
+        assert!(info.fg.is_some());
+    }
+
+    #[test]
+    fn test_fallout_theme_green_dominance() {
+        // Verify that the primary colors are green-based (phosphor theme)
+        // All main style colors should be green
+        assert_eq!(PipBoyTheme::text().fg, Some(PipBoyTheme::PHOSPHOR_NORMAL));
+        assert_eq!(PipBoyTheme::header().fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+        assert_eq!(
+            PipBoyTheme::dm_text().fg,
+            Some(PipBoyTheme::PHOSPHOR_NORMAL)
+        );
+    }
+
+    #[test]
+    fn test_border_visibility_hierarchy() {
+        // Normal border should be dimmer than active border
+        let normal_border = PipBoyTheme::border();
+        let active_border = PipBoyTheme::border_active();
+
+        // Active should be bright, normal should be dim
+        assert_eq!(normal_border.fg, Some(PipBoyTheme::PHOSPHOR_DIM));
+        assert_eq!(active_border.fg, Some(PipBoyTheme::PHOSPHOR_BRIGHT));
+    }
+}

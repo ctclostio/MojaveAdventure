@@ -3,6 +3,7 @@ use crate::tui::animations::AnimationManager;
 use crate::tui::theme::LoadingSpinner;
 use crate::tui::worldbook_browser::WorldbookBrowser;
 use std::collections::VecDeque;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Information about player death for game over screen
 #[derive(Debug, Clone)]
@@ -65,6 +66,12 @@ pub struct App {
 
     /// Death information for game over screen
     pub death_info: Option<DeathInfo>,
+
+    /// Last autosave timestamp (in seconds since UNIX_EPOCH)
+    pub last_autosave_time: u64,
+
+    /// Equipment menu state - selected item index
+    pub equipment_selected_index: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +99,7 @@ pub enum ViewMode {
     Stats,     // Viewing character stats
     Worldbook, // Viewing worldbook
     Combat,    // In combat
+    Equipment, // Equipment menu for equipping/unequipping items
     #[allow(dead_code)]
     GameOver, // Player died - game over screen
 }
@@ -116,6 +124,11 @@ impl App {
             stream_receiver: None,
             should_flicker: false,
             death_info: None,
+            last_autosave_time: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            equipment_selected_index: 0,
         };
 
         // Add welcome message
@@ -397,6 +410,7 @@ impl App {
         self.scroll_offset = 0;
         self.waiting_for_ai = false;
         self.cancel_streaming();
+        self.equipment_selected_index = 0;
 
         // Add welcome message
         self.add_message(
@@ -408,6 +422,63 @@ impl App {
                 .to_string(),
             MessageType::System,
         );
+    }
+
+    /// Check if autosave should occur and perform it
+    /// Returns true if autosave was performed
+    pub fn check_and_perform_autosave(&mut self, autosave_interval_minutes: u32) -> bool {
+        if autosave_interval_minutes == 0 {
+            return false;
+        }
+
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        let elapsed_seconds = current_time.saturating_sub(self.last_autosave_time);
+        let interval_seconds = (autosave_interval_minutes as u64) * 60;
+
+        if elapsed_seconds >= interval_seconds {
+            if let Err(e) = crate::game::persistence::save_to_file(&self.game_state, "autosave") {
+                self.add_system_message(format!("[Autosave failed: {}]", e));
+                return false;
+            }
+            self.last_autosave_time = current_time;
+            self.add_system_message("[Game autosaved]".to_string());
+            return true;
+        }
+
+        false
+    }
+
+    /// Perform a manual save
+    /// Returns true if save was successful
+    pub fn perform_save(&mut self, save_name: Option<&str>) -> bool {
+        let filename = match save_name {
+            Some(name) if !name.is_empty() => name.to_string(),
+            _ => "quicksave".to_string(),
+        };
+
+        match crate::game::persistence::save_to_file(&self.game_state, &filename) {
+            Ok(_) => {
+                let message = if filename == "quicksave" {
+                    "Game saved to: saves/quicksave.json".to_string()
+                } else {
+                    format!("Game saved to: saves/{}.json", filename)
+                };
+                self.add_system_message(message);
+                self.last_autosave_time = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                true
+            }
+            Err(e) => {
+                self.add_error_message(format!("Save failed: {}", e));
+                false
+            }
+        }
     }
 }
 
