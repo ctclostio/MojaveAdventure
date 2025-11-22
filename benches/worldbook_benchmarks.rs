@@ -16,7 +16,7 @@ fn main() {
 /// Benchmark creating a default worldbook
 #[divan::bench]
 fn worldbook_creation(bencher: Bencher) {
-    bencher.bench_local(|| Worldbook::with_defaults());
+    bencher.bench_local(Worldbook::with_defaults);
 }
 
 /// Benchmark location lookup

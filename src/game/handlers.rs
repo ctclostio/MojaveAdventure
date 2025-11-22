@@ -50,11 +50,12 @@ pub async fn game_loop(mut game_state: GameState, ai_dm: &AIDungeonMaster, confi
 
         let input = UI::prompt(">");
 
-        if input.is_empty() {
+        let parts: Vec<&str> = input.split_whitespace().collect();
+
+        if parts.is_empty() {
             continue;
         }
 
-        let parts: Vec<&str> = input.split_whitespace().collect();
         let command = parse_numbered_command(&parts[0].to_lowercase(), game_state.combat.active);
 
         match command.as_str() {

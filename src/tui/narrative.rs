@@ -203,7 +203,7 @@ fn parse_narrative_content(content: &str) -> Vec<NarrativeSection> {
             || line.starts_with("- ")
             || line.starts_with("* ")
             || (line.len() > 2
-                && line.chars().next().unwrap().is_numeric()
+                && line.chars().next().is_some_and(|c| c.is_numeric())
                 && line.chars().nth(1) == Some('.'))
         {
             let bullet_text = if let Some(text) = line.strip_prefix("• ") {

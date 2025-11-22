@@ -13,7 +13,7 @@ fn main() {
 /// Benchmark prompt template rendering
 #[divan::bench]
 fn template_rendering(bencher: Bencher) {
-    bencher.bench_local(|| fallout_dnd::templates::render_system_prompt());
+    bencher.bench_local(fallout_dnd::templates::render_system_prompt);
 }
 
 /// Benchmark large prompt construction
