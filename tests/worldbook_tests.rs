@@ -230,7 +230,7 @@ fn snapshot_extraction_to_worldbook_conversion() {
 
     // Snapshot the converted worldbook entries
     insta::assert_json_snapshot!((locations, npcs, events), {
-        ".[]..timestamp" => insta::dynamic_redaction(|value, _path| {
+        ".**[].timestamp" => insta::dynamic_redaction(|value, _path| {
             // Redact timestamps since they'll change every test run
             assert!(value.as_str().is_some());
             "<redacted timestamp>"
@@ -241,7 +241,6 @@ fn snapshot_extraction_to_worldbook_conversion() {
         {
           "id": "rivet_city",
           "name": "Rivet City",
-          "name_lowercase": "rivet city",
           "description": "Aircraft carrier settlement",
           "location_type": "settlement",
           "npcs_present": [],
@@ -257,7 +256,6 @@ fn snapshot_extraction_to_worldbook_conversion() {
         {
           "id": "doctor_li",
           "name": "Doctor Li",
-          "name_lowercase": "doctor li",
           "role": "scientist",
           "personality": [
             "intelligent",

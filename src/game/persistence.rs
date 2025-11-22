@@ -241,8 +241,9 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_load_nonexistent_file() {
-        fs::create_dir_all("saves").unwrap();
+        let _ = fs::create_dir_all("saves");
 
         let result = load_from_file("nonexistent_file_12345");
         assert!(result.is_err());

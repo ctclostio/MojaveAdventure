@@ -31,6 +31,7 @@ temperature = 0.7
 top_p = 0.95
 top_k = 50
 max_tokens = 1024
+context_window = 8192
 repeat_penalty = 1.2
 system_prompt = "Test prompt"
 
@@ -49,6 +50,7 @@ autosave_interval = 10
     assert_eq!(config.llama.top_p, 0.95);
     assert_eq!(config.llama.top_k, 50);
     assert_eq!(config.llama.max_tokens, 1024);
+    assert_eq!(config.llama.context_window, 8192);
     assert_eq!(config.llama.repeat_penalty, 1.2);
     assert_eq!(config.llama.system_prompt, "Test prompt");
 
@@ -96,6 +98,7 @@ temperature = 0.8
 top_p = 0.9
 top_k = 40
 max_tokens = 512
+context_window = 8192
 repeat_penalty = 1.1
 system_prompt = "Test"
 
@@ -200,6 +203,14 @@ fn test_custom_llama_config() {
         context_window: 8192,
         repeat_penalty: 1.0,
         system_prompt: "Custom prompt".to_string(),
+        auto_start: false,
+        llama_server_path: None,
+        narrative_model_path: None,
+        extraction_model_path: None,
+        narrative_ctx_size: 8192,
+        extraction_ctx_size: 4096,
+        narrative_threads: 4,
+        extraction_threads: 4,
     };
 
     assert_eq!(custom.server_url, "http://custom:8080");
@@ -232,6 +243,7 @@ temperature = 2.0
 top_p = 1.0
 top_k = 100
 max_tokens = 4096
+context_window = 32768
 repeat_penalty = 2.0
 system_prompt = "Very long prompt that could theoretically be quite extensive"
 
@@ -246,6 +258,7 @@ autosave_interval = 1
 
     assert_eq!(config.llama.temperature, 2.0);
     assert_eq!(config.llama.max_tokens, 4096);
+    assert_eq!(config.llama.context_window, 32768);
     assert_eq!(config.game.starting_level, 100);
     assert_eq!(config.game.starting_caps, 999999);
 }
@@ -260,6 +273,7 @@ temperature = 0.8
 top_p = 0.9
 top_k = 40
 max_tokens = 512
+context_window = 8192
 repeat_penalty = 1.1
 system_prompt = "Test"
 
@@ -278,6 +292,7 @@ temperature = 0.8
 top_p = 0.9
 top_k = 40
 max_tokens = 512
+context_window = 8192
 repeat_penalty = 1.1
 system_prompt = "Test"
 

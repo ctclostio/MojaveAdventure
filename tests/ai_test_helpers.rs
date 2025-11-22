@@ -12,7 +12,7 @@ use fallout_dnd::game::worldbook::Location;
 fn snapshot_ai_extraction_prompt() {
     use fallout_dnd::ai::extractor::ExtractionAI;
 
-    let extractor = ExtractionAI::new("http://localhost:8081".into());
+    let _extractor = ExtractionAI::new("http://localhost:8081".into());
     let narrative = "You arrive at Megaton, a settlement built around an unexploded atomic bomb. Sheriff Lucas Simms, a stern lawman, greets you warily.";
 
     // We can't directly call build_extraction_prompt since it's private,

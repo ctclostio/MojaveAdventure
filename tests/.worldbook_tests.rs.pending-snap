@@ -1,0 +1,21 @@
+{"run_id":"1763770459-658761200","line":232,"new":{"module_name":"worldbook_tests","snapshot_name":"snapshot_extraction_to_worldbook_conversion","metadata":{"source":"tests/worldbook_tests.rs","assertion_line":232,"expression":"(locations, npcs, events)"},"snapshot":"[\n  [\n    {\n      \"id\": \"rivet_city\",\n      \"name\": \"Rivet City\",\n      \"description\": \"Aircraft carrier settlement\",\n      \"location_type\": \"settlement\",\n      \"npcs_present\": [],\n      \"atmosphere\": null,\n      \"first_visited\": null,\n      \"last_visited\": null,\n      \"visit_count\": 0,\n      \"notes\": [],\n      \"state\": {}\n    }\n  ],\n  [\n    {\n      \"id\": \"doctor_li\",\n      \"name\": \"Doctor Li\",\n      \"role\": \"scientist\",\n      \"personality\": [\n        \"intelligent\",\n        \"dedicated\"\n      ],\n      \"current_location\": \"rivet_city\",\n      \"disposition\": 0,\n      \"knowledge\": [],\n      \"notes\": \"\",\n      \"alive\": true\n    }\n  ],\n  [\n    {\n      \"timestamp\": \"<redacted timestamp>\",\n      \"location\": \"rivet_city\",\n      \"event_type\": \"npc_met\",\n      \"description\": \"Met Doctor Li at Rivet City\",\n      \"entities\": [\n        \"doctor_li\"\n      ]\n    }\n  ]\n]"},"old":{"module_name":"worldbook_tests","metadata":{},"snapshot":"[\n  [\n    {\n      \"id\": \"rivet_city\",\n      \"name\": \"Rivet City\",\n      \"name_lowercase\": \"rivet city\",\n      \"description\": \"Aircraft carrier settlement\",\n      \"location_type\": \"settlement\",\n      \"npcs_present\": [],\n      \"atmosphere\": null,\n      \"first_visited\": null,\n      \"last_visited\": null,\n      \"visit_count\": 0,\n      \"notes\": [],\n      \"state\": {}\n    }\n  ],\n  [\n    {\n      \"id\": \"doctor_li\",\n      \"name\": \"Doctor Li\",\n      \"name_lowercase\": \"doctor li\",\n      \"role\": \"scientist\",\n      \"personality\": [\n        \"intelligent\",\n        \"dedicated\"\n      ],\n      \"current_location\": \"rivet_city\",\n      \"disposition\": 0,\n      \"knowledge\": [],\n      \"notes\": \"\",\n      \"alive\": true\n    }\n  ],\n  [\n    {\n      \"timestamp\": \"<redacted timestamp>\",\n      \"location\": \"rivet_city\",\n      \"event_type\": \"npc_met\",\n      \"description\": \"Met Doctor Li at Rivet City\",\n      \"entities\": [\n        \"doctor_li\"\n      ]\n    }\n  ]\n]"}}
+{"run_id":"1763770493-211923300","line":232,"new":null,"old":null}
+{"run_id":"1763770493-211923300","line":87,"new":null,"old":null}
+{"run_id":"1763770493-211923300","line":153,"new":null,"old":null}
+{"run_id":"1763770493-211923300","line":37,"new":null,"old":null}
+{"run_id":"1763770500-270931200","line":153,"new":null,"old":null}
+{"run_id":"1763770500-270931200","line":87,"new":null,"old":null}
+{"run_id":"1763770500-270931200","line":232,"new":null,"old":null}
+{"run_id":"1763770500-270931200","line":37,"new":null,"old":null}
+{"run_id":"1763770765-424326000","line":87,"new":null,"old":null}
+{"run_id":"1763770765-424326000","line":232,"new":null,"old":null}
+{"run_id":"1763770765-424326000","line":153,"new":null,"old":null}
+{"run_id":"1763770765-424326000","line":37,"new":null,"old":null}
+{"run_id":"1763770828-735416400","line":37,"new":null,"old":null}
+{"run_id":"1763770828-735416400","line":153,"new":null,"old":null}
+{"run_id":"1763770828-735416400","line":232,"new":null,"old":null}
+{"run_id":"1763770828-735416400","line":87,"new":null,"old":null}
+{"run_id":"1763771110-679605900","line":87,"new":null,"old":null}
+{"run_id":"1763771110-679605900","line":37,"new":null,"old":null}
+{"run_id":"1763771110-679605900","line":232,"new":null,"old":null}
+{"run_id":"1763771110-679605900","line":153,"new":null,"old":null}

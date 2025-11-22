@@ -146,10 +146,10 @@ async fn handle_key_event(
         return handle_worldbook_keys(app, key);
     }
 
-    // TODO: Special handling for Equipment view mode
-    // if app.view_mode == crate::tui::app::ViewMode::Equipment {
-    //     return handle_equipment_keys(app, key);
-    // }
+    // Special handling for Equipment view mode
+    if app.view_mode == crate::tui::app::ViewMode::Equipment {
+        return handle_equipment_keys(app, key);
+    }
 
     match key.code {
         // Quit
@@ -458,6 +458,10 @@ async fn handle_player_input(
             app.set_view_mode(crate::tui::app::ViewMode::Worldbook);
             return Ok(());
         }
+        "equip" | "equipment" => {
+            app.set_view_mode(crate::tui::app::ViewMode::Equipment);
+            return Ok(());
+        }
         "help" => {
             show_help(app);
             return Ok(());
@@ -713,6 +717,7 @@ fn show_help(app: &mut App) {
     app.add_info_message("inventory, inv, i  - View your inventory".to_string());
     app.add_info_message("stats, sheet       - View character stats".to_string());
     app.add_info_message("worldbook, wb      - View worldbook".to_string());
+    app.add_info_message("equip, equipment   - Equip/unequip items".to_string());
     app.add_info_message("save [name]        - Save game (default: 'quicksave')".to_string());
     app.add_info_message("help               - Show this help".to_string());
     app.add_info_message("debug, context     - Show AI conversation context".to_string());

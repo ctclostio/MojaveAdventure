@@ -74,7 +74,7 @@ pub fn render(f: &mut Frame, app: &App) {
             crate::tui::worldbook_ui::render_worldbook(f, app, content_chunks[0]);
         }
         ViewMode::Equipment => {
-            render_inventory(f, app, content_chunks[0]);
+            render_equipment_menu(f, app, content_chunks[0]);
         }
         ViewMode::GameOver => {
             render_game_over(f, app, content_chunks[0]);
@@ -698,26 +698,26 @@ fn render_equipment_menu(f: &mut Frame, app: &App, area: Rect) {
 
         // Show detailed comparison for selected item
         let selected_item = equippable_items[selected_index];
-        let mut lines = vec![];
-
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![Span::styled(
-            selected_item.name.as_str(),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )]));
-        lines.push(Line::from(""));
-        lines.push(Line::from(vec![Span::styled(
-            selected_item.description.as_str(),
-            Style::default().fg(Color::DarkGray),
-        )]));
-        lines.push(Line::from(""));
-        lines.push(Line::from(Span::styled(
-            "─".repeat(details_inner.width as usize),
-            Style::default().fg(Color::DarkGray),
-        )));
-        lines.push(Line::from(""));
+        let mut lines = vec![
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                selected_item.name.as_str(),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                selected_item.description.as_str(),
+                Style::default().fg(Color::DarkGray),
+            )]),
+            Line::from(""),
+            Line::from(Span::styled(
+                "─".repeat(details_inner.width as usize),
+                Style::default().fg(Color::DarkGray),
+            )),
+            Line::from(""),
+        ];
 
         match &selected_item.item_type {
             crate::game::items::ItemType::Weapon(stats) => {

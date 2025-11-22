@@ -59,6 +59,7 @@
 
 pub mod cache;
 pub mod extractor;
+pub mod server_manager;
 
 use crate::config::LlamaConfig;
 use crate::error::GameError;

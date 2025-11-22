@@ -1051,8 +1051,27 @@ fn handle_equip(game_state: &mut GameState) {
         .cloned()
         .collect();
 
-    // TODO: Implement equipment menu UI
-    UI::print_info("Equipment system not yet implemented");
+    // Equipment menu is implemented in TUI mode only
+    // In classic mode, we provide basic text-based equipment info
+    UI::print_info("Equipment menu available in TUI mode. Use 'equip' command in TUI.");
+    println!();
+
+    // Show currently equipped items
+    if let Some(weapon_id) = &character.equipped_weapon {
+        if let Some(weapon) = character.inventory.iter().find(|i| i.id == *weapon_id) {
+            println!("Currently equipped weapon: {}", weapon.name);
+        }
+    } else {
+        println!("No weapon equipped (using unarmed)");
+    }
+
+    if let Some(armor_id) = &character.equipped_armor {
+        if let Some(armor) = character.inventory.iter().find(|i| i.id == *armor_id) {
+            println!("Currently equipped armor: {}", armor.name);
+        }
+    } else {
+        println!("No armor equipped");
+    }
 }
 
 /// Save worldbook to file

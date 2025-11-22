@@ -11,6 +11,22 @@ pub struct Config {
     pub game: GameConfig,
 }
 
+fn default_narrative_ctx_size() -> i32 {
+    8192
+}
+
+fn default_extraction_ctx_size() -> i32 {
+    4096
+}
+
+fn default_narrative_threads() -> i32 {
+    8
+}
+
+fn default_extraction_threads() -> i32 {
+    6
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct LlamaConfig {
     #[garde(skip)]
@@ -31,6 +47,31 @@ pub struct LlamaConfig {
     pub repeat_penalty: f32,
     #[garde(skip)]
     pub system_prompt: String,
+    // Server auto-start configuration
+    #[garde(skip)]
+    #[serde(default)]
+    pub auto_start: bool,
+    #[garde(skip)]
+    #[serde(default)]
+    pub llama_server_path: Option<String>,
+    #[garde(skip)]
+    #[serde(default)]
+    pub narrative_model_path: Option<String>,
+    #[garde(skip)]
+    #[serde(default)]
+    pub extraction_model_path: Option<String>,
+    #[garde(range(min = 512, max = 131072))]
+    #[serde(default = "default_narrative_ctx_size")]
+    pub narrative_ctx_size: i32,
+    #[garde(range(min = 512, max = 131072))]
+    #[serde(default = "default_extraction_ctx_size")]
+    pub extraction_ctx_size: i32,
+    #[garde(range(min = 1, max = 32))]
+    #[serde(default = "default_narrative_threads")]
+    pub narrative_threads: i32,
+    #[garde(range(min = 1, max = 32))]
+    #[serde(default = "default_extraction_threads")]
+    pub extraction_threads: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -125,6 +166,18 @@ impl Default for Config {
                 context_window: 8192, // Standard context window for most llama.cpp models
                 repeat_penalty: 1.1,
                 system_prompt: "You are a Fallout universe DM.".to_string(),
+                auto_start: true,
+                llama_server_path: Some("llama-cpp/llama-server.exe".to_string()),
+                narrative_model_path: Some(
+                    "llama-cpp/models/TheDrummer_Cydonia-24B-v4.2.0-Q4_K_M.gguf".to_string(),
+                ),
+                extraction_model_path: Some(
+                    "llama-cpp/models/Hermes-2-Pro-Llama-3-8B-Q4_K_M.gguf".to_string(),
+                ),
+                narrative_ctx_size: 8192,
+                extraction_ctx_size: 4096,
+                narrative_threads: 8,
+                extraction_threads: 6,
             },
             game: GameConfig {
                 starting_level: 1,

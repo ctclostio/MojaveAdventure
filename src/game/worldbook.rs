@@ -59,11 +59,11 @@
 //!
 //! // Add a location
 //! let mut megaton = Location {
-//!    id: "megaton_01".to_string(),
-//!    name: "Megaton".to_string(),
-//!    name_lowercase: "megaton".to_string(),
-//!    description: "A settlement built around an undetonated atomic bomb".to_string(),
-//!    location_type: "settlement".to_string(),
+//!    id: "megaton_01".into(),
+//!    name: "Megaton".into(),
+//!    name_lowercase: "megaton".into(),
+//!    description: "A settlement built around an undetonated atomic bomb".into(),
+//!    location_type: "settlement".into(),
 //!    npcs_present: vec![],
 //!    atmosphere: None,
 //!    first_visited: None,
@@ -76,26 +76,26 @@
 //!
 //! // Add an NPC
 //! let mut lucas = NPC {
-//!     id: "lucas_simms_01".to_string(),
-//!     name: "Lucas Simms".to_string(),
-//!     name_lowercase: "lucas simms".to_string(),
-//!     role: "sheriff".to_string(),
+//!     id: "lucas_simms_01".into(),
+//!     name: "Lucas Simms".into(),
+//!     name_lowercase: "lucas simms".into(),
+//!     role: "sheriff".into(),
 //!     personality: vec![],
 //!     current_location: None,
 //!     disposition: 50, // Neutral-friendly
 //!     knowledge: vec![],
-//!     notes: "".to_string(),
+//!     notes: "".into(),
 //!     alive: true,
 //! };
 //! worldbook.add_npc(lucas);
 //!
 //! // Record an event
 //! let event = WorldEvent {
-//!    timestamp: "2277-10-23T10:00:00Z".to_string(),
-//!    location: Some("megaton_01".to_string()),
-//!    event_type: "npc_met".to_string(),
-//!    description: "Met Sheriff Lucas Simms at the town gates".to_string(),
-//!    entities: vec!["lucas_simms_01".to_string()],
+//!    timestamp: "2277-10-23T10:00:00Z".into(),
+//!    location: Some("megaton_01".into()),
+//!    event_type: "npc_met".into(),
+//!    description: "Met Sheriff Lucas Simms at the town gates".into(),
+//!    entities: vec!["lucas_simms_01".into()],
 //! };
 //! worldbook.add_event(event);
 //!
