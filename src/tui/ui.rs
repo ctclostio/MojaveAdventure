@@ -469,8 +469,8 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
         }
     }
 
-    // Add streaming message if present
-    if let Some(ref streaming_msg) = app.streaming_message {
+    // Add streaming message if present (use filtered version to hide thinking tokens)
+    if let Some(ref streaming_msg) = app.filtered_streaming_message {
         if !streaming_msg.is_empty() {
             let narrative_lines =
                 narrative::format_dm_narrative(streaming_msg, inner_area.width as usize);
@@ -483,18 +483,29 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),
             )]));
-        } else {
-            // Show "DM is typing..." before any tokens arrive
+        } else if app.is_streaming {
+            // Show "DM is typing..." when streaming but filtered content is empty (still thinking)
             lines.push(Line::from(vec![
                 Span::styled(
-                    "DM is typing",
+                    "DM is thinking",
                     Style::default()
-                        .fg(Color::Green)
+                        .fg(Color::Yellow)
                         .add_modifier(Modifier::ITALIC),
                 ),
-                Span::styled("...", Style::default().fg(Color::Green)),
+                Span::styled("...", Style::default().fg(Color::Yellow)),
             ]));
         }
+    } else if app.is_streaming {
+        // Show "DM is typing..." before any tokens arrive
+        lines.push(Line::from(vec![
+            Span::styled(
+                "DM is typing",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::ITALIC),
+            ),
+            Span::styled("...", Style::default().fg(Color::Green)),
+        ]));
     }
 
     let paragraph = Paragraph::new(lines);

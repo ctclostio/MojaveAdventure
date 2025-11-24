@@ -56,8 +56,17 @@ pub struct App {
     /// Loading spinner for AI responses
     pub loading_spinner: LoadingSpinner,
 
-    /// Current streaming message being received from AI
+    /// Current streaming message being received from AI (full, including thinking)
     pub streaming_message: Option<String>,
+
+    /// Filtered streaming message for display (thinking tokens removed)
+    pub filtered_streaming_message: Option<String>,
+
+    /// Line buffer for detecting thinking tokens during streaming
+    thinking_line_buffer: String,
+
+    /// Whether we're currently in a thinking block (line started with thinking indicator)
+    in_thinking_mode: bool,
 
     /// Whether we're currently receiving a streaming response
     pub is_streaming: bool,
@@ -140,6 +149,9 @@ impl App {
             animation_manager: AnimationManager::new(),
             loading_spinner: LoadingSpinner::new(),
             streaming_message: None,
+            filtered_streaming_message: None,
+            thinking_line_buffer: String::new(),
+            in_thinking_mode: false,
             is_streaming: false,
             stream_receiver: None,
             should_flicker: false,
@@ -329,6 +341,9 @@ impl App {
     ) {
         self.is_streaming = true;
         self.streaming_message = Some(String::new());
+        self.filtered_streaming_message = Some(String::new());
+        self.thinking_line_buffer.clear();
+        self.in_thinking_mode = false;
         self.stream_receiver = Some(receiver);
         self.scroll_offset = 0; // Auto-scroll to bottom when streaming
     }
@@ -361,36 +376,131 @@ impl App {
         None
     }
 
-    /// Append a token to the current streaming message
+    /// Append a token to the current streaming message with thinking-token filtering
+    /// GPT-OSS-20B outputs chain-of-thought reasoning marked with 🤔 and 💭 emojis
+    /// We filter these out and only display the final response
     pub fn append_streaming_token(&mut self, token: String) {
+        // Always store full message (including thinking) for extraction/debugging
         if let Some(ref mut msg) = self.streaming_message {
             msg.push_str(&token);
         }
+
+        // Process token for filtered display
+        self.thinking_line_buffer.push_str(&token);
+
+        // Process complete lines from the buffer
+        while let Some(newline_pos) = self.thinking_line_buffer.find('\n') {
+            let line = self.thinking_line_buffer[..newline_pos].to_string();
+            self.thinking_line_buffer = self.thinking_line_buffer[newline_pos + 1..].to_string();
+
+            // Check if this line is a thinking line
+            let trimmed = line.trim_start();
+            let is_thinking = Self::is_thinking_indicator(trimmed);
+
+            if is_thinking {
+                // This is a thinking line - don't add to filtered output
+                self.in_thinking_mode = true;
+                tracing::trace!("Filtered thinking line: {}", line);
+            } else if !line.trim().is_empty() {
+                // Non-thinking line with content - add to filtered output
+                self.in_thinking_mode = false;
+                if let Some(ref mut filtered) = self.filtered_streaming_message {
+                    if !filtered.is_empty() {
+                        filtered.push('\n');
+                    }
+                    filtered.push_str(&line);
+                }
+            }
+        }
+
+        // If we have buffered content and we're not in thinking mode,
+        // show it as it streams (for real-time display)
+        if !self.in_thinking_mode && !self.thinking_line_buffer.is_empty() {
+            // Check if the buffer starts with a thinking indicator
+            let trimmed = self.thinking_line_buffer.trim_start();
+            if Self::is_thinking_indicator(trimmed) {
+                self.in_thinking_mode = true;
+            }
+        }
+    }
+
+    /// Check if a line starts with a thinking indicator (🤔, 💭, etc.)
+    fn is_thinking_indicator(line: &str) -> bool {
+        // GPT-OSS uses these emojis for chain-of-thought reasoning
+        let thinking_prefixes = [
+            "🤔",  // Thinking face
+            "💭",  // Thought balloon
+            "...", // Often used for thinking continuation
+        ];
+
+        for prefix in &thinking_prefixes {
+            if line.starts_with(prefix) {
+                return true;
+            }
+        }
+        false
     }
 
     /// Finish the current streaming message and add it to the log
-    /// Returns the completed message content
+    /// Returns the completed message content (filtered, without thinking tokens)
     pub fn finish_streaming(&mut self) -> Option<String> {
         self.is_streaming = false;
         self.stream_receiver = None;
-        if let Some(content) = self.streaming_message.take() {
+
+        // Process any remaining content in the line buffer
+        if !self.thinking_line_buffer.is_empty() {
+            let remaining = std::mem::take(&mut self.thinking_line_buffer);
+            let trimmed = remaining.trim();
+            if !trimmed.is_empty() && !Self::is_thinking_indicator(trimmed) {
+                if let Some(ref mut filtered) = self.filtered_streaming_message {
+                    if !filtered.is_empty() {
+                        filtered.push('\n');
+                    }
+                    filtered.push_str(trimmed);
+                }
+            }
+        }
+
+        // Clean up thinking state
+        self.in_thinking_mode = false;
+
+        // Use filtered message for display (without thinking tokens)
+        // Keep full message in streaming_message for extraction/debugging
+        let _full_content = self.streaming_message.take(); // Keep for potential debugging
+
+        if let Some(content) = self.filtered_streaming_message.take() {
             if !content.is_empty() {
                 // Strip any stop tokens that may have been included in the response
                 let cleaned_content = Self::strip_stop_tokens(&content);
-                if !cleaned_content.is_empty() {
-                    self.add_message(cleaned_content.clone(), MessageType::DM);
+                // Also do a final pass to strip any thinking content that made it through
+                let final_content = Self::strip_thinking_content(&cleaned_content);
+                if !final_content.is_empty() {
+                    self.add_message(final_content.clone(), MessageType::DM);
                     // Add DM response to both conversation systems for continuity
                     self.game_state
                         .conversation
-                        .add_dm_turn(cleaned_content.clone());
-                    self.game_state
-                        .story
-                        .add(format!("DM: {}", cleaned_content)); // Legacy support
-                    return Some(cleaned_content);
+                        .add_dm_turn(final_content.clone());
+                    self.game_state.story.add(format!("DM: {}", final_content)); // Legacy support
+                    return Some(final_content);
                 }
             }
         }
         None
+    }
+
+    /// Strip thinking content from response (final cleanup pass)
+    /// Removes any lines that start with thinking indicators
+    fn strip_thinking_content(content: &str) -> String {
+        content
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim();
+                !Self::is_thinking_indicator(trimmed)
+            })
+            .collect::<Vec<&str>>()
+            .join("\n")
+            .trim()
+            .to_string()
     }
 
     /// Strip stop tokens from the AI response
@@ -464,6 +574,9 @@ impl App {
     pub fn cancel_streaming(&mut self) {
         self.is_streaming = false;
         self.streaming_message = None;
+        self.filtered_streaming_message = None;
+        self.thinking_line_buffer.clear();
+        self.in_thinking_mode = false;
         self.stream_receiver = None;
     }
 
