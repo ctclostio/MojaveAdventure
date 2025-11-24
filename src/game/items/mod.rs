@@ -58,4 +58,5 @@ pub mod weapons;
 pub use consumables::ConsumableEffect;
 pub use database::get_starting_items;
 pub use types::{Item, ItemType};
+#[allow(unused_imports)] // Re-exported for public API; used by tests and external consumers
 pub use weapons::{DamageType, WeaponType};

@@ -50,6 +50,7 @@ impl RollResult {
 /// Parse skill/stat from AI response
 /// Expected format: "SKILL: lockpick DC 15" or "STAT: perception DC 10"
 /// This parser is designed to be forgiving of minor format variations
+#[allow(dead_code)] // Public API for integration tests
 pub fn parse_roll_request(text: &str) -> Option<(String, i32)> {
     let lower = text.to_lowercase();
 

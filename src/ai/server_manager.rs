@@ -158,15 +158,15 @@ impl ServerManager {
         // ===== SPEED OPTIMIZATIONS =====
         let mut speedhacks: Vec<&str> = Vec::new();
 
-        // Flash Attention for faster GPU inference
+        // Flash Attention for faster GPU inference (new syntax in llama.cpp b7150+)
         if config.flash_attention {
-            cmd.arg("-fa");
+            cmd.arg("--flash-attn").arg("on");
             speedhacks.push("flash-attn");
         }
 
-        // Continuous batching for better throughput
+        // Continuous batching for better throughput (new syntax in llama.cpp b7150+)
         if config.continuous_batching {
-            cmd.arg("-cb");
+            cmd.arg("--cont-batching");
             speedhacks.push("cont-batch");
         }
 

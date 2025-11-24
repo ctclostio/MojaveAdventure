@@ -223,6 +223,7 @@ impl Worldbook {
         }
     }
 
+    #[allow(dead_code)] // Public API for integration tests
     pub fn save_to_file(&self, path: &Path) -> anyhow::Result<()> {
         let json = serde_json::to_string_pretty(self)?;
         fs::write(path, json)?;
