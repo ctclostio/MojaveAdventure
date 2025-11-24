@@ -28,11 +28,9 @@ use std::path::Path;
 pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
     crate::validation::validate_save_name(filename)?;
 
-    // Ensure saves directory exists
+    // Ensure saves directory exists (always call - it's idempotent)
     let saves_dir = Path::new("saves");
-    if !saves_dir.exists() {
-        fs::create_dir_all(saves_dir)?;
-    }
+    fs::create_dir_all(saves_dir)?;
 
     let json = serde_json::to_string_pretty(game_state)?;
     let save_path = saves_dir.join(format!("{}.json", filename));
