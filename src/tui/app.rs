@@ -1,9 +1,13 @@
+use crate::ai::extractor::ExtractedEntities;
 use crate::game::GameState;
 use crate::tui::animations::AnimationManager;
 use crate::tui::theme::LoadingSpinner;
 use crate::tui::worldbook_browser::WorldbookBrowser;
 use std::collections::VecDeque;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Worldbook update message from background extraction
+pub type WorldbookUpdate = (ExtractedEntities, String);
 
 /// Information about player death for game over screen
 #[derive(Debug, Clone)]
@@ -72,6 +76,19 @@ pub struct App {
 
     /// Equipment menu state - selected item index
     pub equipment_selected_index: usize,
+
+    /// Command history
+    pub command_history: Vec<String>,
+
+    /// Current position in command history (index)
+    /// When equal to command_history.len(), we are at the "new" line
+    pub history_index: usize,
+
+    /// Channel sender for worldbook updates from background extraction
+    pub worldbook_update_sender: tokio::sync::mpsc::Sender<WorldbookUpdate>,
+
+    /// Channel receiver for worldbook updates from background extraction
+    pub worldbook_update_receiver: tokio::sync::mpsc::Receiver<WorldbookUpdate>,
 }
 
 #[derive(Debug, Clone)]
@@ -106,6 +123,9 @@ pub enum ViewMode {
 
 impl App {
     pub fn new(game_state: GameState) -> Self {
+        // Create channel for worldbook updates from background extraction
+        let (worldbook_tx, worldbook_rx) = tokio::sync::mpsc::channel::<WorldbookUpdate>(16);
+
         let mut app = Self {
             should_quit: false,
             input: String::new(),
@@ -129,6 +149,10 @@ impl App {
                 .unwrap_or_default()
                 .as_secs(),
             equipment_selected_index: 0,
+            command_history: Vec::new(),
+            history_index: 0,
+            worldbook_update_sender: worldbook_tx,
+            worldbook_update_receiver: worldbook_rx,
         };
 
         // Add welcome message
@@ -351,14 +375,89 @@ impl App {
         self.stream_receiver = None;
         if let Some(content) = self.streaming_message.take() {
             if !content.is_empty() {
-                self.add_message(content.clone(), MessageType::DM);
-                // Add DM response to both conversation systems for continuity
-                self.game_state.conversation.add_dm_turn(content.clone());
-                self.game_state.story.add(format!("DM: {}", content)); // Legacy support
-                return Some(content);
+                // Strip any stop tokens that may have been included in the response
+                let cleaned_content = Self::strip_stop_tokens(&content);
+                if !cleaned_content.is_empty() {
+                    self.add_message(cleaned_content.clone(), MessageType::DM);
+                    // Add DM response to both conversation systems for continuity
+                    self.game_state
+                        .conversation
+                        .add_dm_turn(cleaned_content.clone());
+                    self.game_state
+                        .story
+                        .add(format!("DM: {}", cleaned_content)); // Legacy support
+                    return Some(cleaned_content);
+                }
             }
         }
         None
+    }
+
+    /// Strip stop tokens from the AI response
+    /// These are tokens that should terminate generation but may be partially included
+    fn strip_stop_tokens(content: &str) -> String {
+        let stop_tokens = [
+            ">>> PLAYER:",
+            ">>> PLAYER",
+            "\n>>> PLAYER:",
+            "\n>>> PLAYER",
+            "Player:",
+            "\nPlayer:",
+        ];
+
+        let mut result = content.to_string();
+        for token in &stop_tokens {
+            if let Some(pos) = result.find(token) {
+                result = result[..pos].to_string();
+            }
+        }
+        result.trim().to_string()
+    }
+
+    /// Process any pending worldbook updates from background extraction
+    /// Call this in the tick event to integrate extracted entities
+    pub fn process_worldbook_updates(&mut self) {
+        // Try to receive worldbook update without blocking
+        while let Ok((entities, summary)) = self.worldbook_update_receiver.try_recv() {
+            // Show brief status message
+            self.add_info_message(format!("[Worldbook: {}]", summary));
+
+            // Convert extracted entities to worldbook entries
+            let (locations, npcs, events) = entities.to_worldbook_entries();
+            let mut saved_count = 0;
+
+            // Integrate locations
+            for location in locations {
+                let loc_id = location.id.clone();
+                if self.game_state.worldbook.get_location(&loc_id).is_none() {
+                    self.game_state.worldbook.add_location(location);
+                    saved_count += 1;
+
+                    if self.game_state.worldbook.current_location.is_none() {
+                        self.game_state
+                            .worldbook
+                            .set_current_location(Some(loc_id.clone()));
+                        self.game_state.worldbook.visit_location(&loc_id);
+                    }
+                }
+            }
+
+            // Integrate NPCs
+            for npc in npcs {
+                if self.game_state.worldbook.get_npc(&npc.id).is_none() {
+                    self.game_state.worldbook.add_npc(npc);
+                    saved_count += 1;
+                }
+            }
+
+            // Always add events
+            for event in events {
+                self.game_state.worldbook.add_event(event);
+                saved_count += 1;
+            }
+
+            tracing::info!("Worldbook updated: {} new entries saved", saved_count);
+        }
     }
 
     /// Cancel the current streaming message
@@ -478,6 +577,101 @@ impl App {
                 self.add_error_message(format!("Save failed: {}", e));
                 false
             }
+        }
+    }
+
+    /// Navigate up in command history (older commands)
+    pub fn history_up(&mut self) {
+        if self.command_history.is_empty() {
+            return;
+        }
+
+        if self.history_index > 0 {
+            self.history_index -= 1;
+            self.input = self.command_history[self.history_index].clone();
+            self.move_cursor_end();
+        }
+    }
+
+    /// Navigate down in command history (newer commands)
+    pub fn history_down(&mut self) {
+        if self.command_history.is_empty() {
+            return;
+        }
+
+        if self.history_index < self.command_history.len() {
+            self.history_index += 1;
+            if self.history_index == self.command_history.len() {
+                self.input.clear();
+            } else {
+                self.input = self.command_history[self.history_index].clone();
+            }
+            self.move_cursor_end();
+        }
+    }
+
+    /// Add a command to history
+    pub fn add_to_history(&mut self, command: &str) {
+        if command.trim().is_empty() {
+            return;
+        }
+
+        // Don't add duplicates if it's the same as the last command
+        if let Some(last) = self.command_history.last() {
+            if last == command {
+                self.history_index = self.command_history.len();
+                return;
+            }
+        }
+
+        self.command_history.push(command.to_string());
+        self.history_index = self.command_history.len();
+    }
+
+    /// Tab completion for commands
+    pub fn tab_complete(&mut self) {
+        let input = self.input.trim();
+        if input.is_empty() {
+            return;
+        }
+
+        let commands = vec![
+            "/help",
+            "/quit",
+            "/inventory",
+            "/stats",
+            "/worldbook",
+            "/equip",
+            "/save",
+            "look",
+            "status",
+            "north",
+            "south",
+            "east",
+            "west",
+        ];
+
+        // Find matches
+        let matches: Vec<&str> = commands
+            .iter()
+            .filter(|cmd| cmd.starts_with(input))
+            .cloned()
+            .collect();
+
+        if matches.len() == 1 {
+            // Exact match or single completion
+            self.input = matches[0].to_string();
+            self.move_cursor_end();
+        } else if matches.len() > 1 {
+            // Multiple matches - show them in log?
+            // For now, just cycle or pick first?
+            // Simple implementation: pick first
+            self.input = matches[0].to_string();
+            self.move_cursor_end();
+
+            // Optional: show available completions
+            let completions = matches.join(", ");
+            self.add_info_message(format!("Completions: {}", completions));
         }
     }
 }
@@ -613,5 +807,62 @@ mod tests {
         assert!(!app.should_quit);
         assert_eq!(app.view_mode, ViewMode::Normal);
         assert_eq!(app.message_log.len(), 2); // Welcome messages
+    }
+
+    // ============================================================================
+    // STOP TOKEN STRIPPING TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_strip_stop_tokens_with_player_prompt() {
+        let content = "You see a large door ahead.\n\n>>> PLAYER:";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "You see a large door ahead.");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_with_partial_player() {
+        let content = "You see a large door ahead.\n\n>>> PLAYER";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "You see a large door ahead.");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_with_player_colon() {
+        let content = "The sheriff looks at you.\n\nPlayer:";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "The sheriff looks at you.");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_no_tokens() {
+        let content = "This is a normal response without any stop tokens.";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "This is a normal response without any stop tokens.");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_empty_string() {
+        let content = "";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_only_stop_token() {
+        let content = ">>> PLAYER:";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_strip_stop_tokens_preserves_content_before() {
+        let content =
+            "The door creaks open, revealing a dark hallway. What do you do?\n>>> PLAYER:";
+        let result = App::strip_stop_tokens(content);
+        assert_eq!(
+            result,
+            "The door creaks open, revealing a dark hallway. What do you do?"
+        );
     }
 }

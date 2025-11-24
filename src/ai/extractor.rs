@@ -65,6 +65,7 @@ pub struct ExtractedEvent {
     pub entities: Vec<String>,
 }
 
+#[derive(Clone)]
 pub struct ExtractionAI {
     server_url: String,
     client: reqwest::Client,

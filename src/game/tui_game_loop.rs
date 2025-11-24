@@ -93,6 +93,9 @@ async fn run_app<B: ratatui::backend::Backend>(
                 // Check and perform autosave if needed
                 app.check_and_perform_autosave(config.game.autosave_interval);
 
+                // Process any pending worldbook updates from background extraction
+                app.process_worldbook_updates();
+
                 // Process streaming tokens if available
                 if app.is_streaming {
                     while let Some(result) = app.try_recv_token() {
@@ -111,17 +114,46 @@ async fn run_app<B: ratatui::backend::Backend>(
 
                     // Check if stream has finished
                     if let Some(dm_response) = app.check_stream_finished() {
+                        // Mark AI as no longer waiting FIRST so user can interact immediately
+                        app.waiting_for_ai = false;
+
                         // Check if DM requested a skill check
                         if let Err(e) = handle_skill_check_if_needed(app, &dm_response, ai_dm).await
                         {
                             app.add_error_message(format!("Skill check error: {}", e));
                         }
 
-                        // Extract and integrate worldbook entities from the completed response
-                        // This runs asynchronously and won't block gameplay
-                        extract_and_integrate_entities(extractor, &dm_response, app).await;
+                        // Extract worldbook entities in background (non-blocking)
+                        // Clone necessary data for the background task
+                        let extractor_clone = extractor.clone();
+                        let response_clone = dm_response.clone();
+                        let worldbook_update_tx = app.worldbook_update_sender.clone();
 
-                        app.waiting_for_ai = false;
+                        tokio::spawn(async move {
+                            // Run extraction with short timeout - don't block gameplay
+                            match tokio::time::timeout(
+                                std::time::Duration::from_secs(10),
+                                extract_entities_background(&extractor_clone, &response_clone),
+                            )
+                            .await
+                            {
+                                Ok(Ok(Some((entities, summary)))) => {
+                                    // Send update to main thread via channel
+                                    let _ = worldbook_update_tx.send((entities, summary)).await;
+                                }
+                                Ok(Ok(None)) => {
+                                    // No entities found - normal
+                                    tracing::debug!("No entities extracted from narrative");
+                                }
+                                Ok(Err(e)) => {
+                                    // Extraction failed - log but don't disrupt gameplay
+                                    tracing::debug!("Worldbook extraction skipped: {}", e);
+                                }
+                                Err(_) => {
+                                    tracing::debug!("Worldbook extraction timed out");
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -206,6 +238,18 @@ async fn handle_key_event(
         // Character input
         KeyCode::Char(c) => {
             app.enter_char(c);
+        }
+
+        // Command history navigation
+        KeyCode::Up => {
+            app.history_up();
+        }
+        KeyCode::Down => {
+            app.history_down();
+        }
+
+        KeyCode::Tab => {
+            app.tab_complete();
         }
 
         _ => {}
@@ -436,6 +480,7 @@ async fn handle_player_input(
 
     // Echo player input
     app.add_player_action(input);
+    app.add_to_history(input);
 
     // Handle special commands
     match input.to_lowercase().as_str() {
@@ -885,64 +930,19 @@ async fn handle_skill_check_if_needed(
     Ok(())
 }
 
-/// Extract entities from AI narrative and integrate into worldbook
-/// This runs silently in the background to avoid disrupting gameplay
-async fn extract_and_integrate_entities(extractor: &ExtractionAI, narrative: &str, app: &mut App) {
+/// Background extraction function that runs without blocking gameplay
+/// Returns extracted entities and summary, or None if no entities found
+async fn extract_entities_background(
+    extractor: &ExtractionAI,
+    narrative: &str,
+) -> anyhow::Result<Option<(crate::ai::extractor::ExtractedEntities, String)>> {
     // Extract entities from the narrative
-    match extractor.extract_entities(narrative).await {
-        Ok(entities) if !entities.is_empty() => {
-            // Show brief status message
-            app.add_info_message(format!("[Worldbook: {}]", entities.summary()));
+    let entities = extractor.extract_entities(narrative).await?;
 
-            // Convert extracted entities to worldbook entries
-            let (locations, npcs, events) = entities.to_worldbook_entries();
-            let mut saved_count = 0;
-
-            // Integrate locations
-            for location in locations {
-                let loc_id = location.id.clone();
-
-                // Only add if it's new
-                if app.game_state.worldbook.get_location(&loc_id).is_none() {
-                    app.game_state.worldbook.add_location(location);
-                    saved_count += 1;
-
-                    // Only set as current location if we don't have one
-                    if app.game_state.worldbook.current_location.is_none() {
-                        app.game_state
-                            .worldbook
-                            .set_current_location(Some(loc_id.clone()));
-                        app.game_state.worldbook.visit_location(&loc_id);
-                    }
-                }
-            }
-
-            // Integrate NPCs
-            for npc in npcs {
-                // Only add if it's new
-                if app.game_state.worldbook.get_npc(&npc.id).is_none() {
-                    app.game_state.worldbook.add_npc(npc);
-                    saved_count += 1;
-                }
-            }
-
-            // Always add events (they represent unique moments)
-            for event in events {
-                app.game_state.worldbook.add_event(event);
-                saved_count += 1;
-            }
-
-            // Log success
-            tracing::info!("Worldbook updated: {} new entries saved", saved_count);
-        }
-        Ok(_) => {
-            // No entities found - this is normal, don't show message
-            tracing::debug!("No entities extracted from narrative");
-        }
-        Err(e) => {
-            // Log error but don't disrupt gameplay
-            tracing::warn!("Worldbook extraction error: {}", e);
-            // Silently fail - worldbook extraction is non-critical
-        }
+    if entities.is_empty() {
+        return Ok(None);
     }
+
+    let summary = entities.summary();
+    Ok(Some((entities, summary)))
 }

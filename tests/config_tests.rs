@@ -211,6 +211,18 @@ fn test_custom_llama_config() {
         extraction_ctx_size: 4096,
         narrative_threads: 4,
         extraction_threads: 4,
+        narrative_gpu_layers: 99,
+        extraction_gpu_layers: 99,
+        // Speed optimizations
+        flash_attention: true,
+        continuous_batching: true,
+        no_kv_offload: true,
+        mmap: true,
+        mlock: false,
+        batch_size: 2048,
+        ubatch_size: 512,
+        cache_type_k: "q8_0".to_string(),
+        cache_type_v: "q8_0".to_string(),
     };
 
     assert_eq!(custom.server_url, "http://custom:8080");

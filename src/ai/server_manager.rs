@@ -23,10 +23,31 @@ pub struct ServerConfig {
     pub ctx_size: usize,
     /// Number of threads to use
     pub threads: usize,
+    /// Number of layers to offload to GPU (0 = CPU only, 99 = all layers)
+    pub gpu_layers: usize,
     /// Server URL (e.g., "http://localhost:8080")
     pub url: String,
     /// Human-readable name for this server
     pub name: String,
+    // ===== SPEED OPTIMIZATIONS =====
+    /// Enable Flash Attention for faster GPU inference
+    pub flash_attention: bool,
+    /// Enable continuous batching for better throughput
+    pub continuous_batching: bool,
+    /// Keep KV cache in VRAM (faster but uses more VRAM)
+    pub no_kv_offload: bool,
+    /// Memory-map the model file for faster loading
+    pub mmap: bool,
+    /// Lock model in RAM to prevent swapping
+    pub mlock: bool,
+    /// Batch size for prompt processing
+    pub batch_size: i32,
+    /// Micro batch size for parallelism
+    pub ubatch_size: i32,
+    /// KV cache quantization type for K (q8_0, q4_0, f16, f32)
+    pub cache_type_k: String,
+    /// KV cache quantization type for V (q8_0, q4_0, f16, f32)
+    pub cache_type_v: String,
 }
 
 /// Manages AI server processes
@@ -84,28 +105,131 @@ impl ServerManager {
 
     /// Start a single server process
     fn start_server(&self, config: &ServerConfig) -> Result<Child> {
-        let child = Command::new(&config.executable)
-            .arg("-m")
-            .arg(&config.model_path)
+        // Convert paths to absolute paths
+        let current_dir = std::env::current_dir().map_err(|e| {
+            GameError::AIConnectionError(format!("Failed to get current directory: {}", e))
+        })?;
+
+        let executable = if config.executable.is_absolute() {
+            config.executable.clone()
+        } else {
+            current_dir.join(&config.executable)
+        };
+
+        let model_path = if config.model_path.is_absolute() {
+            config.model_path.clone()
+        } else {
+            current_dir.join(&config.model_path)
+        };
+
+        tracing::info!(
+            "Starting {} server: exe={:?}, model={:?}",
+            config.name,
+            executable,
+            model_path
+        );
+
+        // Redirect stdout/stderr to log files for debugging
+        let log_dir = current_dir.join("llama-cpp");
+        std::fs::create_dir_all(&log_dir).ok();
+
+        let log_file_name = format!("server-{}.log", config.port);
+        let log_path = log_dir.join(log_file_name);
+
+        let log_file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .map_err(|e| GameError::AIConnectionError(format!("Failed to open log file: {}", e)))?;
+
+        // Build command with required parameters
+        let mut cmd = Command::new(&executable);
+        cmd.arg("-m")
+            .arg(&model_path)
             .arg("--port")
             .arg(config.port.to_string())
             .arg("-c")
             .arg(config.ctx_size.to_string())
             .arg("--threads")
             .arg(config.threads.to_string())
-            .arg("--ctx-size")
-            .arg(config.ctx_size.to_string())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
+            .arg("-ngl") // GPU layers parameter
+            .arg(config.gpu_layers.to_string());
+
+        // ===== SPEED OPTIMIZATIONS =====
+        let mut speedhacks: Vec<&str> = Vec::new();
+
+        // Flash Attention for faster GPU inference
+        if config.flash_attention {
+            cmd.arg("-fa");
+            speedhacks.push("flash-attn");
+        }
+
+        // Continuous batching for better throughput
+        if config.continuous_batching {
+            cmd.arg("-cb");
+            speedhacks.push("cont-batch");
+        }
+
+        // Keep KV cache in VRAM (faster inference, uses more VRAM)
+        if config.no_kv_offload {
+            cmd.arg("--no-kv-offload");
+            speedhacks.push("no-kv-offload");
+        }
+
+        // Memory-map for faster model loading
+        if config.mmap {
+            cmd.arg("--mmap");
+            speedhacks.push("mmap");
+        }
+
+        // Lock model in RAM to prevent swapping
+        if config.mlock {
+            cmd.arg("--mlock");
+            speedhacks.push("mlock");
+        }
+
+        // Batch size for prompt processing
+        if config.batch_size > 0 {
+            cmd.arg("-b").arg(config.batch_size.to_string());
+        }
+
+        // Micro batch size for parallelism
+        if config.ubatch_size > 0 {
+            cmd.arg("-ub").arg(config.ubatch_size.to_string());
+        }
+
+        // KV cache quantization
+        if !config.cache_type_k.is_empty() && config.cache_type_k != "f16" {
+            cmd.arg("--cache-type-k").arg(&config.cache_type_k);
+            speedhacks.push("kv-quant");
+        }
+        if !config.cache_type_v.is_empty() && config.cache_type_v != "f16" {
+            cmd.arg("--cache-type-v").arg(&config.cache_type_v);
+        }
+
+        tracing::info!(
+            "{} server speedhacks enabled: [{}]",
+            config.name,
+            speedhacks.join(", ")
+        );
+
+        let child = cmd
+            .stdout(log_file.try_clone().unwrap())
+            .stderr(log_file)
             .spawn()
             .map_err(|e| {
                 GameError::AIConnectionError(format!(
                     "Failed to start {} server: {}. Make sure llama-server exists at {:?}",
-                    config.name, e, config.executable
+                    config.name, e, executable
                 ))
             })?;
 
-        tracing::info!("Started {} server (PID: {})", config.name, child.id());
+        tracing::info!(
+            "Started {} server (PID: {}) - logs: {:?}",
+            config.name,
+            child.id(),
+            log_path
+        );
 
         Ok(child)
     }

@@ -13,6 +13,7 @@ use colored::Colorize;
 use fallout_dnd::game::worldbook::{Location, WorldEvent, Worldbook, NPC};
 use smartstring::alias::String as SmartString;
 use std::collections::HashMap;
+use tiktoken_rs::cl100k_base;
 
 fn main() {
     println!("{}", "=== Fallout D&D - Worldbook Demo ===\n".bold().cyan());
@@ -347,10 +348,11 @@ fn main() {
     );
     println!();
 
-    // Show token count estimate
-    let token_estimate = context.len() / 4; // Rough estimate: 1 token ≈ 4 chars
+    // Accurate token count using tiktoken-rs
+    let bpe = cl100k_base().expect("Failed to initialize tokenizer");
+    let token_count = bpe.encode_with_special_tokens(&context).len();
     println!("Context Length: {} characters", context.len());
-    println!("Estimated Tokens: ~{}", token_estimate);
+    println!("Token Count: {}", token_count);
     println!();
 
     // Query examples

@@ -87,6 +87,7 @@ impl UI {
         println!();
     }
 
+    #[allow(dead_code)]
     pub fn print_character_sheet(character: &crate::game::character::Character) {
         println!("{}", "╔════════════════════════════════════════╗".cyan());
         println!(
@@ -145,6 +146,7 @@ impl UI {
         println!();
     }
 
+    #[allow(dead_code)]
     pub fn print_dm_response(text: &str) {
         let term_size = crossterm::terminal::size().unwrap_or((80u16, 24u16));
         let term_width = term_size.0 as usize;
@@ -190,6 +192,7 @@ impl UI {
         println!();
     }
 
+    #[allow(dead_code)]
     pub fn print_combat_status(combat: &crate::game::combat::CombatState) {
         if !combat.active {
             return;
@@ -223,6 +226,7 @@ impl UI {
         println!();
     }
 
+    #[allow(dead_code)]
     fn health_bar(current: i32, max: i32) -> String {
         let percentage = (current as f32 / max as f32 * 100.0) as i32;
         let bars = (percentage / 10).min(10);
@@ -240,6 +244,7 @@ impl UI {
         }
     }
 
+    #[allow(dead_code)]
     pub fn print_inventory(items: &[crate::game::items::Item]) {
         println!("{}", "╔═══ INVENTORY ═══════════════════════════╗".cyan());
         if items.is_empty() {

@@ -11,7 +11,7 @@ use ai::extractor::ExtractionAI;
 use ai::server_manager::{ServerConfig, ServerManager};
 use ai::AIDungeonMaster;
 use config::Config;
-use game::handlers::{create_new_character, game_loop, load_game};
+use game::handlers::{create_new_character, load_game};
 use game::tui_game_loop::run_game_with_tui;
 use std::path::PathBuf;
 use ui::UI;
@@ -53,8 +53,18 @@ async fn main() {
                 port: 8080,
                 ctx_size: config.llama.narrative_ctx_size as usize,
                 threads: config.llama.narrative_threads as usize,
+                gpu_layers: config.llama.narrative_gpu_layers as usize,
                 url: config.llama.server_url.clone(),
                 name: "Narrative AI".to_string(),
+                flash_attention: config.llama.flash_attention,
+                continuous_batching: config.llama.continuous_batching,
+                no_kv_offload: config.llama.no_kv_offload,
+                mmap: config.llama.mmap,
+                mlock: config.llama.mlock,
+                batch_size: config.llama.batch_size,
+                ubatch_size: config.llama.ubatch_size,
+                cache_type_k: config.llama.cache_type_k.clone(),
+                cache_type_v: config.llama.cache_type_v.clone(),
             })
         } else {
             None
@@ -70,8 +80,18 @@ async fn main() {
                 port: 8081,
                 ctx_size: config.llama.extraction_ctx_size as usize,
                 threads: config.llama.extraction_threads as usize,
+                gpu_layers: config.llama.extraction_gpu_layers as usize,
                 url: config.llama.extraction_url.clone(),
                 name: "Extraction AI".to_string(),
+                flash_attention: config.llama.flash_attention,
+                continuous_batching: config.llama.continuous_batching,
+                no_kv_offload: config.llama.no_kv_offload,
+                mmap: config.llama.mmap,
+                mlock: config.llama.mlock,
+                batch_size: config.llama.batch_size,
+                ubatch_size: config.llama.ubatch_size,
+                cache_type_k: config.llama.cache_type_k.clone(),
+                cache_type_v: config.llama.cache_type_v.clone(),
             })
         } else {
             None
@@ -145,11 +165,9 @@ async fn main() {
     loop {
         use colored::*;
         println!("{}", "MAIN MENU".bold());
-        println!("  1. New Game (TUI Mode) - Recommended!");
-        println!("  2. New Game (Classic Mode)");
-        println!("  3. Load Game (TUI Mode)");
-        println!("  4. Load Game (Classic Mode)");
-        println!("  5. Exit");
+        println!("  1. New Game");
+        println!("  2. Load Game");
+        println!("  3. Exit");
         println!();
 
         let choice = UI::prompt(">").to_lowercase();
@@ -168,11 +186,7 @@ async fn main() {
                 UI::clear_screen();
                 UI::print_header();
             }
-            "2" | "classic" => {
-                let game_state = create_new_character(&config);
-                game_loop(game_state, &ai_dm, config.clone()).await;
-            }
-            "3" | "load" => {
+            "2" | "load" | "load game" => {
                 if let Some(game_state) = load_game() {
                     if let Err(e) =
                         run_game_with_tui(game_state, &ai_dm, &extractor, config.clone()).await
@@ -186,12 +200,7 @@ async fn main() {
                     UI::print_header();
                 }
             }
-            "4" | "load classic" => {
-                if let Some(game_state) = load_game() {
-                    game_loop(game_state, &ai_dm, config.clone()).await;
-                }
-            }
-            "5" | "exit" | "quit" => {
+            "3" | "exit" | "quit" => {
                 println!("Thanks for playing!");
                 break;
             }
@@ -210,17 +219,45 @@ async fn main() {
 
 /// Initialize tracing subscriber for logging
 fn init_logging() {
-    use tracing_subscriber::{fmt, EnvFilter};
+    use tracing_subscriber::{
+        fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
+    };
 
-    // Default to info level, but allow override via RUST_LOG env var
-    let filter =
+    // Create log file in current directory
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("fallout-dnd-debug.log")
+        .expect("Failed to open log file");
+
+    // Default to info level for console, debug for file
+    let console_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fallout_dnd=info"));
 
-    fmt()
-        .with_env_filter(filter)
-        .with_target(false) // Don't show target module in logs
+    let file_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fallout_dnd=debug"));
+
+    // Console layer - INFO and above
+    let console_layer = fmt::layer()
+        .with_target(false)
         .with_thread_ids(false)
         .with_file(true)
         .with_line_number(true)
+        .with_filter(console_filter);
+
+    // File layer - DEBUG and above
+    let file_layer = fmt::layer()
+        .with_writer(std::sync::Mutex::new(log_file))
+        .with_target(true)
+        .with_thread_ids(true)
+        .with_file(true)
+        .with_line_number(true)
+        .with_ansi(false) // No color codes in file
+        .with_filter(file_filter);
+
+    // Combine both layers
+    tracing_subscriber::registry()
+        .with(console_layer)
+        .with(file_layer)
         .init();
 }

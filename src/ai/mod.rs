@@ -68,7 +68,6 @@ use crate::templates::{
     self, CharacterContext, CombatContext, EnemyContext, SkillsContext, SpecialStats,
 };
 use anyhow::Result;
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -93,6 +92,14 @@ struct LlamaResponse {
     content: String,
     #[serde(default)]
     error: Option<String>,
+}
+
+/// Streaming response chunk from llama.cpp
+#[derive(Debug, Deserialize)]
+struct LlamaStreamChunk {
+    content: String,
+    #[serde(default)]
+    stop: bool,
 }
 
 #[derive(Clone)]
@@ -177,17 +184,28 @@ impl AIDungeonMaster {
             top_k: self.config.top_k,
             n_predict: self.config.max_tokens,
             repeat_penalty: self.config.repeat_penalty,
-            stop: vec!["\nPlayer:".to_string(), "\n>".to_string()],
-            stream: Some(true),
+            stop: vec![
+                ">>> PLAYER:".to_string(),
+                "\n>>> PLAYER:".to_string(),
+                "Player:".to_string(),
+                "\nPlayer:".to_string(),
+            ],
+            stream: Some(true), // Enable streaming for real-time token display
         };
 
         let url = format!("{}/completion", self.config.server_url);
+
+        tracing::debug!(
+            "Sending streaming request to: {}, prompt length: {} chars",
+            url,
+            request.prompt.len()
+        );
 
         let response = self
             .client
             .post(&url)
             .json(&request)
-            .timeout(Duration::from_secs(120))
+            .timeout(Duration::from_secs(600)) // 10 minutes for slow generation
             .send()
             .await
             .map_err(|e| {
@@ -196,6 +214,8 @@ impl AIDungeonMaster {
                     e, self.config.server_url
                 ))
             })?;
+
+        tracing::debug!("Got response with status: {}", response.status());
 
         if !response.status().is_success() {
             return Err(GameError::AIConnectionError(format!(
@@ -208,46 +228,62 @@ impl AIDungeonMaster {
         // Create a channel to send tokens
         let (tx, rx) = mpsc::channel::<Result<String, String>>(100);
 
-        // Spawn a task to process the stream
+        // Process streaming SSE response in background task
         tokio::spawn(async move {
+            tracing::debug!("Starting to process streaming response");
+
+            // Get the response body as bytes stream
             let mut stream = response.bytes_stream();
+            use futures_util::StreamExt;
+
             let mut buffer = String::new();
 
             while let Some(chunk_result) = stream.next().await {
                 match chunk_result {
-                    Ok(chunk) => {
-                        // Parse the SSE data
-                        if let Ok(text) = String::from_utf8(chunk.to_vec()) {
-                            buffer.push_str(&text);
+                    Ok(bytes) => {
+                        // Append new bytes to buffer
+                        if let Ok(text) = std::str::from_utf8(&bytes) {
+                            buffer.push_str(text);
 
-                            // Process complete SSE events
+                            // Process complete SSE events (data: {...}\n\n)
                             while let Some(event_end) = buffer.find("\n\n") {
                                 let event = buffer[..event_end].to_string();
                                 buffer = buffer[event_end + 2..].to_string();
 
-                                // Extract the data field
+                                // Parse SSE data line
                                 for line in event.lines() {
                                     if let Some(data) = line.strip_prefix("data: ") {
-                                        // Skip the [DONE] message
-                                        if data == "[DONE]" {
-                                            continue;
-                                        }
-
-                                        // Try to parse as JSON
-                                        if let Ok(json) =
-                                            serde_json::from_str::<serde_json::Value>(data)
-                                        {
-                                            if let Some(content) =
-                                                json.get("content").and_then(|v| v.as_str())
-                                            {
-                                                if !content.is_empty()
-                                                    && tx
-                                                        .send(Ok(content.to_string()))
-                                                        .await
-                                                        .is_err()
+                                        // Parse the JSON chunk
+                                        match serde_json::from_str::<LlamaStreamChunk>(data) {
+                                            Ok(chunk) => {
+                                                if !chunk.content.is_empty()
+                                                    && tx.send(Ok(chunk.content)).await.is_err()
                                                 {
-                                                    return; // Receiver dropped
+                                                    tracing::debug!(
+                                                        "Receiver dropped, stopping stream"
+                                                    );
+                                                    return;
                                                 }
+                                                if chunk.stop {
+                                                    tracing::debug!("Stream completed (stop=true)");
+                                                    return;
+                                                }
+                                            }
+                                            Err(e) => {
+                                                // Try parsing as error response
+                                                if let Ok(err_response) =
+                                                    serde_json::from_str::<LlamaResponse>(data)
+                                                {
+                                                    if let Some(error) = err_response.error {
+                                                        let _ = tx.send(Err(error)).await;
+                                                        return;
+                                                    }
+                                                }
+                                                tracing::warn!(
+                                                    "Failed to parse stream chunk: {} - data: {}",
+                                                    e,
+                                                    data
+                                                );
                                             }
                                         }
                                     }
@@ -256,11 +292,14 @@ impl AIDungeonMaster {
                         }
                     }
                     Err(e) => {
+                        tracing::error!("Stream error: {}", e);
                         let _ = tx.send(Err(format!("Stream error: {}", e))).await;
                         return;
                     }
                 }
             }
+
+            tracing::debug!("Stream ended naturally");
         });
 
         Ok(rx)
