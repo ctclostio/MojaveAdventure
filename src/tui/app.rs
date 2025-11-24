@@ -377,8 +377,7 @@ impl App {
     }
 
     /// Append a token to the current streaming message with thinking-token filtering
-    /// GPT-OSS-20B outputs chain-of-thought reasoning marked with 🤔 and 💭 emojis
-    /// We filter these out and only display the final response
+    /// GPT-OSS-20B uses the "harmony format" with channel markers for thinking vs final response
     pub fn append_streaming_token(&mut self, token: String) {
         // Always store full message (including thinking) for extraction/debugging
         if let Some(ref mut msg) = self.streaming_message {
@@ -388,7 +387,46 @@ impl App {
         // Process token for filtered display
         self.thinking_line_buffer.push_str(&token);
 
-        // Process complete lines from the buffer
+        // Check if we've hit an end-of-thinking marker - this starts the actual response
+        // Includes both OpenAI </think> tags and GPT-OSS harmony format markers
+        let final_markers = [
+            "</think>",
+            "<|channel|>final<|message|>",
+            "<|final|><|message|>",
+        ];
+        for marker in &final_markers {
+            if let Some(pos) = self.thinking_line_buffer.find(marker) {
+                // Found final marker - switch out of thinking mode and extract content after it
+                self.in_thinking_mode = false;
+                let after_marker = self.thinking_line_buffer[pos + marker.len()..].to_string();
+                self.thinking_line_buffer = after_marker;
+
+                // Add any content after the marker to filtered output
+                if !self.thinking_line_buffer.is_empty() {
+                    let cleaned = Self::strip_channel_markers(&self.thinking_line_buffer);
+                    if !cleaned.is_empty() {
+                        if let Some(ref mut filtered) = self.filtered_streaming_message {
+                            filtered.push_str(&cleaned);
+                        }
+                    }
+                    self.thinking_line_buffer.clear();
+                }
+                return;
+            }
+        }
+
+        // Check if we're in thinking mode (analysis channel or emoji indicators)
+        if Self::is_thinking_indicator(&self.thinking_line_buffer) {
+            self.in_thinking_mode = true;
+        }
+
+        // If we're in thinking mode, don't add to filtered output
+        if self.in_thinking_mode {
+            // Keep buffering but don't display
+            return;
+        }
+
+        // Process complete lines from the buffer for non-harmony format responses
         while let Some(newline_pos) = self.thinking_line_buffer.find('\n') {
             let line = self.thinking_line_buffer[..newline_pos].to_string();
             self.thinking_line_buffer = self.thinking_line_buffer[newline_pos + 1..].to_string();
@@ -398,39 +436,50 @@ impl App {
             let is_thinking = Self::is_thinking_indicator(trimmed);
 
             if is_thinking {
-                // This is a thinking line - don't add to filtered output
                 self.in_thinking_mode = true;
                 tracing::trace!("Filtered thinking line: {}", line);
             } else if !line.trim().is_empty() {
-                // Non-thinking line with content - add to filtered output
                 self.in_thinking_mode = false;
-                if let Some(ref mut filtered) = self.filtered_streaming_message {
-                    if !filtered.is_empty() {
-                        filtered.push('\n');
+                // Strip channel markers and add to filtered output
+                let cleaned = Self::strip_channel_markers(&line);
+                if !cleaned.is_empty() {
+                    if let Some(ref mut filtered) = self.filtered_streaming_message {
+                        if !filtered.is_empty() {
+                            filtered.push('\n');
+                        }
+                        filtered.push_str(&cleaned);
                     }
-                    filtered.push_str(&line);
                 }
-            }
-        }
-
-        // If we have buffered content and we're not in thinking mode,
-        // show it as it streams (for real-time display)
-        if !self.in_thinking_mode && !self.thinking_line_buffer.is_empty() {
-            // Check if the buffer starts with a thinking indicator
-            let trimmed = self.thinking_line_buffer.trim_start();
-            if Self::is_thinking_indicator(trimmed) {
-                self.in_thinking_mode = true;
             }
         }
     }
 
-    /// Check if a line starts with a thinking indicator (🤔, 💭, etc.)
+    /// Check if a line is a thinking/reasoning line from GPT-OSS
+    /// GPT-OSS uses the "harmony format" with channel markers, emoji indicators, and <think> tags
     fn is_thinking_indicator(line: &str) -> bool {
+        // OpenAI/GPT-OSS thinking tags
+        if line.contains("<think>") || line.starts_with("<think") {
+            return true;
+        }
+
+        // GPT-OSS harmony format channel markers for analysis/thinking
+        let harmony_thinking_markers = [
+            "<|channel|>analysis",
+            "<|analysis|>",
+            "<|start|>assistant<|channel|>analysis",
+        ];
+
+        // Check for harmony format thinking markers anywhere in line
+        for marker in &harmony_thinking_markers {
+            if line.contains(marker) {
+                return true;
+            }
+        }
+
         // GPT-OSS uses these emojis for chain-of-thought reasoning
         let thinking_prefixes = [
-            "🤔",  // Thinking face
-            "💭",  // Thought balloon
-            "...", // Often used for thinking continuation
+            "🤔", // Thinking face
+            "💭", // Thought balloon
         ];
 
         for prefix in &thinking_prefixes {
@@ -438,7 +487,41 @@ impl App {
                 return true;
             }
         }
+
         false
+    }
+
+    /// Strip harmony format channel markers and thinking tags from content
+    fn strip_channel_markers(content: &str) -> String {
+        let markers_to_strip = [
+            "<|end|>",
+            "<|start|>",
+            "<|assistant|>",
+            "<|channel|>",
+            "<|analysis|>",
+            "<|final|>",
+            "<|message|>",
+            "<|user|>",
+            "<|system|>",
+            "analysis>",
+            "final>",
+            "<|commentary|>",
+            "<think>",
+            "</think>",
+        ];
+
+        let mut result = content.to_string();
+        for marker in &markers_to_strip {
+            result = result.replace(marker, "");
+        }
+
+        // Clean up multiple spaces and trim
+        result
+            .split_whitespace()
+            .collect::<Vec<&str>>()
+            .join(" ")
+            .trim()
+            .to_string()
     }
 
     /// Finish the current streaming message and add it to the log
@@ -489,18 +572,50 @@ impl App {
     }
 
     /// Strip thinking content from response (final cleanup pass)
-    /// Removes any lines that start with thinking indicators
+    /// Extracts only the final response from GPT-OSS harmony format or <think> tags
     fn strip_thinking_content(content: &str) -> String {
-        content
-            .lines()
-            .filter(|line| {
-                let trimmed = line.trim();
-                !Self::is_thinking_indicator(trimmed)
-            })
-            .collect::<Vec<&str>>()
-            .join("\n")
-            .trim()
-            .to_string()
+        // GPT-OSS harmony format: everything is on one line with channel markers
+        // Format: thinking...<|channel|>analysis<|message|>...<|channel|>final<|message|>actual response
+        // Or OpenAI format: <think>thinking...</think>actual response
+        // We need to extract content after the "final" channel marker or </think> tag
+
+        let mut result = content.to_string();
+
+        // First check for </think> tag (OpenAI thinking format)
+        if let Some(pos) = result.find("</think>") {
+            // Extract everything after </think>
+            result = result[pos + "</think>".len()..].to_string();
+        } else {
+            // Look for the final channel marker and extract content after it
+            let final_markers = [
+                "<|channel|>final<|message|>",
+                "<|final|><|message|>",
+                "<|channel|>final>",
+            ];
+
+            for marker in &final_markers {
+                if let Some(pos) = result.find(marker) {
+                    // Extract everything after the final marker
+                    result = result[pos + marker.len()..].to_string();
+                    break;
+                }
+            }
+        }
+
+        // If no markers found, try to filter by lines
+        if result == content {
+            result = content
+                .lines()
+                .filter(|line| {
+                    let trimmed = line.trim();
+                    !Self::is_thinking_indicator(trimmed)
+                })
+                .collect::<Vec<&str>>()
+                .join("\n");
+        }
+
+        // Strip any remaining channel markers
+        Self::strip_channel_markers(&result)
     }
 
     /// Strip stop tokens from the AI response
