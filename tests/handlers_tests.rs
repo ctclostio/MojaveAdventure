@@ -399,7 +399,7 @@ fn test_show_action_menu_combat_mode() {
     let combat_active = true;
 
     if combat_active {
-        let expected_actions = vec!["attack", "use", "run"];
+        let expected_actions = ["attack", "use", "run"];
         assert_eq!(expected_actions.len(), 3);
     }
 }
@@ -410,7 +410,7 @@ fn test_show_action_menu_exploration_mode() {
     let combat_active = false;
 
     if !combat_active {
-        let expected_actions = vec![
+        let expected_actions = [
             "roll",
             "inventory",
             "stats",
@@ -432,7 +432,7 @@ fn test_display_locations_empty() {
     let game_state = GameState::new(create_test_character("Hero"));
 
     // Should handle empty worldbook gracefully
-    assert!(game_state.worldbook.locations.len() >= 1); // At least Vault 13
+    assert!(!game_state.worldbook.locations.is_empty()); // At least Vault 13
 }
 
 #[test]
@@ -843,7 +843,7 @@ fn test_worldbook_summary_empty() {
     let game_state = GameState::new(create_test_character("Hero"));
 
     // Should have at least default Vault 13
-    assert!(game_state.worldbook.locations.len() >= 1);
+    assert!(!game_state.worldbook.locations.is_empty());
     assert_eq!(game_state.worldbook.npcs.len(), 0);
     assert_eq!(game_state.worldbook.events.len(), 0);
 }
