@@ -30,7 +30,6 @@
 pub mod char_handlers;
 pub mod character;
 pub mod combat;
-pub mod combat_handlers;
 pub mod conversation;
 pub mod handlers;
 pub mod items;

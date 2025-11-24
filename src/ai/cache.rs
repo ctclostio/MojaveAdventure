@@ -32,7 +32,6 @@ use std::time::Duration;
 /// Maps text to token count. Since token counting is deterministic,
 /// we can cache results indefinitely (until evicted by size limit).
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct TokenCache {
     cache: Cache<String, usize>,
 }
@@ -43,7 +42,6 @@ impl TokenCache {
     /// - Max 10,000 entries
     /// - 5 minute TTL (time to live)
     /// - Thread-safe concurrent access
-    #[allow(dead_code)]
     pub fn new() -> Self {
         TokenCache {
             cache: Cache::builder()
@@ -54,7 +52,6 @@ impl TokenCache {
     }
 
     /// Get cached token count or compute and cache it
-    #[allow(dead_code)]
     pub async fn get_or_compute<F>(&self, text: &str, compute: F) -> usize
     where
         F: FnOnce(&str) -> usize,
@@ -70,13 +67,16 @@ impl TokenCache {
         count
     }
 
-    /// Get cache statistics
-    #[allow(dead_code)]
-    pub fn stats(&self) -> CacheStats {
-        CacheStats {
-            entry_count: self.cache.entry_count(),
-            weighted_size: self.cache.weighted_size(),
-        }
+    /// Get number of entries in cache (for testing/debugging)
+    #[cfg(test)]
+    pub fn entry_count(&self) -> u64 {
+        self.cache.entry_count()
+    }
+
+    /// Run pending cache maintenance tasks (for testing)
+    #[cfg(test)]
+    pub async fn run_pending_tasks(&self) {
+        self.cache.run_pending_tasks().await;
     }
 }
 
@@ -91,7 +91,6 @@ impl Default for TokenCache {
 /// Caches the expensive worldbook.build_context() operation.
 /// Uses a hash of the worldbook state as the key.
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct WorldbookCache {
     cache: Cache<u64, Arc<String>>,
 }
@@ -101,7 +100,6 @@ impl WorldbookCache {
     ///
     /// - Max 1,000 entries (worldbook states are larger)
     /// - 2 minute TTL (worldbook changes more frequently)
-    #[allow(dead_code)]
     pub fn new() -> Self {
         WorldbookCache {
             cache: Cache::builder()
@@ -114,7 +112,6 @@ impl WorldbookCache {
     /// Get cached worldbook context or compute and cache it
     ///
     /// The key is a hash of the worldbook's current state.
-    #[allow(dead_code)]
     pub async fn get_or_compute<F>(&self, key: u64, compute: F) -> Arc<String>
     where
         F: FnOnce() -> String,
@@ -130,25 +127,10 @@ impl WorldbookCache {
         context
     }
 
-    /// Invalidate cache entry for a specific worldbook state
-    #[allow(dead_code)]
+    /// Invalidate cache entry for a specific worldbook state (for testing)
+    #[cfg(test)]
     pub async fn invalidate(&self, key: u64) {
         self.cache.invalidate(&key).await;
-    }
-
-    /// Clear all cached entries
-    #[allow(dead_code)]
-    pub async fn clear(&self) {
-        self.cache.invalidate_all();
-    }
-
-    /// Get cache statistics
-    #[allow(dead_code)]
-    pub fn stats(&self) -> CacheStats {
-        CacheStats {
-            entry_count: self.cache.entry_count(),
-            weighted_size: self.cache.weighted_size(),
-        }
     }
 }
 
@@ -158,21 +140,12 @@ impl Default for WorldbookCache {
     }
 }
 
-/// Cache statistics
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct CacheStats {
-    pub entry_count: u64,
-    pub weighted_size: u64,
-}
-
 /// Compute a hash of worldbook state for caching
 ///
 /// This hashes the essential worldbook state:
 /// - Number of locations, NPCs, events
 /// - Current location
 /// - Last modified timestamps
-#[allow(dead_code)]
 pub fn hash_worldbook_state(worldbook: &crate::game::worldbook::Worldbook) -> u64 {
     use std::collections::hash_map::DefaultHasher;
 
@@ -286,21 +259,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_cache_stats() {
+    async fn test_cache_entry_count() {
         let cache = TokenCache::new();
 
         // Initially empty
-        let stats = cache.stats();
-        assert_eq!(stats.entry_count, 0);
+        assert_eq!(cache.entry_count(), 0);
 
         // Add entry
         cache.get_or_compute("test", |_| 5).await;
 
         // Moka batches operations for performance, so we need to wait for pending tasks
-        cache.cache.run_pending_tasks().await;
+        cache.run_pending_tasks().await;
 
         // Should have one entry
-        let stats = cache.stats();
-        assert_eq!(stats.entry_count, 1);
+        assert_eq!(cache.entry_count(), 1);
     }
 }

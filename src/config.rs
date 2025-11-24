@@ -255,7 +255,7 @@ impl Default for Config {
                 auto_start: true,
                 llama_server_path: Some("llama-cpp/llama-server.exe".to_string()),
                 narrative_model_path: Some(
-                    // GPT-OSS-20B: Smaller, faster model with good narrative quality
+                    // GPT-OSS-20B: OpenAI's open-weight model (requires llama.cpp b6096+)
                     "llama-cpp/models/gpt-oss-20b-q4_k_m.gguf".to_string(),
                 ),
                 extraction_model_path: Some(

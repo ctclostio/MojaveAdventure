@@ -222,19 +222,18 @@ fn render_location_detail(f: &mut Frame, app: &App, area: Rect) {
 
     let (_id, location) = locations[browser.selected_index];
 
-    let mut lines = vec![
-        Line::from(Span::styled(
-            location.name.as_str(),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            format!("Type: {}", location.location_type),
-            Style::default().fg(Color::Yellow),
-        )),
-        Line::from(""),
-    ];
+    let mut lines = Vec::with_capacity(20); // Pre-allocate for typical location details
+    lines.push(Line::from(Span::styled(
+        location.name.as_str(),
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    )));
+    lines.push(Line::from(Span::styled(
+        format!("Type: {}", location.location_type),
+        Style::default().fg(Color::Yellow),
+    )));
+    lines.push(Line::from(""));
 
     // Description
     let wrapped_desc = wrap_text(&location.description, inner_area.width as usize - 2);
@@ -412,25 +411,24 @@ fn render_npc_detail(f: &mut Frame, app: &App, area: Rect) {
 
     let (disp_text, emoji) = get_disposition_string(npc.disposition);
 
-    let mut lines = vec![
-        Line::from(vec![
-            Span::styled(
-                npc.name.as_str(),
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                if !npc.alive { " [DECEASED]" } else { "" },
-                Style::default().fg(Color::Red),
-            ),
-        ]),
-        Line::from(Span::styled(
-            format!("Role: {}", npc.role),
-            Style::default().fg(Color::Yellow),
-        )),
-        Line::from(""),
-    ];
+    let mut lines = Vec::with_capacity(15); // Pre-allocate for typical NPC details
+    lines.push(Line::from(vec![
+        Span::styled(
+            npc.name.as_str(),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            if !npc.alive { " [DECEASED]" } else { "" },
+            Style::default().fg(Color::Red),
+        ),
+    ]));
+    lines.push(Line::from(Span::styled(
+        format!("Role: {}", npc.role),
+        Style::default().fg(Color::Yellow),
+    )));
+    lines.push(Line::from(""));
 
     // Disposition
     lines.push(Line::from(vec![
@@ -591,19 +589,18 @@ fn render_event_detail(f: &mut Frame, app: &App, area: Rect) {
 
     let event = events[browser.selected_index];
 
-    let mut lines = vec![
-        Line::from(Span::styled(
-            format!("Event: {}", event.event_type),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            format!("Time: {}", format_relative_time(&event.timestamp)),
-            Style::default().fg(Color::Yellow),
-        )),
-        Line::from(""),
-    ];
+    let mut lines = Vec::with_capacity(15); // Pre-allocate for typical event details
+    lines.push(Line::from(Span::styled(
+        format!("Event: {}", event.event_type),
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    )));
+    lines.push(Line::from(Span::styled(
+        format!("Time: {}", format_relative_time(&event.timestamp)),
+        Style::default().fg(Color::Yellow),
+    )));
+    lines.push(Line::from(""));
 
     // Location
     if let Some(loc_id) = &event.location {

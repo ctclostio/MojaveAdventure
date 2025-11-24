@@ -49,8 +49,11 @@ impl ConversationTurn {
             Speaker::DM => format!("DM: {}", self.message),
         }
     }
+}
 
-    /// Format this turn with a clear visual separator for prompts
+// Test-only helper methods
+#[cfg(test)]
+impl ConversationTurn {
     pub fn format_for_prompt(&self) -> String {
         match self.speaker {
             Speaker::Player => format!(">>> PLAYER: {}", self.message),
@@ -94,16 +97,6 @@ impl ConversationManager {
         ConversationManager {
             turns: VecDeque::new(),
             max_turns: MAX_CONVERSATION_TURNS,
-            current_turn: 0,
-        }
-    }
-
-    /// Create a new ConversationManager with custom max turns
-    #[allow(dead_code)]
-    pub fn with_capacity(max_turns: usize) -> Self {
-        ConversationManager {
-            turns: VecDeque::with_capacity(max_turns),
-            max_turns,
             current_turn: 0,
         }
     }
@@ -187,10 +180,23 @@ impl ConversationManager {
         }
     }
 
-    /// Build a prompt section from recent conversation history
-    ///
-    /// This creates a well-formatted section for AI prompts that clearly
-    /// identifies who said what, with emphasis on the DM being "YOU".
+    /// Get the maximum number of turns
+    pub fn max_turns(&self) -> usize {
+        self.max_turns
+    }
+}
+
+// Test-only helper methods
+#[cfg(test)]
+impl ConversationManager {
+    pub fn with_capacity(max_turns: usize) -> Self {
+        ConversationManager {
+            turns: VecDeque::with_capacity(max_turns),
+            max_turns,
+            current_turn: 0,
+        }
+    }
+
     pub fn build_prompt_section(&self, include_last_n: usize) -> String {
         if self.turns.is_empty() {
             return String::new();
@@ -201,9 +207,7 @@ impl ConversationManager {
             return String::new();
         }
 
-        // Pre-allocate: ~100 bytes per turn + headers
         let mut section = String::with_capacity(200 + recent_turns.len() * 100);
-
         section.push_str("=== CONVERSATION HISTORY ===\n");
         section.push_str("(You are the DM. The player is the other speaker.)\n");
         section.push_str("(>>> marks turn boundaries for clarity)\n\n");
@@ -215,56 +219,6 @@ impl ConversationManager {
 
         section.push_str("\n=== END HISTORY ===\n\n");
         section
-    }
-
-    /// Build a simple prompt section (backward compatible with old system)
-    #[allow(dead_code)]
-    pub fn build_simple_prompt_section(&self, include_last_n: usize) -> String {
-        if self.turns.is_empty() {
-            return String::new();
-        }
-
-        let recent_turns = self.get_recent_turns(include_last_n);
-        if recent_turns.is_empty() {
-            return String::new();
-        }
-
-        let mut section = String::with_capacity(50 + recent_turns.len() * 100);
-        section.push_str("Recent events:\n");
-
-        for turn in recent_turns {
-            section.push_str(&turn.format());
-            section.push('\n');
-        }
-
-        section.push('\n');
-        section
-    }
-
-    /// Get conversation summary for debugging
-    #[allow(dead_code)]
-    pub fn get_summary(&self) -> String {
-        format!(
-            "Conversation: {} turns, current turn: {}",
-            self.turns.len(),
-            self.current_turn
-        )
-    }
-
-    /// Set the maximum number of turns to keep
-    #[allow(dead_code)]
-    pub fn set_max_turns(&mut self, max: usize) {
-        self.max_turns = max;
-
-        // Trim if necessary
-        while self.turns.len() > self.max_turns {
-            self.turns.pop_front();
-        }
-    }
-
-    /// Get the maximum number of turns
-    pub fn max_turns(&self) -> usize {
-        self.max_turns
     }
 }
 

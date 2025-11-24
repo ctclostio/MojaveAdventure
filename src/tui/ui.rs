@@ -339,7 +339,7 @@ fn render_special_stats(f: &mut Frame, character: &Character, area: Rect) {
 /// Render quick status (weapon, combat status, etc.)
 fn render_quick_status(f: &mut Frame, app: &App, area: Rect) {
     let character = &app.game_state.character;
-    let mut lines = vec![];
+    let mut lines = Vec::with_capacity(10); // Pre-allocate for typical status display
 
     // Combat status
     if app.game_state.combat.active {
@@ -433,8 +433,8 @@ fn render_message_log(f: &mut Frame, app: &App, area: Rect) {
     // Get visible messages
     let messages = app.get_visible_messages(available_height);
 
-    // Create lines with proper formatting
-    let mut lines: Vec<Line> = vec![];
+    // Create lines with proper formatting - pre-allocate for better performance
+    let mut lines: Vec<Line> = Vec::with_capacity(available_height);
 
     for msg in messages {
         // Use enhanced formatting for DM messages

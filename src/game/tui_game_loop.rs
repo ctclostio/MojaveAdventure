@@ -507,8 +507,37 @@ async fn handle_player_input(
             app.set_view_mode(crate::tui::app::ViewMode::Equipment);
             return Ok(());
         }
+        _ if input.to_lowercase().starts_with("use ") => {
+            let item_id = input[4..].trim();
+            if item_id.is_empty() {
+                app.add_error_message("Usage: use <item_id> (e.g., 'use stimpak')".to_string());
+                return Ok(());
+            }
+            match app.game_state.character.use_consumable(item_id) {
+                Ok(message) => {
+                    app.add_system_message(format!("✓ {}", message));
+                    // Trigger HP animation if healing item
+                    if item_id.contains("stimpak") || item_id.contains("radaway") {
+                        app.animation_manager.start_health_drain(
+                            app.game_state.character.current_hp - 25,
+                            app.game_state.character.current_hp,
+                        );
+                    }
+                }
+                Err(e) => app.add_error_message(e),
+            }
+            return Ok(());
+        }
         "help" => {
             show_help(app);
+            return Ok(());
+        }
+        "fight" | "combat" => {
+            if app.game_state.combat.active {
+                app.add_error_message("Already in combat!".to_string());
+            } else {
+                spawn_random_encounter(app);
+            }
             return Ok(());
         }
         "debug" | "context" => {
@@ -661,8 +690,12 @@ fn handle_combat_command(app: &mut App, input: &str) -> Option<anyhow::Result<()
 
                     // Check if combat ended
                     if app.game_state.combat.all_enemies_dead() {
-                        app.add_combat_message("🎉 Victory! All enemies defeated!".to_string());
-                        app.game_state.combat.active = false;
+                        let total_xp = app.game_state.combat.total_xp_reward();
+                        app.add_combat_message(format!(
+                            "🎉 Victory! All enemies defeated! Total XP: +{}",
+                            total_xp
+                        ));
+                        app.game_state.combat.end_combat();
                         app.set_view_mode(crate::tui::app::ViewMode::Normal);
                     }
 
@@ -741,11 +774,16 @@ fn handle_enemy_turn(app: &mut App) {
             }
 
             // Check if player died
-            if app.game_state.character.current_hp <= 0 {
+            if !app.game_state.character.is_alive() {
                 app.add_combat_message("☠ You have been defeated!".to_string());
-                app.add_system_message("Game Over! (Note: Death mechanics WIP)".to_string());
-                app.game_state.combat.active = false;
-                app.set_view_mode(crate::tui::app::ViewMode::Normal);
+                app.death_info = Some(crate::tui::app::DeathInfo {
+                    location: app.game_state.location.clone(),
+                    day: app.game_state.day,
+                    level: app.game_state.character.level,
+                    cause: format!("Killed by {}", enemy_name),
+                });
+                app.game_state.combat.end_combat();
+                app.set_view_mode(crate::tui::app::ViewMode::GameOver);
                 return;
             }
         } else {
@@ -757,12 +795,47 @@ fn handle_enemy_turn(app: &mut App) {
     app.game_state.combat.next_round();
 }
 
+/// Spawn a random combat encounter based on player level
+fn spawn_random_encounter(app: &mut App) {
+    use crate::game::combat::Enemy;
+    use rand::Rng;
+
+    let mut rng = rand::rng();
+    let level = app.game_state.character.level;
+    let encounter_type = rng.random_range(0..3);
+
+    let enemies = match encounter_type {
+        0 => {
+            app.add_combat_message("🐛 Mutated insects emerge from the shadows!".to_string());
+            vec![
+                Enemy::radroach(level),
+                Enemy::radroach(level),
+                Enemy::radroach(level),
+            ]
+        }
+        1 => {
+            app.add_combat_message("⚔ Raiders spot you and attack!".to_string());
+            vec![Enemy::raider(level), Enemy::raider(level)]
+        }
+        _ => {
+            app.add_combat_message("👹 A Super Mutant emerges from the ruins!".to_string());
+            vec![Enemy::super_mutant(level)]
+        }
+    };
+
+    app.game_state.combat.start_combat(enemies);
+    app.set_view_mode(crate::tui::app::ViewMode::Combat);
+    app.add_system_message("Combat started! Use 'attack <number>' to fight.".to_string());
+}
+
 fn show_help(app: &mut App) {
     app.add_system_message("═══ COMMANDS ═══".to_string());
     app.add_info_message("inventory, inv, i  - View your inventory".to_string());
     app.add_info_message("stats, sheet       - View character stats".to_string());
     app.add_info_message("worldbook, wb      - View worldbook".to_string());
     app.add_info_message("equip, equipment   - Equip/unequip items".to_string());
+    app.add_info_message("use <item>         - Use consumable (stimpak, radaway)".to_string());
+    app.add_info_message("fight, combat      - Start random combat encounter".to_string());
     app.add_info_message("save [name]        - Save game (default: 'quicksave')".to_string());
     app.add_info_message("help               - Show this help".to_string());
     app.add_info_message("debug, context     - Show AI conversation context".to_string());
@@ -770,6 +843,7 @@ fn show_help(app: &mut App) {
     app.add_system_message("".to_string());
     app.add_system_message("In combat:".to_string());
     app.add_info_message("attack <number>    - Attack enemy".to_string());
+    app.add_info_message("use <item>         - Use consumable item".to_string());
     app.add_info_message("run, flee          - Attempt to flee".to_string());
     app.add_system_message("".to_string());
     app.add_system_message("Press ESC to return to main view".to_string());
@@ -852,24 +926,8 @@ async fn handle_skill_check_if_needed(
         // Perform the roll automatically
         let result = perform_roll(&app.game_state.character, &skill_or_stat, dc);
 
-        // Format roll result message
-        let roll_msg = format!(
-            "🎲 {} Check: Rolled {}+{} = {} vs DC {} - {}",
-            result.skill_name,
-            result.roll,
-            result.modifier,
-            result.total,
-            result.dc,
-            if result.critical {
-                "CRITICAL SUCCESS!"
-            } else if result.fumble {
-                "CRITICAL FAILURE!"
-            } else if result.success {
-                "Success"
-            } else {
-                "Failure"
-            }
-        );
+        // Format roll result using the RollResult methods
+        let roll_msg = format!("{} {}", result.emoji(), result.format());
 
         // Display the roll result
         app.add_system_message(roll_msg);

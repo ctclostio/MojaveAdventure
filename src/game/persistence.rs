@@ -103,17 +103,6 @@ pub fn list_save_files() -> Vec<String> {
     saves
 }
 
-/// Interactive save game with user prompt
-///
-/// Prompts the user for a filename and saves the game state.
-pub fn save_game(game_state: &GameState) {
-    let filename = UI::prompt("Save name:");
-    match save_to_file(game_state, &filename) {
-        Ok(_) => UI::print_success("Game saved!"),
-        Err(e) => UI::print_error(&format!("Save failed: {}", e)),
-    }
-}
-
 /// Interactive load game with save file selection
 ///
 /// Shows available saves and prompts the user to select one.

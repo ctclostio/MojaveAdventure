@@ -176,10 +176,10 @@ impl ServerManager {
             speedhacks.push("no-kv-offload");
         }
 
-        // Memory-map for faster model loading
+        // Memory-map is enabled by default in modern llama.cpp
+        // No need to pass --mmap flag (it's not supported in newer versions)
         if config.mmap {
-            cmd.arg("--mmap");
-            speedhacks.push("mmap");
+            speedhacks.push("mmap(default)");
         }
 
         // Lock model in RAM to prevent swapping

@@ -6,15 +6,6 @@ use serde::{Deserialize, Serialize};
 use smartstring::alias::String as SmartString;
 use std::time::Duration;
 
-/// Function calling schema for entity extraction
-#[allow(dead_code)]
-#[derive(Debug, Serialize)]
-struct FunctionDefinition {
-    name: String,
-    description: String,
-    parameters: serde_json::Value,
-}
-
 #[derive(Debug, Serialize)]
 struct ExtractionRequest {
     prompt: String,

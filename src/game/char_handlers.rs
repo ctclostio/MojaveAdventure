@@ -47,24 +47,3 @@ pub fn create_new_character(_config: &Config) -> GameState {
 
     GameState::new(character)
 }
-
-/// Print detailed character statistics
-pub fn print_detailed_stats(character: &Character) {
-    println!(
-        "{}",
-        "═══ DETAILED STATS ═════════════════════════".cyan().bold()
-    );
-    println!();
-    println!("{}", "SKILLS:".bold());
-    println!("  Small Guns: {}", character.skills.small_guns);
-    println!("  Big Guns: {}", character.skills.big_guns);
-    println!("  Energy Weapons: {}", character.skills.energy_weapons);
-    println!("  Melee Weapons: {}", character.skills.melee_weapons);
-    println!("  Unarmed: {}", character.skills.unarmed);
-    println!("  Speech: {}", character.skills.speech);
-    println!("  Sneak: {}", character.skills.sneak);
-    println!("  Lockpick: {}", character.skills.lockpick);
-    println!("  Science: {}", character.skills.science);
-    println!("  Repair: {}", character.skills.repair);
-    println!();
-}

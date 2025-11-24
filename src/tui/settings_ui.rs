@@ -52,7 +52,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
 /// Render the list of settings
 fn render_settings_list(f: &mut Frame, editor: &SettingsEditor, area: Rect) {
     let fields = SettingsEditor::get_fields();
-    let mut lines = vec![];
+    let mut lines = Vec::with_capacity(fields.len() * 4 + 5); // Pre-allocate for all fields
 
     lines.push(Line::from(""));
     lines.push(Line::from(vec![
