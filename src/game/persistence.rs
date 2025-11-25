@@ -36,27 +36,14 @@ pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
     let save_path = saves_dir.join(format!("{}.json", filename));
 
     // Final safety check: ensure the path is within saves/ directory
-    // We can't canonicalize a file that doesn't exist yet, so check the parent
+    // Since the filename is validated to not contain path separators,
+    // the parent should always match saves_dir
     if let Some(parent) = save_path.parent() {
-        // Only compare canonicalized paths if both succeed; otherwise compare as-is
-        match (parent.canonicalize(), saves_dir.canonicalize()) {
-            (Ok(canonical_parent), Ok(canonical_saves)) => {
-                if canonical_parent != canonical_saves {
-                    return Err(GameError::PathTraversalError(
-                        "Path escapes saves directory".to_string(),
-                    )
-                    .into());
-                }
-            }
-            _ => {
-                // Fallback: compare the path components directly
-                if parent != saves_dir {
-                    return Err(GameError::PathTraversalError(
-                        "Path escapes saves directory".to_string(),
-                    )
-                    .into());
-                }
-            }
+        // Compare using OsStr for cross-platform consistency
+        if parent.as_os_str() != saves_dir.as_os_str() {
+            return Err(
+                GameError::PathTraversalError("Path escapes saves directory".to_string()).into(),
+            );
         }
     }
 
