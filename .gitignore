@@ -33,3 +33,7 @@ llama-cpp/cudart/
 
 # Claude Code settings
 .claude/
+
+# Mutation testing
+mutants.out/
+mutants.out.old/
