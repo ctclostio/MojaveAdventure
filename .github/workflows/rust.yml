@@ -63,3 +63,17 @@ jobs:
       run: cargo miri test --no-default-features
       env:
         MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-ignore-leaks
+
+  machete:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: bnjbvr/cargo-machete@main
+
+  semver:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: obi1kenobi/cargo-semver-checks-action@v2

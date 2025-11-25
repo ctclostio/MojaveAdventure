@@ -7,7 +7,12 @@ use ratatui::{
 pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
 
+    // Ensure we have a minimum width to work with
+    let max_width = max_width.max(20);
+
     // Add top border with "DUNGEON MASTER" header
+    // Layout: "┌─ " (3) + "DUNGEON MASTER" (14) + " ─...─" (max_width-19) + "┐" (1) = max_width-1
+    // We use max_width-1 to leave room for the border character
     lines.push(Line::from(vec![
         Span::styled("┌─ ", Style::default().fg(Color::Cyan)),
         Span::styled(
@@ -17,10 +22,10 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(
-            format!(" {}", "─".repeat(max_width.saturating_sub(18))),
+            format!(" {}", "─".repeat(max_width.saturating_sub(20))),
             Style::default().fg(Color::Cyan),
         ),
-        Span::styled("┐", Style::default().fg(Color::Cyan)),
+        Span::styled("─┐", Style::default().fg(Color::Cyan)),
     ]));
 
     // Parse the content and format it
@@ -30,16 +35,15 @@ pub fn format_dm_narrative(content: &str, max_width: usize) -> Vec<Line<'static>
         match section {
             NarrativeSection::Text(text) => {
                 // Add wrapped text with borders
-                let wrapped = wrap_text_advanced(&text, max_width.saturating_sub(4));
+                // Content width = max_width - 4 (for "│ " and " │" borders)
+                let content_width = max_width.saturating_sub(4);
+                let wrapped = wrap_text_advanced(&text, content_width);
                 for wrapped_line in wrapped {
-                    lines.push(Line::from(vec![
-                        Span::styled("│ ", Style::default().fg(Color::Cyan)),
-                        Span::styled(
-                            pad_line(&wrapped_line, max_width.saturating_sub(4)),
-                            Style::default().fg(Color::White),
-                        ),
-                        Span::styled(" │", Style::default().fg(Color::Cyan)),
-                    ]));
+                    lines.push(build_bordered_line(
+                        &wrapped_line,
+                        max_width,
+                        Style::default().fg(Color::White),
+                    ));
                 }
             }
             NarrativeSection::BulletList(items) => {
@@ -383,14 +387,38 @@ fn wrap_text_advanced(text: &str, max_width: usize) -> Vec<String> {
     lines
 }
 
-/// Pad a line to a specific width
+/// Pad or truncate a line to a specific width
+/// Ensures the returned string is EXACTLY the specified width
 fn pad_line(text: &str, width: usize) -> String {
-    let text_len = text.chars().count();
+    if width == 0 {
+        return String::new();
+    }
+
+    let chars: Vec<char> = text.chars().collect();
+    let text_len = chars.len();
+
     if text_len >= width {
-        text.to_string()
+        // Truncate to exactly width characters
+        chars.into_iter().take(width).collect()
     } else {
+        // Pad with spaces to reach width
         format!("{}{}", text, " ".repeat(width - text_len))
     }
+}
+
+/// Build a bordered content line with proper width handling
+/// Format: "│ " + content + " │" = max_width chars total
+/// Content will be wrapped/truncated to fit exactly
+fn build_bordered_line(content: &str, max_width: usize, style: Style) -> Line<'static> {
+    // We need at least 4 chars for borders: "│ " (2) + " │" (2)
+    let content_width = max_width.saturating_sub(4);
+    let padded_content = pad_line(content, content_width);
+
+    Line::from(vec![
+        Span::styled("│ ", Style::default().fg(Color::Cyan)),
+        Span::styled(padded_content, style),
+        Span::styled(" │", Style::default().fg(Color::Cyan)),
+    ])
 }
 
 #[cfg(test)]
@@ -472,8 +500,10 @@ mod tests {
 
     #[test]
     fn test_pad_line_longer_than_width() {
+        // Now truncates to fit exactly the specified width
         let padded = pad_line("TooLongText", 5);
-        assert_eq!(padded, "TooLongText");
+        assert_eq!(padded, "TooLo");
+        assert_eq!(padded.chars().count(), 5);
     }
 
     #[test]
@@ -824,5 +854,55 @@ mod tests {
             NarrativeSection::Text(t) => assert_eq!(t, "Conclusion"),
             _ => panic!("Expected text"),
         }
+    }
+
+    #[test]
+    fn test_format_dm_narrative_long_paragraph_wraps() {
+        // Test case similar to the actual game output - a long narrative description
+        let content = "The vault entrance is dimly lit by flickering fluorescent tubes, the rusted metal walls bearing faded slogans. A low hum from the old air filters rattles against your chest. The door itself is a sealed steel slab, its brass bolts corroded green with age.";
+
+        // Use a typical terminal width of 80 chars
+        let max_width = 80;
+        let lines = format_dm_narrative(content, max_width);
+
+        // Should have header, multiple content lines, and footer
+        assert!(
+            lines.len() >= 4,
+            "Expected at least 4 lines (header, 2+ content, footer)"
+        );
+
+        // Verify each line is within max_width by checking span widths
+        for (i, line) in lines.iter().enumerate() {
+            let total_width: usize = line.spans.iter().map(|s| s.content.chars().count()).sum();
+            assert!(
+                total_width <= max_width,
+                "Line {} exceeds max_width: {} chars (max {})",
+                i,
+                total_width,
+                max_width
+            );
+        }
+    }
+
+    #[test]
+    fn test_build_bordered_line_exact_width() {
+        let max_width = 50;
+        let line = build_bordered_line("Test content", max_width, Style::default());
+
+        let total_width: usize = line.spans.iter().map(|s| s.content.chars().count()).sum();
+        assert_eq!(total_width, max_width, "Line should be exactly max_width");
+    }
+
+    #[test]
+    fn test_build_bordered_line_truncates_long_content() {
+        let max_width = 20;
+        let long_content = "This is a very long content that should be truncated";
+        let line = build_bordered_line(long_content, max_width, Style::default());
+
+        let total_width: usize = line.spans.iter().map(|s| s.content.chars().count()).sum();
+        assert_eq!(
+            total_width, max_width,
+            "Line should be exactly max_width even with long content"
+        );
     }
 }
