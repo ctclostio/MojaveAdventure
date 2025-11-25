@@ -338,11 +338,27 @@ fn wrap_text_advanced(text: &str, max_width: usize) -> Vec<String> {
                 current_width = 0;
             }
 
-            // Handle very long words that exceed max_width
+            // Handle very long words that exceed max_width - split them
             if word_len > max_width {
-                lines.push(word[..max_width].to_string());
-                current_line = word[max_width..].to_string();
-                current_width = current_line.chars().count();
+                // Use char_indices for proper UTF-8 handling
+                let chars: Vec<char> = word.chars().collect();
+                let mut start = 0;
+                while start < chars.len() {
+                    let end = (start + max_width).min(chars.len());
+                    let chunk: String = chars[start..end].iter().collect();
+                    if start == 0 || end == chars.len() {
+                        // First chunk or last chunk - might go on current/next line
+                        if start == 0 {
+                            lines.push(chunk);
+                        } else {
+                            current_line = chunk;
+                            current_width = end - start;
+                        }
+                    } else {
+                        lines.push(chunk);
+                    }
+                    start = end;
+                }
                 continue;
             }
         }

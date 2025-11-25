@@ -456,6 +456,8 @@ impl App {
 
     /// Check if a line is a thinking/reasoning line from GPT-OSS
     /// GPT-OSS uses the "harmony format" with channel markers, emoji indicators, and <think> tags
+    /// NOTE: Meta-commentary detection is NOT done here to avoid false positives on narrative text
+    /// Meta-commentary is stripped only during the final cleanup pass in strip_thinking_content
     fn is_thinking_indicator(line: &str) -> bool {
         // OpenAI/GPT-OSS thinking tags
         if line.contains("<think>") || line.starts_with("<think") {
@@ -484,6 +486,94 @@ impl App {
 
         for prefix in &thinking_prefixes {
             if line.starts_with(prefix) {
+                return true;
+            }
+        }
+
+        // NOTE: We do NOT check is_meta_commentary here because it would cause false positives
+        // on legitimate narrative text containing phrases like "Let me show you" (dialogue)
+        // or "We should explore" (NPC speech). Meta-commentary is only stripped in the final
+        // cleanup pass via strip_meta_commentary_sentences.
+
+        false
+    }
+
+    /// Check if text contains meta-commentary patterns (model planning what to write)
+    /// These are phrases like "We should describe...", "The text says...", etc.
+    /// Only matches patterns at the START of the text to avoid false positives on dialogue
+    fn is_meta_commentary(text: &str) -> bool {
+        let lower = text.to_lowercase().trim_start().to_string();
+
+        // Skip leading asterisks/markdown formatting for pattern matching
+        let check_text = lower.trim_start_matches('*').trim_start();
+
+        // Meta-commentary indicators that must appear at the START of text
+        // These indicate the model is planning/reasoning about what to write
+        let start_patterns = [
+            "we should",
+            "we might",
+            "we need to",
+            "we could",
+            "we can ",
+            "we have ", // "We have to describe..."
+            "we are ",  // "We are in a vault..." (context stating)
+            "we're ",   // "We're going to describe..."
+            "let's ",
+            "let me ",
+            "i should",
+            "i'll ",
+            "i will ",
+            "i need to",
+            "i have to",
+            "the text says",
+            "the prompt",
+            "the player ", // "The player wants..."
+            "the user ",   // "The user is asking..."
+            "this requires",
+            "this needs",
+            "this is about",
+            "then we",
+            "first we",
+            "first,",
+            "now we",
+            "now,",
+            "now i",
+            "okay,",
+            "ok,",
+            "so,",
+            "so we",
+            "alright,",
+            "hmm",
+            "let me think",
+            "thinking about",
+        ];
+
+        for pattern in &start_patterns {
+            if check_text.starts_with(pattern) {
+                return true;
+            }
+        }
+
+        // Additional patterns that can appear anywhere but are very specific to meta-commentary
+        // These are unlikely to appear in normal narrative
+        let anywhere_patterns = [
+            "should describe",
+            "might mention",
+            "need to include",
+            "describe environment",
+            "mention doors",
+            "should mention",
+            "could mention",
+            "will describe",
+            "will mention",
+            "the user wants",
+            "the player wants",
+            "respond with",
+            "write a response",
+        ];
+
+        for pattern in &anywhere_patterns {
+            if lower.contains(pattern) {
                 return true;
             }
         }
@@ -602,20 +692,199 @@ impl App {
             }
         }
 
-        // If no markers found, try to filter by lines
-        if result == content {
-            result = content
+        // For multi-line content, filter out lines that are purely thinking indicators
+        // (emoji prefixes, harmony markers, etc.) but NOT meta-commentary
+        // Meta-commentary is handled at the sentence level below
+        if result.lines().count() > 1 {
+            result = result
                 .lines()
                 .filter(|line| {
                     let trimmed = line.trim();
-                    !Self::is_thinking_indicator(trimmed)
+                    // Only filter lines with explicit thinking markers, not meta-commentary
+                    !Self::has_explicit_thinking_markers(trimmed)
                 })
                 .collect::<Vec<&str>>()
                 .join("\n");
         }
 
+        // Strip meta-commentary sentences from the beginning
+        // These are sentences like "We should describe...", "The text says...", etc.
+        result = Self::strip_meta_commentary_sentences(&result);
+
+        // Clean up degenerate/garbled punctuation patterns
+        result = Self::clean_degenerate_punctuation(&result);
+
         // Strip any remaining channel markers
         Self::strip_channel_markers(&result)
+    }
+
+    /// Clean up degenerate punctuation patterns that indicate broken model output
+    /// Patterns like "....", "????", "**?**", excessive asterisks, etc.
+    fn clean_degenerate_punctuation(content: &str) -> String {
+        use regex::Regex;
+
+        // Lazy static would be better but this is called infrequently (once per response)
+        let patterns: Vec<(Regex, &str)> = vec![
+            // Multiple periods (3+ in a row) -> ellipsis
+            (Regex::new(r"\.{3,}").unwrap(), "..."),
+            // Multiple question marks (2+ in a row) -> single
+            (Regex::new(r"\?{2,}").unwrap(), "?"),
+            // Multiple exclamation marks (2+ in a row) -> single
+            (Regex::new(r"!{2,}").unwrap(), "!"),
+            // Unicode ellipsis followed by periods or vice versa
+            (Regex::new(r"…\.+|\.+…").unwrap(), "..."),
+            // Multiple unicode ellipsis
+            (Regex::new(r"…{2,}").unwrap(), "..."),
+            // Orphaned markdown bold/italic markers with just punctuation inside: **?** or *?*
+            (Regex::new(r"\*\*[?.!…\s]*\*\*").unwrap(), ""),
+            (Regex::new(r"\*[?.!…\s]*\*").unwrap(), ""),
+            // Multiple spaces
+            (Regex::new(r" {2,}").unwrap(), " "),
+            // Standalone punctuation clusters (just dots, question marks, etc. with spaces)
+            (Regex::new(r"^\s*[.?!…\s]+\s*$").unwrap(), ""),
+            // Leading/trailing garbage punctuation (not part of words)
+            (Regex::new(r"^[.?!…*\s]+").unwrap(), ""),
+        ];
+
+        let mut result = content.to_string();
+        for (regex, replacement) in &patterns {
+            result = regex.replace_all(&result, *replacement).to_string();
+        }
+
+        // Also filter out "sentences" that are mostly punctuation (>50% non-alphanumeric)
+        result = result
+            .split(". ")
+            .filter(|sentence| {
+                let total = sentence.len();
+                if total == 0 {
+                    return false;
+                }
+                let alpha_count = sentence.chars().filter(|c| c.is_alphanumeric()).count();
+                // Keep sentence if at least 30% is alphanumeric
+                (alpha_count as f32 / total as f32) > 0.3
+            })
+            .collect::<Vec<&str>>()
+            .join(". ");
+
+        result.trim().to_string()
+    }
+
+    /// Check if a line has explicit thinking markers (tags, emojis) but NOT meta-commentary
+    /// This is used for line-based filtering to avoid filtering out mixed content
+    fn has_explicit_thinking_markers(line: &str) -> bool {
+        // OpenAI/GPT-OSS thinking tags
+        if line.contains("<think>") || line.starts_with("<think") {
+            return true;
+        }
+
+        // GPT-OSS harmony format channel markers for analysis/thinking
+        let harmony_thinking_markers = [
+            "<|channel|>analysis",
+            "<|analysis|>",
+            "<|start|>assistant<|channel|>analysis",
+        ];
+
+        for marker in &harmony_thinking_markers {
+            if line.contains(marker) {
+                return true;
+            }
+        }
+
+        // GPT-OSS emoji prefixes for chain-of-thought
+        let thinking_prefixes = ["🤔", "💭"];
+
+        for prefix in &thinking_prefixes {
+            if line.starts_with(prefix) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Strip meta-commentary sentences from the beginning of the response
+    /// Keeps stripping sentences until we find one that isn't meta-commentary
+    fn strip_meta_commentary_sentences(content: &str) -> String {
+        let mut result = content.trim().to_string();
+
+        // Keep stripping meta-commentary sentences from the beginning
+        loop {
+            let trimmed = result.trim_start();
+            if trimmed.is_empty() {
+                break;
+            }
+
+            // FIRST: Check for "etc " pattern (common delimiter in meta-commentary)
+            // e.g., "Then we might mention doors, etc The actual content..."
+            // This must come BEFORE sentence boundary check because "etc" often
+            // appears in the middle of what looks like one long sentence
+            if let Some(etc_pos) = trimmed.to_lowercase().find("etc ") {
+                let before_etc = &trimmed[..etc_pos + 4]; // Include "etc "
+                if Self::is_meta_commentary(before_etc) {
+                    // Skip past "etc " and continue
+                    result = trimmed[etc_pos + 4..].trim_start().to_string();
+                    continue;
+                }
+            }
+
+            // Find first sentence boundary (. or ? or !)
+            let sentence_end = Self::find_sentence_boundary(trimmed);
+
+            if let Some(end_pos) = sentence_end {
+                let first_sentence = &trimmed[..=end_pos]; // Include the punctuation
+
+                // Check if this sentence is meta-commentary
+                if Self::is_meta_commentary(first_sentence) {
+                    // Skip this sentence - find where to continue
+                    let skip_to = end_pos + 1;
+                    if skip_to < trimmed.len() {
+                        result = trimmed[skip_to..].trim_start().to_string();
+                    } else {
+                        // Nothing left after this sentence
+                        result = String::new();
+                        break;
+                    }
+                } else {
+                    // First non-meta sentence found, stop stripping
+                    break;
+                }
+            } else {
+                // No clear sentence boundary - check if entire remaining text is meta
+                if Self::is_meta_commentary(trimmed) {
+                    result = String::new();
+                }
+                break;
+            }
+        }
+
+        result
+    }
+
+    /// Find the first sentence boundary (. ? ! or …) in text
+    /// Returns the byte position of the LAST byte of the punctuation mark
+    /// This is critical for correct UTF-8 slicing with multi-byte characters like …
+    fn find_sentence_boundary(text: &str) -> Option<usize> {
+        // Collect char_indices to properly navigate by character index
+        let chars: Vec<(usize, char)> = text.char_indices().collect();
+
+        for (char_idx, &(byte_pos, c)) in chars.iter().enumerate() {
+            // Check for standard sentence-ending punctuation
+            if c == '.' || c == '?' || c == '!' || c == '…' {
+                // Get next character using character index (not byte index)
+                let next_char = chars.get(char_idx + 1).map(|(_, ch)| *ch);
+                // Valid boundary if followed by: end of string, space, newline, or asterisk (markdown)
+                if next_char.is_none()
+                    || next_char == Some(' ')
+                    || next_char == Some('\n')
+                    || next_char == Some('*')
+                {
+                    // Return byte position of the END of this character (last byte)
+                    // This ensures slicing with [..=end_pos] includes the full character
+                    return Some(byte_pos + c.len_utf8() - 1);
+                }
+            }
+        }
+        None
     }
 
     /// Strip stop tokens from the AI response
@@ -1092,5 +1361,96 @@ mod tests {
             result,
             "The door creaks open, revealing a dark hallway. What do you do?"
         );
+    }
+
+    // ============================================================================
+    // META-COMMENTARY STRIPPING TESTS
+    // ============================================================================
+
+    #[test]
+    fn test_is_meta_commentary_we_should() {
+        // Pattern at start of text
+        assert!(App::is_meta_commentary(
+            "We should describe the environment."
+        ));
+        assert!(App::is_meta_commentary("we should mention the doors"));
+    }
+
+    #[test]
+    fn test_is_meta_commentary_the_text_says() {
+        // Pattern at start of text
+        assert!(App::is_meta_commentary("The text says we need to respond"));
+    }
+
+    #[test]
+    fn test_is_meta_commentary_then_we() {
+        // Pattern at start of text
+        assert!(App::is_meta_commentary("Then we might mention doors, etc"));
+    }
+
+    #[test]
+    fn test_is_meta_commentary_negative() {
+        // These should NOT be detected as meta-commentary
+        assert!(!App::is_meta_commentary(
+            "The vaulted concrete walls rise high above you."
+        ));
+        assert!(!App::is_meta_commentary("You see a door ahead."));
+        assert!(!App::is_meta_commentary(
+            "The wasteland stretches before you."
+        ));
+        // Patterns in the middle should NOT match (dialogue, etc.)
+        assert!(!App::is_meta_commentary(
+            "The guard says 'Let me show you the way.'"
+        ));
+        assert!(!App::is_meta_commentary(
+            "\"We should explore this place,\" says Marcus."
+        ));
+        assert!(!App::is_meta_commentary(
+            "You realize that we are at a crossroads."
+        ));
+    }
+
+    #[test]
+    fn test_strip_meta_commentary_sentences_basic() {
+        let content = "We should describe environment. The vaulted concrete walls rise above you.";
+        let result = App::strip_meta_commentary_sentences(content);
+        assert_eq!(result, "The vaulted concrete walls rise above you.");
+    }
+
+    #[test]
+    fn test_strip_meta_commentary_sentences_multiple() {
+        let content = "The text says? We are at Vault 13. We should describe. Then we might mention doors. The vaulted walls rise above you.";
+        let result = App::strip_meta_commentary_sentences(content);
+        assert_eq!(result, "The vaulted walls rise above you.");
+    }
+
+    #[test]
+    fn test_strip_meta_commentary_sentences_no_meta() {
+        let content =
+            "The vaulted concrete walls rise high above you, a testament to pre-war engineering.";
+        let result = App::strip_meta_commentary_sentences(content);
+        assert_eq!(result, content);
+    }
+
+    #[test]
+    fn test_strip_thinking_content_with_meta() {
+        // Simulates the actual output from GPT-OSS we saw in the screenshot
+        let content = "The text says? We are at Vault 13 Entrance. We should describe environment. Then we might mention doors, etc The vaulted concrete walls of Vault 13 rise high above you, a testament to pre-war engineering.";
+        let result = App::strip_thinking_content(content);
+        assert!(
+            result.starts_with("The vaulted concrete walls"),
+            "Expected to start with 'The vaulted concrete walls', got: '{}'",
+            result
+        );
+        assert!(!result.contains("We should"));
+        assert!(!result.contains("The text says"));
+    }
+
+    #[test]
+    fn test_find_sentence_boundary() {
+        assert_eq!(App::find_sentence_boundary("Hello. World"), Some(5));
+        assert_eq!(App::find_sentence_boundary("Hello? World"), Some(5));
+        assert_eq!(App::find_sentence_boundary("Hello! World"), Some(5));
+        assert_eq!(App::find_sentence_boundary("No boundary here"), None);
     }
 }

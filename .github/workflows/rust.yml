@@ -49,3 +49,17 @@ jobs:
       run: cargo install cargo-audit --locked
     - name: Run security audit
       run: cargo audit
+
+  miri:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: miri
+    - name: Setup Miri
+      run: cargo miri setup
+    - name: Run Miri tests
+      run: cargo miri test --no-default-features
+      env:
+        MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-ignore-leaks

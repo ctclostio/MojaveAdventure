@@ -17,6 +17,8 @@ use std::path::PathBuf;
 use ui::UI;
 
 // Use mimalloc as the global allocator for improved performance
+// Disabled when running under Miri (--no-default-features)
+#[cfg(feature = "mimalloc-alloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
