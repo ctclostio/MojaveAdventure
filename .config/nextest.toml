@@ -2,10 +2,13 @@
 # See https://nexte.st/book/configuration.html
 
 [profile.default]
-# Run tests that share filesystem state serially
 test-threads = "num-cpus"
 
-# Define a test group for persistence tests that use the shared "saves" directory
+# Test group for persistence tests that share filesystem state
+[test-groups.serial-persistence]
+max-threads = 1
+
+# Assign persistence tests to the serial group
 [[profile.default.overrides]]
-filter = "test(persistence::)"
-test-threads = 1
+filter = "test(/persistence/)"
+test-group = "serial-persistence"
