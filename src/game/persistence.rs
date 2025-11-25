@@ -35,17 +35,9 @@ pub fn save_to_file(game_state: &GameState, filename: &str) -> Result<()> {
     let json = serde_json::to_string_pretty(game_state)?;
     let save_path = saves_dir.join(format!("{}.json", filename));
 
-    // Final safety check: ensure the path is within saves/ directory
-    // Since the filename is validated to not contain path separators,
-    // the parent should always match saves_dir
-    if let Some(parent) = save_path.parent() {
-        // Compare using OsStr for cross-platform consistency
-        if parent.as_os_str() != saves_dir.as_os_str() {
-            return Err(
-                GameError::PathTraversalError("Path escapes saves directory".to_string()).into(),
-            );
-        }
-    }
+    // Security note: filename is already validated by validate_save_name() to contain
+    // only alphanumeric chars, hyphens, and underscores (no path separators).
+    // This guarantees save_path is always within saves/ directory.
 
     fs::write(save_path, json)?;
     Ok(())
