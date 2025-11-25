@@ -1,0 +1,11 @@
+# Nextest configuration
+# See https://nexte.st/book/configuration.html
+
+[profile.default]
+# Run tests that share filesystem state serially
+test-threads = "num-cpus"
+
+# Define a test group for persistence tests that use the shared "saves" directory
+[[profile.default.overrides]]
+filter = "test(persistence::)"
+test-threads = 1
