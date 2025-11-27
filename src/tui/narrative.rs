@@ -286,6 +286,15 @@ fn extract_dialogue(line: &str) -> Option<NarrativeSection> {
                 "Unknown".to_string()
             };
 
+            // IMPORTANT: Only treat as dialogue if the "speaker" looks like an actual speaker name
+            // - Should be relatively short (< 30 chars)
+            // - Should not be a full sentence (no periods before the quote)
+            // - Quoted text should be substantial (not just a short label like "V-13")
+            if speaker.len() > 30 || before_quote.contains('.') || dialogue_text.len() < 5 {
+                // This is likely a quoted term/label in narrative, not actual dialogue
+                return None;
+            }
+
             return Some(NarrativeSection::Dialogue(speaker, dialogue_text));
         }
     }
